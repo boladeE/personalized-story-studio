@@ -21,7 +21,7 @@ The user leads business/marketing/customer operations; their creative friend is 
 
 ## Current baseline
 
-The landing page and photographic v2 demo are functioning local prototypes. There is no real intake backend, storage, payment processing, public deployment, or completed photographic video export. The illustrated first demo was rejected and remains historical.
+The landing page is a public Railway preview with a bundled copy of the photographic v2 demo. The standalone v2 demo is local. There is no real intake backend, storage, payment processing, or completed photographic video export. The illustrated first demo was rejected and remains historical.
 
 The original reference's music was implemented through preloaded hosted MP3s, an AudioContext unlocked by the opening click, per-track gains, and fades. The v2 substitute uses official YouTube embeds and a local-file selector. The user reported sound not playing; seamless soundtrack behavior remains unresolved, not verified.
 

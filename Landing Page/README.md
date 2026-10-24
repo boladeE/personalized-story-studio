@@ -1,8 +1,14 @@
 # Little Things landing page
 
-A working local storefront concept for the personalized digital-gifting studio. “Little Things” is a temporary brand name, not a registered or user-approved final identity.
+A shareable storefront preview for the personalized digital-gifting studio. “Little Things” is a temporary brand name, not a registered or user-approved final identity.
 
-## Preview
+## Public preview
+
+https://landing-page-production-ddee.up.railway.app/
+
+Railway serves this directory as a static site. The bundled sample is at `/sample/`. This service was deployed from the `Landing Page/` directory with `railway up -y`; it is not connected to GitHub for automatic deployments. Run `railway up` from this directory after future changes. `.dockerignore` keeps tests and internal design notes out of the served build.
+
+## Local preview
 
     python -m http.server 8768 --bind 127.0.0.1
 
@@ -49,6 +55,6 @@ Five real Chrome/Playwright tests passed:
 
 Actual desktop and mobile screenshots were inspected. QA captures are in /home/sanmi/.hermes/cache/scratch/landing-qa/ (temporary scratch, not required by the site).
 
-## Before public launch
+## Before taking orders
 
-Confirm the brand name and copy; finalize pricing/scope/revisions; connect real intake/email and secure media storage; define privacy, retention and hosting terms; resolve direct-audio rights and playback; add checkout only after terms are agreed. This page is not deployed publicly.
+Confirm the brand name and copy; finalize pricing/scope/revisions; connect real intake/email and secure media storage; define privacy, retention and hosting terms; resolve direct-audio rights and playback; add checkout only after terms are agreed. The public preview does not take orders.

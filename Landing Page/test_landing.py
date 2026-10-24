@@ -60,7 +60,7 @@ class LandingTests(unittest.TestCase):
         self.page.goto(self.base)
         self.page.get_by_role('button',name='Open navigation',exact=True).click()
         self.assertEqual(self.page.locator('.menu-toggle').get_attribute('aria-expanded'),'true')
-        self.page.locator('#nav').get_by_role('link',name='Start your gift').click()
+        self.page.locator('#nav').get_by_role('link',name='Draft your gift').click()
         self.assertTrue(self.page.get_by_role('dialog').is_visible())
         self.assertEqual(self.page.locator('.menu-toggle').get_attribute('aria-expanded'),'false')
         self.page.keyboard.press('Escape')

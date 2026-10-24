@@ -14,7 +14,7 @@ Use the relevant notes as read-only context unless the user explicitly asks to e
 
 ## Existing work
 
-- Landing Page/ — working Little Things storefront concept, an unconfirmed brand name. Local-only brief download, not a live order form. Includes a bundled copy of the photographic sample in sample/.
+- Landing Page/ — working Little Things storefront concept, an unconfirmed brand name. The public preview is at https://landing-page-production-ddee.up.railway.app/ . Its brief downloads only to the visitor's device; it is not a live order form. Includes a bundled copy of the photographic sample in sample/.
 - Demos/For Zara v2/ — preferred photo-led fictional birthday experience, seven consistent generated photographs, 14 scenes. Its YouTube soundtrack is not equivalent to seamless background audio and the user reported sound not playing.
 - Demos/For Zara/ — preserved historical illustrated demo and MP4. The user rejected this creative direction; do not treat it as the target product or promote it as the current sample.
 
@@ -26,13 +26,13 @@ From the project root:
 
     python -m http.server 8768 --bind 127.0.0.1 --directory "Landing Page"
 
-Open http://127.0.0.1:8768/ . Its sample link uses the bundled sample and does not depend on another server.
+Open http://127.0.0.1:8768/ . Its sample link uses the bundled sample and does not depend on another server. The Railway site deploys only `Landing Page/` and currently requires a manual `railway up` from that directory for updates.
 
 For the standalone preferred demo:
 
     python -m http.server 8767 --bind 127.0.0.1 --directory "Demos/For Zara v2"
 
-Open http://127.0.0.1:8767/ . Both are local-only, not publicly deployed.
+Open http://127.0.0.1:8767/ . The standalone demo remains local; the public storefront carries its bundled sample.
 
 ## Tests
 
