@@ -1,0 +1,13 @@
+{
+  "file": "/home/sanmi/Documents/Work/personalized-story-studio/Demos/For Zara/for-zara.mp4",
+  "duration_seconds": 60.0,
+  "width": 1280,
+  "height": 720,
+  "frames": 1440,
+  "fps": "24/1",
+  "video": "h264",
+  "audio": "aac",
+  "bytes": 2971943,
+  "render_seconds": 19.4,
+  "decode_check": "pass"
+}

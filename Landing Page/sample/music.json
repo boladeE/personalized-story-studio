@@ -1,0 +1,32 @@
+{
+  "tracks": [
+    {
+      "id": "roju",
+      "title": "Roju",
+      "artist": "Chike",
+      "videoId": "19WTWVw15n0",
+      "verifiedTitle": "Chik\u00e9 - Roju (Official Video)",
+      "channel": "Chike",
+      "source": "https://www.youtube.com/watch?v=19WTWVw15n0"
+    },
+    {
+      "id": "friend",
+      "title": "How Are You (My Friend)",
+      "artist": "Johnny Drille",
+      "videoId": "CSK5eApRGwQ",
+      "verifiedTitle": "Johnny Drille - How Are You [My Friend] - (Performance Video)",
+      "channel": "Johnny Drille",
+      "source": "https://www.youtube.com/watch?v=CSK5eApRGwQ"
+    },
+    {
+      "id": "grow",
+      "title": "Grow As We Go",
+      "artist": "Ben Platt",
+      "videoId": "aDeNQNtW1f8",
+      "verifiedTitle": "Ben Platt - Grow As We Go [Official Video]",
+      "channel": "Ben Platt",
+      "source": "https://www.youtube.com/watch?v=aDeNQNtW1f8"
+    }
+  ],
+  "note": "Official YouTube embeds, not downloaded or licensed for MP4 export."
+}

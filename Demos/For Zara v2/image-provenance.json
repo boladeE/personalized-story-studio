@@ -1,0 +1,79 @@
+[
+  {
+    "name": "portrait",
+    "model": "google/gemini-2.5-flash-image",
+    "size": [
+      1344,
+      768
+    ],
+    "cost": 0.0387708,
+    "request_id": "gen-1792612084-Fdzfhxyxtc8rnWIdqyEP",
+    "prompt": "Create ONE photorealistic candid smartphone photograph for an explicitly fictional love story demo. Two entirely fictional adult Nigerians, age 26 and 28. Zara: dark-skinned Nigerian woman with a rounded oval face, very warm wide smile, shoulder-length fine black twists, small gold hoop earrings, deep brown eyes. Tobi: dark-skinned Nigerian man with a short neat afro, short trimmed beard, tall slim build, brown eyes. They are sitting very close together at a casual Lagos garden cafe after a rain shower. Zara is nearest camera in a burgundy linen top, smiling spontaneously at Tobi instead of posing; he is in a dark olive casual shirt, laughing. A friend took this unplanned phone photograph from across the table. Faces clear and realistic, spontaneous imperfect moment, believable skin texture, no beauty-filter smoothness, no fashion editorial, no posed stock photography, no illustrations. Quiet warm evening with blurred plants and amber lights. Medium waist-up two-shot, woman left of centre, man right. Film-like low light, intimate grain, rich shadows, horizontal landscape 16:9. No text or watermark. Preserve realistic hands and fingers."
+  },
+  {
+    "name": "cafe",
+    "model": "google/gemini-2.5-flash-image",
+    "size": [
+      1344,
+      768
+    ],
+    "cost": 0.0393311,
+    "request_id": "gen-1792612147-atZDSspiRB93VfQycbpb",
+    "prompt": "Use the attached reference ONLY to keep the exact same two fictional adult people consistent: Zara, 26, dark-skinned Nigerian woman, rounded oval face, shoulder-length black twists, small gold hoops; Tobi, 28, dark-skinned Nigerian man, short neat afro and short trimmed beard. Make ONE photoreal candid smartphone photograph, not illustration or a poster. These are AI-fictional people, not depictions of real identifiable people. Keep facial identities and skin tones consistent. Natural skin texture, believable fingers, imperfect real-life framing, soft grain, no glamour retouching, no text or watermark. Rainy afternoon Lagos cafe; just Zara in a mustard yellow short-sleeve top sitting by a window streaked with rain, laughing at the camera held by Tobi across the table, one hand near a glass of iced coffee. Half-eaten fries on a plate. Portrait of ordinary affection, cloudy soft light, horizontal wide shot, keep face on right half with negative space on left."
+  },
+  {
+    "name": "selfie",
+    "model": "google/gemini-2.5-flash-image",
+    "size": [
+      1344,
+      768
+    ],
+    "cost": 0.0393036,
+    "request_id": "gen-1792612158-mdNQjopZjYcmAmgXoY9G",
+    "prompt": "Use the attached reference ONLY to keep the exact same two fictional adult people consistent: Zara, 26, dark-skinned Nigerian woman, rounded oval face, shoulder-length black twists, small gold hoops; Tobi, 28, dark-skinned Nigerian man, short neat afro and short trimmed beard. Make ONE photoreal candid smartphone photograph, not illustration or a poster. These are AI-fictional people, not depictions of real identifiable people. Keep facial identities and skin tones consistent. Natural skin texture, believable fingers, imperfect real-life framing, soft grain, no glamour retouching, no text or watermark. An arm's-length casual evening selfie of both of them in a parked car, slightly messy cropped edge, Zara closest to camera in a soft blue T-shirt and Tobi in cream T-shirt on the other seat, both making playful mildly silly faces. Dark car interior, city lights visible through window, realistic phone-camera slightly high angle, not a photoshoot. Landscape shot."
+  },
+  {
+    "name": "beach",
+    "model": "google/gemini-2.5-flash-image",
+    "size": [
+      1344,
+      768
+    ],
+    "cost": 0.0393264,
+    "request_id": "gen-1792612169-x76zKLfTBELgzbRXCL4n",
+    "prompt": "Use the attached reference ONLY to keep the exact same two fictional adult people consistent: Zara, 26, dark-skinned Nigerian woman, rounded oval face, shoulder-length black twists, small gold hoops; Tobi, 28, dark-skinned Nigerian man, short neat afro and short trimmed beard. Make ONE photoreal candid smartphone photograph, not illustration or a poster. These are AI-fictional people, not depictions of real identifiable people. Keep facial identities and skin tones consistent. Natural skin texture, believable fingers, imperfect real-life framing, soft grain, no glamour retouching, no text or watermark. Both of them walking barefoot at a Lagos beach at sunset, Zara in a flowing rust-red casual summer dress and Tobi in beige linen shirt and dark trousers rolled up, holding hands seen from a few metres away, Zara glancing back at him with quiet smile. Wide horizontal shot, ocean waves, overcast peach sky, honest candid memory not staged wedding photo, people in right third, spacious horizon."
+  },
+  {
+    "name": "dinner",
+    "model": "google/gemini-2.5-flash-image",
+    "size": [
+      1344,
+      768
+    ],
+    "cost": 0.0393066,
+    "request_id": "gen-1792612180-zGjtRvAXnWGHmaX5kdfM",
+    "prompt": "Use the attached reference ONLY to keep the exact same two fictional adult people consistent: Zara, 26, dark-skinned Nigerian woman, rounded oval face, shoulder-length black twists, small gold hoops; Tobi, 28, dark-skinned Nigerian man, short neat afro and short trimmed beard. Make ONE photoreal candid smartphone photograph, not illustration or a poster. These are AI-fictional people, not depictions of real identifiable people. Keep facial identities and skin tones consistent. Natural skin texture, believable fingers, imperfect real-life framing, soft grain, no glamour retouching, no text or watermark. Games night in an ordinary cosy Lagos apartment with friends cropped at frame edges. Zara in cream T-shirt laughing and pointing playfully at Tobi, who is mock-defensive in a dark green shirt. A few colorful generic playing cards face-down on a small wooden table, pizza box with no brand, warm household lamp. Natural candid 35mm phone-photo feel, horizontal wide shot. Do not add text or card symbols."
+  },
+  {
+    "name": "laughing",
+    "model": "google/gemini-2.5-flash-image",
+    "size": [
+      1344,
+      768
+    ],
+    "cost": 0.0393012,
+    "request_id": "gen-1792612193-6E5mMWmRye086XeGLm4G",
+    "prompt": "Use the attached reference ONLY to keep the exact same two fictional adult people consistent: Zara, 26, dark-skinned Nigerian woman, rounded oval face, shoulder-length black twists, small gold hoops; Tobi, 28, dark-skinned Nigerian man, short neat afro and short trimmed beard. Make ONE photoreal candid smartphone photograph, not illustration or a poster. These are AI-fictional people, not depictions of real identifiable people. Keep facial identities and skin tones consistent. Natural skin texture, believable fingers, imperfect real-life framing, soft grain, no glamour retouching, no text or watermark. A spontaneous close-up candid photograph of Zara alone in burgundy shirt, shoulder-length black twists and small gold hoops, caught mid-laugh with eyes partly closed, genuinely unguarded, head turned a little left, soft warm evening cafe background, face on right half. Photograph taken by her partner not a model portfolio. Landscape composition, rich warm shadows."
+  },
+  {
+    "name": "birthday",
+    "model": "google/gemini-2.5-flash-image",
+    "size": [
+      1344,
+      768
+    ],
+    "cost": 0.0393072,
+    "request_id": "gen-1792612206-ZhtqMrrHmJXCFBn4Gvae",
+    "prompt": "Use the attached reference ONLY to keep the exact same two fictional adult people consistent: Zara, 26, dark-skinned Nigerian woman, rounded oval face, shoulder-length black twists, small gold hoops; Tobi, 28, dark-skinned Nigerian man, short neat afro and short trimmed beard. Make ONE photoreal candid smartphone photograph, not illustration or a poster. These are AI-fictional people, not depictions of real identifiable people. Keep facial identities and skin tones consistent. Natural skin texture, believable fingers, imperfect real-life framing, soft grain, no glamour retouching, no text or watermark. An intimate at-home birthday evening; Zara in a deep burgundy dress sits behind a small chocolate cake with several lit candles, Tobi in a cream shirt is just at the right edge laughing with her. She is covering her grin with one hand, pleasantly embarrassed by the fuss. Fairy lights bokeh, living room not restaurant, very warm candlelit glow, mostly dark frame with candlelight and smile, horizontal cinematic composition, accurate hands, no text on cake."
+  }
+]

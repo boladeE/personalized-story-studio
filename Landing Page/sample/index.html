@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1a0f0b">
+  <meta name="description" content="A fictional birthday screening for Zara, from Tobi. A photo-led love story, told at your pace.">
+  <title>For Zara — a birthday screening</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css"><script defer src="app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <button id="music-toggle" class="music-toggle" aria-haspopup="dialog" aria-controls="music-panel"><span class="music-note" aria-hidden="true">♪</span><span><span id="track-title">The soundtrack</span><small id="track-artist">Music is optional · tap to choose</small></span></button>
+    <div class="edition">A BIRTHDAY SCREENING <span>FOR ZARA</span></div>
+    <button id="credits-toggle" class="quiet-button">Credits</button>
+  </header>
+  <main id="screen" tabindex="-1" aria-label="A birthday story for Zara">
+    <section id="scene" class="scene" aria-labelledby="scene-title"></section>
+  </main>
+  <div id="countdown" class="countdown" hidden role="dialog" aria-modal="true" aria-label="Your screening is starting"><p class="eyebrow">Get comfortable. This one is for you.</p><div id="count-number">3</div><button id="skip-countdown">Skip countdown</button></div>
+  <footer class="transport">
+    <div class="disclosure">Fictional story · AI-generated photos</div>
+    <nav id="chapter-dots" class="chapter-dots" aria-label="Story chapters"></nav>
+    <div class="transport-buttons"><button id="previous" aria-label="Previous scene">← <span>Previous</span></button><span id="scene-counter" aria-live="polite">01 / 14</span><button id="next" aria-label="Next scene"><span>Next</span> →</button></div>
+  </footer>
+  <dialog id="music-panel" class="panel" aria-labelledby="music-heading">
+    <button class="close-dialog" data-close aria-label="Close music panel">×</button>
+    <p class="eyebrow">For the scenes between the words</p><h2 id="music-heading">Our soundtrack.</h2>
+    <p class="panel-copy">Music is your choice. The story waits for you, not the song.</p>
+    <label for="track-select">Scene soundtrack</label><select id="track-select"></select>
+    <button id="soundtrack-enable" class="primary-button">Show YouTube player</button>
+    <a id="youtube-fallback" class="youtube-fallback" href="https://www.youtube.com/watch?v=19WTWVw15n0" target="_blank" rel="noopener noreferrer">Open this song on YouTube ↗</a>
+    <div id="youtube-container"><p class="player-placeholder">The official player appears here when you enable music.</p></div>
+    <p class="fine-print" id="music-status" aria-live="polite">YouTube needs internet. Your browser or the video owner may block playback. Use the visible player to press play.</p>
+    <div class="local-music"><label for="local-audio">Or play a song you’re allowed to use</label><input id="local-audio" type="file" accept="audio/*"><p class="fine-print">Stays on your device. Nothing is uploaded.</p><audio id="local-player" controls hidden></audio></div>
+    <button id="stop-music" class="quiet-button">Stop all music</button>
+  </dialog>
+  <dialog id="credits-panel" class="panel" aria-labelledby="credits-heading"><button class="close-dialog" data-close aria-label="Close credits">×</button><p class="eyebrow">The small print, with love</p><h2 id="credits-heading">An imagined us.</h2><p>This is a fictional demonstration. Zara and Tobi are invented adults, and every memory, message and letter was written for this story. The photographs are AI-generated depictions of a fictional Nigerian couple, not personal customer photographs.</p><p>No names, biography, messages or media from the private visual reference have been reused. Its cinematic mood informed the art direction only.</p><p>Music belongs to its respective artists and rights holders. Songs play only through the visible YouTube player or an audio file you select with permission. No audio is downloaded, generated or bundled.</p><p>Bodoni Moda by Owen Earl / indestructible type*, distributed under the SIL Open Font License. Photography generated with Google Gemini. Design and original fictional writing: Personalized Story Studio demo.</p><p class="fine-print">This story has no first-party analytics, no uploads and no front-end API keys. Enabling YouTube connects to a third-party service, which may use cookies and collect playback data.</p></dialog>
+  <dialog id="photo-dialog" class="photo-dialog" aria-label="Photograph enlarged"><button class="close-dialog" data-close aria-label="Close photograph">×</button><img id="enlarged-photo" alt=""><p id="photo-caption"></p></dialog>
+  <noscript><p class="noscript">This interactive story needs JavaScript. Please enable it, then reload.</p></noscript>
+</body>
+</html>

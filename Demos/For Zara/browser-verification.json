@@ -1,0 +1,13 @@
+{
+  "http_download": "pass, downloaded bytes match original MP4",
+  "video_playback": "pass",
+  "metadata": {
+    "duration": 60,
+    "width": 1280,
+    "height": 720
+  },
+  "mobile_all_chapters": "pass",
+  "wish_control": "pass",
+  "sound_toggle": "pass",
+  "reduced_motion_initial_state": "paused"
+}
