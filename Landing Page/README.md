@@ -1,6 +1,6 @@
-# Little Things landing page
+# Little Things Digital landing page
 
-A shareable storefront preview for the personalized digital-gifting studio. “Little Things” is a temporary brand name, not a registered or user-approved final identity.
+A shareable storefront preview for the personalized digital-gifting studio. The user has confirmed the business name Little Things Digital and owns littlethingsdigital.com. Offer terms shown on the page remain pilot proposals.
 
 ## Public preview
 
@@ -16,12 +16,13 @@ Open http://127.0.0.1:8768/ . The page also opens directly from index.html; HTTP
 
 ## Included
 
-- Responsive photo-led landing page with locally hosted Bodoni Moda and DM Sans fonts.
-- Working occasion selector and format-specific brief CTAs.
-- A self-contained copy of the fictional photographic Zara/Tobi interactive birthday demo at sample/.
-- Website and keepsake-film offer descriptions, three-step process, ₦30,000 starting pilot-price guide, and FAQ.
-- Accessible native-dialog brief form with required-field/email validation and a real downloadable text brief.
-- Working mobile menu, native FAQ disclosure, keyboard focus, Escape-to-close dialog behavior, and reduced-motion support.
+- Redesigned (Nov 2026) for the confirmed name Little Things Digital. See DESIGN.md for tokens and rationale.
+- Hero with a short fictional "quick moment" that reveals line by line, with replay and a reduced-motion fallback.
+- Six occasion groups from the partner's Product Offerings proposal. Selecting one updates the example moments and presets the brief.
+- The bundled fictional photographic Zara/Tobi sample at sample/, with its real chapter list.
+- Quick moment vs full story, website/video/both comparison, and extras being explored, all labelled as pilot proposals.
+- Four-step process, FAQ, accessible native-dialog brief (occasion, size, format) that downloads a text file.
+- Fonts are self-hosted: Bricolage Grotesque (subset woff2) and Bodoni Moda italic, with OFL files in assets/. `dm-sans.ttf` and `bodoni-regular.ttf` are no longer referenced by the landing page but were left in place.
 
 ## Honest prototype limits
 
@@ -41,20 +42,12 @@ The fonts are local; their SIL Open Font License files are in assets/. The site 
 
 ## Verification
 
-Run:
+Run (system Python with Playwright and Chrome at /usr/bin/google-chrome):
 
-    /home/sanmi/.hermes/cache/scratch/gift-demo-env/bin/python test_landing.py
+    python3 test_landing.py
 
-Five real Chrome/Playwright tests passed:
-
-- Landing page and bundled sample open successfully.
-- A filled brief produces a downloadable file containing the actual entered information without sending an order.
-- Mobile menu and format preselection work.
-- Required fields prevent an empty brief download.
-- Images/fonts load and no horizontal document overflow or JavaScript errors occur at 320, 390, 600, 768, 1024, and 1440 pixels; dialog remains within viewport width.
-
-Actual desktop and mobile screenshots were inspected. QA captures are in /home/sanmi/.hermes/cache/scratch/landing-qa/ (temporary scratch, not required by the site).
+Ten tests: the sample opens to its admission ticket; the bundled sample is byte-identical to Demos/For Zara v2; the hero moment reveals and replays; reduced motion shows it complete; occasion selection updates examples and presets the brief; a filled brief downloads with the entered values and makes no POST or data-bearing request; mobile menu and size/format preselection; required fields block download; no third-party requests; no overflow, image failures, or JS errors at 320–1440px with the dialog inside the viewport.
 
 ## Before taking orders
 
-Confirm the brand name and copy; finalize pricing/scope/revisions; connect real intake/email and secure media storage; define privacy, retention and hosting terms; resolve direct-audio rights and playback; add checkout only after terms are agreed. The public preview does not take orders.
+Finalize pricing/scope/revisions; connect real intake/email and secure media storage; define privacy, retention and hosting terms; resolve direct-audio rights and playback; add checkout only after terms are agreed. The public preview does not take orders.

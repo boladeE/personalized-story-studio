@@ -1,25 +1,61 @@
 (() => {
   'use strict';
-  const dialog = document.querySelector('#brief-dialog');
-  const form = document.querySelector('#brief-form');
-  const status = document.querySelector('#brief-status');
-  let selectedOccasion = 'Birthday';
-  const descriptions = {
-    Birthday: 'A birthday gift that sounds like you, not a greeting card.',
-    Anniversary: 'The big milestones. And the ordinary days that got you there.',
-    Proposal: 'A story only the two of you share. One very big question.',
-    'Just because': 'No special date needed. Just someone worth celebrating.'
+  const $ = selector => document.querySelector(selector);
+  const $$ = selector => Array.from(document.querySelectorAll(selector));
+  const dialog = $('#brief-dialog');
+  const form = $('#brief-form');
+  const status = $('#brief-status');
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  /* Hero: a short fictional "quick moment" that reveals line by line. */
+  const moment = $('#moment');
+  const lines = $$('.moment-lines li');
+  let timers = [];
+  function playMoment() {
+    timers.forEach(clearTimeout);
+    timers = [];
+    lines.forEach(line => line.classList.remove('shown'));
+    moment.dataset.state = 'playing';
+    if (reduceMotion.matches) {
+      lines.forEach(line => line.classList.add('shown'));
+      moment.dataset.state = 'done';
+      return;
+    }
+    lines.forEach((line, i) => timers.push(setTimeout(() => line.classList.add('shown'), 450 + i * 850)));
+    timers.push(setTimeout(() => { moment.dataset.state = 'done'; }, 450 + lines.length * 850 + 250));
+  }
+  $('#replay').addEventListener('click', playMoment);
+  playMoment();
+
+  /* Occasions: examples drawn from the proposed product offering. */
+  const occasions = {
+    Romance: {phrase: 'a romantic moment', examples: ['Asking someone out', 'A proposal', 'An anniversary', 'Valentine’s Day', 'Saying sorry', 'A long-distance surprise']},
+    Birthdays: {phrase: 'a birthday', examples: ['A midnight surprise', 'A memory-lane timeline', 'A birthday letter with the photos they forgot you took']},
+    Weddings: {phrase: 'a wedding', examples: ['Your how-we-met story', 'An invitation page', 'A memory page after the day']},
+    'Life milestones': {phrase: 'a milestone', examples: ['A graduation', 'A new job', 'A retirement', 'A pregnancy announcement', 'A gender reveal']},
+    Family: {phrase: 'family', examples: ['Mother’s Day', 'Father’s Day', 'Children celebrating their parents’ anniversary']},
+    'Just because': {phrase: 'a just-because moment', examples: ['Reasons I love you', 'Open-when letters', 'For a best friend', 'After a rough week', 'Before an exam or interview', 'Thank you to a parent or mentor', 'For someone far away']}
   };
-  document.querySelectorAll('[data-occasion]').forEach(button => {
+  let selectedOccasion = 'Birthdays';
+  const examples = $('#occasion-examples');
+  const occasionCta = $('#occasion-cta');
+  $$('[data-occasion]').forEach(button => {
     button.addEventListener('click', () => {
       selectedOccasion = button.dataset.occasion;
-      document.querySelectorAll('[data-occasion]').forEach(other => other.setAttribute('aria-pressed', String(other === button)));
-      document.querySelector('.occasion-response').textContent = descriptions[selectedOccasion];
-      form.elements.occasion.value = selectedOccasion;
+      $$('[data-occasion]').forEach(other => other.setAttribute('aria-pressed', String(other === button)));
+      const info = occasions[selectedOccasion];
+      examples.replaceChildren(...info.examples.map(text => {
+        const li = document.createElement('li');
+        li.textContent = text;
+        return li;
+      }));
+      occasionCta.textContent = `Start a brief for ${info.phrase}`;
     });
   });
-  const menu = document.querySelector('.menu-toggle');
-  const nav = document.querySelector('#nav');
+
+  /* Mobile navigation */
+  const menu = $('.menu-toggle');
+  const nav = $('#nav');
   function closeMenu() {
     menu.setAttribute('aria-expanded', 'false');
     menu.setAttribute('aria-label', 'Open navigation');
@@ -33,36 +69,48 @@
   });
   nav.querySelectorAll('a').forEach(a => a.addEventListener('click', closeMenu));
   document.addEventListener('keydown', event => {
-    if (event.key === 'Escape') closeMenu();
+    if (event.key === 'Escape' && nav.classList.contains('open')) {
+      closeMenu();
+      menu.focus();
+    }
   });
-  function openBrief(format) {
+
+  /* Brief dialog: local-only text download */
+  let opener = null;
+  function openBrief({size, format} = {}) {
     form.elements.occasion.value = selectedOccasion;
+    if (size) form.elements.size.value = size;
     if (format) form.elements.format.value = format;
     status.textContent = '';
     closeMenu();
+    opener = document.activeElement;
     if (!dialog.open) dialog.showModal();
     document.body.classList.add('modal-open');
     dialog.scrollTop = 0;
   }
-  document.querySelectorAll('a[href="#brief"]').forEach(a => a.addEventListener('click', event => {
+  $$('a[href="#brief"]').forEach(a => a.addEventListener('click', event => {
     event.preventDefault();
-    openBrief(a.dataset.format);
+    openBrief({size: a.dataset.size, format: a.dataset.format});
   }));
-  document.querySelector('#start-brief').addEventListener('click', () => openBrief());
-  document.querySelector('.dialog-close').addEventListener('click', () => dialog.close());
-  dialog.addEventListener('close', () => document.body.classList.remove('modal-open'));
+  $('#start-brief').addEventListener('click', () => openBrief());
+  $('.dialog-close').addEventListener('click', () => dialog.close());
+  dialog.addEventListener('close', () => {
+    document.body.classList.remove('modal-open');
+    if (opener && document.contains(opener) && opener.offsetParent !== null) opener.focus();
+  });
   dialog.addEventListener('click', event => {
     if (event.target !== dialog) return;
     const r = dialog.getBoundingClientRect();
     if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) dialog.close();
   });
+
   form.addEventListener('submit', event => {
     event.preventDefault();
     if (!form.reportValidity()) return;
     const data = new FormData(form);
     const get = name => String(data.get(name) || '').trim();
     const text = [
-      'LITTLE THINGS — DRAFT GIFT BRIEF',
+      'LITTLE THINGS DIGITAL: DRAFT GIFT BRIEF',
       '',
       'Local draft only. This is not a submitted order or booking.',
       '',
@@ -70,21 +118,22 @@
       `Email: ${get('email')}`,
       `For: ${get('recipient')}`,
       `Occasion: ${get('occasion')}`,
+      `Size: ${get('size')}`,
       `Format: ${get('format')}`,
-      `Preferred date: ${get('date') || 'To discuss'}`,
+      `Date in mind: ${get('date') || 'To discuss'}`,
       '', 'THE LITTLE THINGS', get('story'), '',
-      'TO AGREE BEFORE PRODUCTION',
-      'Story and style, available photos/clips, music permissions, quote, timeline, revisions, privacy, and hosting or delivery.',
+      'TO AGREE BEFORE ANY WORK STARTS',
+      'Story and style, photos and clips, music permissions, price, date, review rounds, privacy, and hosting or delivery.',
       '', 'Nothing has been sent or uploaded from this preview.'
     ].join('\n');
     const url = URL.createObjectURL(new Blob([text], {type: 'text/plain;charset=utf-8'}));
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'Little-Things-Gift-Brief.txt';
+    a.download = 'Little-Things-Digital-Brief.txt';
     document.body.appendChild(a);
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
-    status.textContent = 'Your draft is ready to keep. Nothing has been sent or booked.';
+    status.textContent = 'Your brief is downloaded and ready to keep. Nothing has been sent or booked.';
   });
 })();
