@@ -129,7 +129,7 @@ nav>a:not(.button):hover{color:var(--chalk);text-decoration:underline;text-under
 /* Offers */
 .offers{padding:100px 0}
 .offers-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:end;margin-bottom:44px}
-.pilot-note{padding:18px 22px;border-left:4px solid var(--candle);background:var(--chalk);border-radius:0 14px 14px 0;color:var(--muted);max-width:34em}
+.offers-note{font-size:18px;color:var(--muted);max-width:26em}
 .offer-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.45fr);gap:24px;align-items:stretch}
 .offer{border-radius:22px;padding:34px;display:flex;flex-direction:column}
 .offer h3{font-size:clamp(30px,3vw,40px);font-stretch:80%;font-weight:750;margin-bottom:10px}
@@ -258,7 +258,7 @@ dialog::backdrop{background:#0b281fb3;backdrop-filter:blur(4px)}
   .print-back{left:0}
   .print-front{right:0}
   .sample-head,.offers-head{display:block}
-  .sample-head p,.pilot-note{margin-top:20px}
+  .sample-head p,.offers-note{margin-top:20px}
   .offer-full-body{grid-template-columns:1fr}
   .format-cols{grid-template-columns:1fr;gap:32px}
   .how-inner,.faq-inner{grid-template-columns:1fr;gap:36px}

@@ -66,6 +66,12 @@ class LandingTests(unittest.TestCase):
         self.assertTrue(self.page.get_by_role('button', name='Admit one: Zara. Tap to begin').is_visible())
         self.assertEqual(errors, [])
 
+    def test_public_copy_has_no_pilot_or_unfinished_wording(self):
+        self.page.goto(self.base)
+        text = self.page.locator('body').inner_text().lower()
+        for phrase in ['pilot', 'still being', 'not available yet', 'preview site', 'taking orders yet', '₦']:
+            self.assertNotIn(phrase, text)
+
     def test_hero_moment_reveals_and_replays(self):
         self.page.goto(self.base)
         moment = self.page.locator('#moment')
@@ -117,7 +123,7 @@ class LandingTests(unittest.TestCase):
         text = Path(download.path()).read_text()
         for value in ['Ada', 'Mummy', 'Family', 'A full story', 'Video', 'off-key', 'ada@example.com', 'not a submitted order']:
             self.assertIn(value, text)
-        self.assertIn('Nothing has been sent', dialog.inner_text())
+        self.assertIn('Your brief is saved to your device.', dialog.inner_text())
         self.assertFalse(any(method == 'POST' for method, _ in requests))
         self.assertFalse(any('Mummy' in url or 'ada%40example' in url for _, url in requests))
         self.page.keyboard.press('Escape')

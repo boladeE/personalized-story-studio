@@ -124,7 +124,7 @@
       '', 'THE LITTLE THINGS', get('story'), '',
       'TO AGREE BEFORE ANY WORK STARTS',
       'Story and style, photos and clips, music permissions, price, date, review rounds, privacy, and hosting or delivery.',
-      '', 'Nothing has been sent or uploaded from this preview.'
+      '', 'Saved from littlethingsdigital.com. This file has not been sent to anyone.'
     ].join('\n');
     const url = URL.createObjectURL(new Blob([text], {type: 'text/plain;charset=utf-8'}));
     const a = document.createElement('a');
@@ -134,6 +134,6 @@
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
-    status.textContent = 'Your brief is downloaded and ready to keep. Nothing has been sent or booked.';
+    status.textContent = 'Your brief is saved to your device.';
   });
 })();
