@@ -4,13 +4,13 @@ A shareable storefront preview for the personalized digital-gifting studio. The 
 
 ## Public preview
 
-https://landing-page-production-ddee.up.railway.app/
+https://littlethingsdigital.com/
 
-Railway serves this directory as a static site. The bundled sample is at `/sample/`. This service was deployed from the `Landing Page/` directory with `railway up -y`; it is not connected to GitHub for automatic deployments. Run `railway up` from this directory after future changes. `.dockerignore` keeps tests and internal design notes out of the served build.
+Railway serves this directory as a static site. The bundled sample is at `/sample/`. The existing Railway service is connected to `boladeE/personalized-story-studio` on `main`, with `/Landing Page` as its root directory. Pushes to `main` trigger deployments. `.dockerignore` keeps tests and internal design notes out of the served build.
 
 ## Local preview
 
-    python -m http.server 8768 --bind 127.0.0.1
+    python -m http.server 8768 --bind 127.0.0.1 --directory "Landing Page"
 
 Open http://127.0.0.1:8768/ . The page also opens directly from index.html; HTTP is preferable for the embedded sample's optional external music player.
 
