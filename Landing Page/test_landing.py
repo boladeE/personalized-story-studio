@@ -71,6 +71,10 @@ class LandingTests(unittest.TestCase):
         text = self.page.locator('body').inner_text().lower()
         for phrase in ['pilot', 'still being', 'not available yet', 'preview site', 'taking orders yet', '₦']:
             self.assertNotIn(phrase, text)
+        for page in ['', 'sample/']:
+            html = self.page.request.get(self.base + '/' + page).text() if page else self.page.content()
+            self.assertNotIn('\u2014', html)
+        self.assertNotIn('\u2014', (ROOT / 'sample' / 'app.js').read_text())
 
     def test_hero_moment_reveals_and_replays(self):
         self.page.goto(self.base)
