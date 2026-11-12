@@ -99,7 +99,9 @@ export function verifyUnlock(slug: string, token: string | undefined, now = Date
 }
 
 export function unlockCookie(slug: string, request: Request) {
-  const secure = new URL(request.url).protocol === 'https:' ? '; Secure' : ''
+  // Behind Railway's proxy the app sees http; the original scheme is in x-forwarded-proto.
+  const https = new URL(request.url).protocol === 'https:' || request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim() === 'https'
+  const secure = https ? '; Secure' : ''
   return `${cookieName(slug)}=${signUnlock(slug)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${COOKIE_DAYS * 86_400}${secure}`
 }
 
