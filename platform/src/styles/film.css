@@ -1502,3 +1502,51 @@
   height: 100%;
   display: block;
 }
+
+/* ---------- Stills: one frame of the film, standing still, at any size ---------- */
+
+.still-box {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: #050304;
+}
+.film.still {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  transform: scale(var(--still-scale, 0.5));
+}
+/* Words arrive as they are typed, not on the film's own timing. */
+.film.still .type-char .ch,
+.film.still .type-word .w,
+.film.still .sheet .greeting,
+.film.still .sheet .para,
+.film.still .sheet .signoff,
+.film.still .pips,
+.film.still .name-rule {
+  animation-duration: 0.45s;
+  animation-delay: 0s;
+}
+.film.still .fx-wait {
+  opacity: 1;
+  transition: none;
+}
+.film.still .film-grain,
+.film.still .ticket-float,
+.film.still .sheet-in {
+  animation: none;
+}
+.film.still .deal li {
+  animation-delay: calc(var(--i) * 0.09s);
+}
+.film.still .film-frame,
+.film.still .opening {
+  transition: opacity 0.3s;
+}
+.film.is-ghost .film-frame,
+.film.is-ghost .opening {
+  opacity: 0.42;
+}

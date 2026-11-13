@@ -9,10 +9,10 @@ test('the sample becomes a film that plays by itself, with sound, to the wish an
   const errors = trackErrors(page)
   await open(page, '/')
   await page.getByRole('link', { name: 'Start a birthday story' }).first().click()
-  await expect(page.locator('.sb-count')).toHaveText('0 of 9 scenes ready')
+  await expect(page.locator('.reel-count')).toHaveText('0 of 9 scenes ready')
   await expect(page.getByRole('button', { name: 'Build the story' })).toBeDisabled()
   await page.getByRole('button', { name: 'Fill with the sample' }).click()
-  await expect(page.locator('.sb-count')).toHaveText('9 of 9 scenes ready')
+  await expect(page.locator('.reel-count')).toHaveText('9 of 9 scenes ready')
   await page.getByRole('button', { name: 'Build the story' }).click()
   await expect(page).toHaveURL(/\/preview$/)
 
@@ -66,15 +66,34 @@ test('the sender’s own words and uploaded photo appear, and nothing is sent wh
   const requests: string[] = []
   page.on('request', (r) => r.method() !== 'GET' && requests.push(`${r.method()} ${r.url()}`))
   await open(page, '/create')
-  await page.getByLabel('Your name').fill('Ada')
+  // One question at a time, and the scene beside it fills in as they type.
+  const scene = page.locator('.projection')
+  await expect(scene.locator('.film')).toHaveClass(/is-ghost/)
   await page.getByLabel('Their name').fill('Kemi')
+  await page.getByLabel('Your name').fill('Ada')
+  await expect(scene.locator('.ticket-name')).toHaveText('Kemi')
+  await expect(scene.locator('.film')).not.toHaveClass(/is-ghost/)
+  await page.getByRole('button', { name: 'Next: photos' }).click()
   await page.getByLabel('Add photos').setInputFiles({ name: 'kemi.png', mimeType: 'image/png', buffer: PNG })
   await page.getByLabel('Caption for photo 1').fill('Kemi at the market')
-  await page.getByLabel('What do you love about how they are?').fill('You hum when you cook and pretend you don’t.')
+  await page.getByRole('button', { name: 'Next: main character' }).click()
+  await page.getByRole('textbox', { name: 'What do you love about how Kemi is?' }).fill('You hum when you cook and pretend you don’t.')
+  await expect(scene.locator('.shot')).toContainText('You hum when you cook')
+  await expect(scene.locator('.shot img')).toHaveAttribute('src', /^blob:/)
+
+  // The strip of frames jumps anywhere; Enter moves down a list.
+  await page.getByRole('navigation', { name: 'Steps' }).getByRole('button', { name: 'Red flags' }).click()
+  await expect(page.locator('.scene-line')).toHaveText('Not in the film yet: Red flags. Add 3 more habits.')
   await page.getByLabel('Habit 1', { exact: true }).fill('Leaves one sip in every cup')
-  await page.getByLabel('Habit 2', { exact: true }).fill('Says five minutes, means forty')
-  await page.getByLabel('Habit 3', { exact: true }).fill('Names every plant in the house')
-  await expect(page.locator('.sb-count')).toHaveText('5 of 9 scenes ready')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('Says five minutes, means forty')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('Names every plant in the house')
+  await expect(page.getByLabel('Habit 2', { exact: true })).toHaveValue('Says five minutes, means forty')
+  await expect(page.getByLabel('Habit 3', { exact: true })).toHaveValue('Names every plant in the house')
+  await expect(scene.locator('.shot')).toContainText('Names every plant in the house')
+  await expect(page.locator('.scene-line')).toHaveText('In the film: Red flags.')
+  await expect(page.locator('.reel-count')).toHaveText('5 of 9 scenes ready')
   await page.getByRole('button', { name: 'Build the story' }).click()
 
   await page.getByRole('button', { name: 'Admit one: Kemi. Tap to begin' }).click()
@@ -142,7 +161,13 @@ for (const [width, height] of [[360, 740], [768, 900], [1360, 800]]) {
     await open(page, '/create')
     await page.getByRole('button', { name: 'Fill with the sample' }).click()
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
-    await page.getByRole('button', { name: 'Build the story' }).first().click()
+    // Every step of the form fits, then the film.
+    for (const step of ['photos', 'main character', 'memories', 'red flags', 'reasons', 'letter', 'the wish', 'look']) {
+      await page.getByRole('button', { name: /^Next/ }).click()
+      await expect(page).toHaveURL(/step=/)
+      expect(await page.evaluate(() => document.documentElement.scrollWidth), `the ${step} step is wider than the screen`).toBeLessThanOrEqual(width)
+    }
+    await page.getByRole('button', { name: 'Build the story' }).click()
     await startFilm(page)
     for (let i = 0; i < 60; i++) {
       await page.waitForTimeout(350)

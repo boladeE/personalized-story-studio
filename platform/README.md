@@ -13,7 +13,7 @@ End to end, birthday only: a sender builds a story, adjusts it, locks it with a 
 ## Flow
 
 1. `/`: the studio home. The hero is the real film player showing the fictional sample.
-2. `/create`: intake with a live storyboard. The draft stays in the tab (photos are `blob:` URLs) until it is sent.
+2. `/create`: one question per screen (`?step=`), with a still of the scene it feeds beside it, filled with the sender's words as they type (`src/film/Still.tsx`, `src/film/previews.ts`). A strip of frames shows which scenes have enough to be in the film and jumps to any step. The draft stays in the tab (photos are `blob:` URLs) until it is sent.
 3. `/preview`: the generated film. Shuffle is a new seed. "Look & music" changes the look without reshuffling and can make an original AI song.
 4. `/send`: question and answer for the lock, then "Create the private link". Photos are redrawn as JPEGs (max 2000px, no EXIF or GPS) in the browser before upload.
 5. `/manage/<id>#k=<key>`: the sender's page with the link, a message to copy, and delete. The key stays in the URL fragment, so it isn't sent in requests or referrers. Only its hash is stored.

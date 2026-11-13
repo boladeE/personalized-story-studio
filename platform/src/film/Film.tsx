@@ -507,23 +507,30 @@ function Opening({ recipient, torn, count, onBegin }: { recipient: string; torn:
         )}
       </div>
       <button type="button" className="ticket-hit" onClick={onBegin} disabled={torn} aria-label={`Admit one: ${recipient}. Tap to begin`} />
-      <div className="ticket-float" aria-hidden="true">
-        <div className="ticket">
-          <span className="ticket-body">
-            <span className="ticket-label">A very private screening</span>
-            <span className="ticket-admit">Admit one</span>
-            <span className="ticket-name">{recipient}</span>
-            <span className="ticket-foot">
-              <span>Front row, centre</span>
-              <span>Your birthday</span>
-            </span>
-          </span>
-          <span className="ticket-stub">
-            <span>Tap to begin</span>
-          </span>
-        </div>
-      </div>
+      <TicketArt recipient={recipient} />
       <p className="opening-hint">Sound on, if you can. It plays by itself.</p>
+    </div>
+  )
+}
+
+/** The ticket as an object, without the tap target. Also used by the studio's scene previews. */
+export function TicketArt({ recipient }: { recipient: string }) {
+  return (
+    <div className="ticket-float" aria-hidden="true">
+      <div className="ticket">
+        <span className="ticket-body">
+          <span className="ticket-label">A very private screening</span>
+          <span className="ticket-admit">Admit one</span>
+          <span className="ticket-name">{recipient}</span>
+          <span className="ticket-foot">
+            <span>Front row, centre</span>
+            <span>Your birthday</span>
+          </span>
+        </span>
+        <span className="ticket-stub">
+          <span>Tap to begin</span>
+        </span>
+      </div>
     </div>
   )
 }

@@ -236,16 +236,7 @@ textarea {
   max-width: 24em;
 }
 
-/* Create */
-.create {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
-  gap: clamp(28px, 4vw, 56px);
-  align-items: start;
-}
-.intake-intro {
-  margin-bottom: 12px;
-}
+/* Sections on paper */
 .intake-section {
   padding: 28px 0;
   border-top: 1px solid var(--line);
@@ -263,11 +254,6 @@ textarea {
   margin: 4px 0 0;
   color: var(--muted);
 }
-.two {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
 .field {
   display: flex;
   flex-direction: column;
@@ -281,7 +267,8 @@ textarea {
   font-size: 14px;
   color: var(--muted);
 }
-input:not([type='radio']):not([type='file']),
+/* :where keeps this at element strength, so any class can restyle a field. */
+:where(input:not([type='radio']):not([type='file'])),
 textarea,
 select {
   width: 100%;
@@ -309,93 +296,7 @@ select:focus-visible {
   font-weight: 600;
 }
 
-.photo-grid {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 14px;
-}
-.photo-tile {
-  background: var(--chalk);
-  padding: 8px 8px 10px;
-  border-radius: 6px;
-  box-shadow: 0 1px 0 var(--line), 0 8px 20px -14px rgba(20, 38, 31, 0.5);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.photo-tile img {
-  aspect-ratio: 4 / 5;
-  object-fit: cover;
-  width: 100%;
-  border-radius: 3px;
-}
-.photo-tile input {
-  font-size: 14px;
-  padding: 7px 9px !important;
-}
-.remove {
-  align-self: flex-start;
-  background: none;
-  border: 0;
-  padding: 2px 0;
-  font-size: 14px;
-  color: var(--muted);
-  text-decoration: underline;
-  cursor: pointer;
-}
-.add-photos {
-  width: 100%;
-  min-height: 190px;
-  border: 2px dashed #9aa597;
-  border-radius: 6px;
-  background: transparent;
-  font-weight: 650;
-  color: var(--palm);
-  cursor: pointer;
-}
-.add-photos:hover {
-  border-color: var(--hibiscus);
-  color: var(--hibiscus-deep);
-}
 
-.memory {
-  border: 0;
-  border-left: 3px solid var(--candle);
-  margin: 0 0 18px;
-  padding: 2px 0 2px 16px;
-}
-.memory legend {
-  font-weight: 700;
-  color: var(--palm);
-  padding: 0;
-  margin-bottom: 8px;
-}
-.memory-row {
-  display: flex;
-  gap: 16px;
-  align-items: flex-end;
-}
-.memory-row .field {
-  flex: 1;
-}
-.memory-row .text-button {
-  margin-bottom: 18px;
-}
-.list-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: flex-start;
-}
-.list-row {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  width: 100%;
-}
 
 .looks {
   display: flex;
@@ -444,81 +345,6 @@ select:focus-visible {
   background: radial-gradient(circle at 35% 35%, #c22a59 0 25%, #f4f2ee 26%);
 }
 
-/* The storyboard: a film strip that fills in as details arrive. */
-.storyboard {
-  position: sticky;
-  top: 20px;
-  background: var(--palm-deep);
-  color: var(--mist);
-  border-radius: 14px;
-  padding: 22px 20px 20px 42px;
-  --sprocket: radial-gradient(circle, var(--mist) 0 3px, transparent 3.5px);
-  background-image: var(--sprocket);
-  background-size: 22px 18px;
-  background-repeat: repeat-y;
-  background-position: 6px 10px;
-}
-.storyboard h2 {
-  margin: 0 0 14px;
-  font-size: 20px;
-  font-stretch: 82%;
-}
-.storyboard-list {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.storyboard-list li {
-  display: flex;
-  flex-direction: column;
-  padding: 9px 12px;
-  border-radius: 6px;
-  transition: background 0.3s, color 0.3s;
-}
-.storyboard-list .is-waiting {
-  border: 1.5px dashed rgba(238, 240, 231, 0.35);
-  color: rgba(238, 240, 231, 0.75);
-}
-.storyboard-list .is-ready {
-  background: var(--chalk);
-  color: var(--ink);
-}
-.sb-name {
-  font-weight: 700;
-}
-.is-ready .sb-name::after {
-  content: '';
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--hibiscus);
-  margin-left: 8px;
-  vertical-align: middle;
-}
-.sb-state {
-  font-size: 14px;
-  line-height: 1.35;
-}
-.is-ready .sb-state {
-  color: var(--muted);
-}
-.sb-count {
-  font-size: 14px;
-  margin: 0 0 12px;
-  color: var(--candle);
-}
-.storyboard .fine {
-  color: rgba(238, 240, 231, 0.8);
-}
-.storyboard .button.primary:disabled {
-  background: #36574b;
-  color: #c8d2cb;
-}
-
 /* ---------- Preview shell ---------- */
 
 .preview-shell {
@@ -533,41 +359,8 @@ select:focus-visible {
 
 /* ---------- Responsive ---------- */
 
-@media (max-width: 960px) {
-  .create {
-    grid-template-columns: 1fr;
-  }
-  .storyboard {
-    position: static;
-  }
-  .create .mobile-build {
-    display: flex;
-  }
-  .storyboard .button,
-  .storyboard .fine {
-    display: none;
-  }
-}
-.mobile-build {
-  display: none;
-  position: sticky;
-  bottom: 0;
-  z-index: 5;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin: 0 calc(-1 * clamp(16px, 4vw, 40px));
-  padding: 12px clamp(16px, 4vw, 40px);
-  background: var(--palm-deep);
-  color: var(--mist);
-  font-size: 15px;
-}
-.mobile-build .button {
-  min-height: 42px;
-}
 @media (max-width: 720px) {
-  .home-steps,
-  .two {
+  .home-steps {
     grid-template-columns: 1fr;
   }
   .studio-header-extra {
@@ -587,11 +380,6 @@ select:focus-visible {
     max-width: none;
     width: 100%;
     text-align: right;
-  }
-  .memory-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0;
   }
 }
 
