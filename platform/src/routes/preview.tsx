@@ -1,6 +1,6 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
-import { StoryPlayer } from '../components/StoryPlayer'
+import { Film } from '../film/Film'
 import { StudioHeader } from '../components/StudioHeader'
 import { useDraft } from '../components/draft'
 import { canGenerate, generateStory, LOOKS } from '../story/generate'
@@ -92,7 +92,7 @@ function Preview() {
             onClose={() => setPanelOpen(false)}
           />
         )}
-        <StoryPlayer story={story} />
+        <Film story={story} />
       </div>
     </div>
   )

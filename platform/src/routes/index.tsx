@@ -1,30 +1,49 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
+import { useMemo } from 'react'
 import { StudioHeader } from '../components/StudioHeader'
+import { Ambient } from '../film/Ambient'
+import { Film } from '../film/Film'
+import { generateStory } from '../story/generate'
+import { SAMPLE_INTAKE } from '../story/sample'
 
 export const Route = createFileRoute('/')({
   component: Home,
 })
 
 function Home() {
+  // The hero is the product itself: the fictional sample, ready to play.
+  const sample = useMemo(() => generateStory({ ...SAMPLE_INTAKE, look: 'screening' }, 20261113), [])
   return (
     <>
       <StudioHeader />
       <main className="studio-page home">
+        <Ambient colors={{ a: '#07140f', b: '#123a2e', c: '#6fae7c' }} density={0.7} />
         <section className="home-hero">
-          <h1 className="studio-title">Tell us the little things. We’ll build the birthday story.</h1>
-          <p className="lede">
-            Names, a few photos, the memories and the habits only you would notice. The studio arranges them into scenes
-            with their own music. Don’t like the arrangement? Shuffle it.
-          </p>
-          <div className="actions">
-            <Link to="/create" className="button primary">
-              Start a birthday story
-            </Link>
-            <Link to="/preview" search={{ sample: 1 }} className="button ghost">
-              Play the sample
-            </Link>
+          <div>
+            <h1 className="studio-title">Tell us the little things. We’ll turn them into a film.</h1>
+            <p className="lede">
+              A private film for one person, made from your photos, your memories and the habits only you would notice. It
+              plays by itself, to music, behind a question only they can answer.
+            </p>
+            <div className="actions">
+              <Link to="/create" className="button primary">
+                Start a birthday story
+              </Link>
+              <Link to="/preview" search={{ sample: 1 }} className="button ghost">
+                Play the sample
+              </Link>
+            </div>
+            <p className="fine">Your draft stays in this browser tab until you choose to send it.</p>
           </div>
-          <p className="fine">Drafts stay in this browser tab. Nothing is uploaded or saved.</p>
+          <div className="screen-wrap">
+            <div className="screen">
+              <Film story={sample} embedded />
+            </div>
+            <p className="screen-note">
+              <span>Tap the ticket. Sound on.</span>
+              <span>Fictional sample, AI-generated photos</span>
+            </p>
+          </div>
         </section>
         <ol className="home-steps">
           <li>
@@ -33,11 +52,11 @@ function Home() {
           </li>
           <li>
             <h2>Build</h2>
-            <p>The studio picks the scenes your details can fill and puts your own words and photos into them.</p>
+            <p>The studio cuts your words and photos into scenes, timed to their own music.</p>
           </li>
           <li>
-            <h2>Shuffle</h2>
-            <p>Every shuffle changes the order, layouts, look and music. Your words never change.</p>
+            <h2>Send</h2>
+            <p>Shuffle until it feels right, lock it with a question, and share one private link.</p>
           </li>
         </ol>
       </main>

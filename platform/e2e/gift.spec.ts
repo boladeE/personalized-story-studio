@@ -1,11 +1,5 @@
 import { expect, test } from '@playwright/test'
-import type { Page } from '@playwright/test'
-
-async function open(page: Page, url: string) {
-  await page.goto(url)
-  await page.waitForSelector('html[data-ready="true"]', { timeout: 30_000 })
-}
-const audioState = (page: Page) => page.evaluate(() => window.__ltAudio?.state())
+import { audioState, filmState, open, startFilm } from './helpers'
 
 test('end to end: build, add an AI song, lock, send, recipient unlocks and plays, sender deletes', async ({ page, browser, baseURL }) => {
   test.setTimeout(90_000)
@@ -20,12 +14,12 @@ test('end to end: build, add an AI song, lock, send, recipient unlocks and plays
   // Light edits: pick a look and make an original song (demo provider in tests).
   await page.getByRole('button', { name: 'Look & music' }).click()
   await page.getByRole('radio', { name: 'Paper' }).check()
-  await expect(page.locator('.gift')).toHaveAttribute('data-look', 'paper')
+  await expect(page.locator('.film')).toHaveAttribute('data-look', 'paper')
   await page.getByLabel('Song style').selectOption('highlife')
   await page.getByRole('button', { name: 'Make an original song' }).click()
   await expect(page.getByRole('radio', { name: 'Highlife guitar, original AI song' })).toBeChecked()
   await page.getByRole('button', { name: 'Done' }).click()
-  await page.getByRole('button', { name: /Tap to begin/ }).click()
+  await startFilm(page)
   await expect.poll(async () => (await audioState(page))?.trackId).toBe('song')
 
   // Lock and send.
@@ -62,17 +56,18 @@ test('end to end: build, add an AI song, lock, send, recipient unlocks and plays
   await recipient.getByLabel('What did you call me at games night?').fill('  a CHEAT ')
   await recipient.getByRole('button', { name: 'Open it' }).click()
 
-  await recipient.getByRole('button', { name: 'Admit one: Zara. Tap to begin' }).click()
+  await expect(recipient.getByRole('button', { name: 'Admit one: Zara. Tap to begin' })).toBeVisible()
+  await startFilm(recipient)
   await expect.poll(async () => (await audioState(recipient))?.trackId).toBe('song')
   const t1 = (await audioState(recipient))!.currentTime
   await recipient.waitForTimeout(500)
   expect((await audioState(recipient))!.currentTime).toBeGreaterThan(t1)
   expect((await audioState(recipient))!.song).toBe(`/api/media/${slug}/song`)
-  await expect(recipient.locator('.gift')).toHaveAttribute('data-look', 'paper')
+  await expect(recipient.locator('.film')).toHaveAttribute('data-look', 'paper')
 
   // Walk to a photo and check it loaded from the private store.
-  for (let i = 0; i < 30 && !(await recipient.locator('.gift-stage img').first().isVisible()); i++) await recipient.keyboard.press('ArrowRight')
-  const img = recipient.locator('.gift-stage img').first()
+  for (let i = 0; i < 30 && (await filmState(recipient)).kind !== 'photo'; i++) await recipient.keyboard.press('ArrowRight')
+  const img = recipient.locator('.shot.is-current img').first()
   await expect(img).toHaveAttribute('src', new RegExp(`^/api/media/${slug}/`))
   await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0)
 

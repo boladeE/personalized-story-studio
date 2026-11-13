@@ -1,0 +1,342 @@
+/* ==========================================================================
+   The studio as a screening room: a dark room, one lit sheet of paper to
+   write on, and the film itself as the brightest thing on the page.
+   Loaded after app.css; colours that differ between the dark room and paper
+   are custom properties so components don't need two sets of rules.
+   ========================================================================== */
+
+:root {
+  --room: #07140f;
+  --room-2: #0e261d;
+  --on-room: #eef0e7;
+  --on-room-soft: rgba(238, 240, 231, 0.76);
+  --on-room-faint: rgba(238, 240, 231, 0.62);
+  --hairline: rgba(238, 240, 231, 0.14);
+  --blush: #f08bab;
+
+  --title: var(--on-room);
+  --body: var(--on-room-soft);
+  --quiet: var(--on-room-faint);
+  --link: var(--blush);
+  --focus: var(--candle);
+}
+
+body {
+  background: var(--room);
+  color: var(--on-room);
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(90% 60% at 80% -10%, rgba(29, 82, 64, 0.6), transparent 70%),
+    radial-gradient(60% 50% at 0% 100%, rgba(78, 26, 44, 0.35), transparent 70%);
+  pointer-events: none;
+}
+:focus-visible {
+  outline-color: var(--focus);
+}
+
+/* Anything written on paper goes back to ink. */
+.intake,
+.studio-page.send,
+.studio-page.manage,
+.adjust-panel {
+  --title: var(--palm);
+  --body: var(--ink);
+  --quiet: var(--muted);
+  --link: var(--hibiscus-deep);
+  --focus: var(--hibiscus);
+  color: var(--ink);
+}
+
+.studio-header {
+  background: transparent;
+  border-bottom-color: var(--hairline);
+}
+.wordmark {
+  color: var(--on-room);
+}
+.wordmark span {
+  color: var(--blush);
+}
+.studio-tag {
+  color: var(--on-room-faint);
+  border-color: var(--hairline);
+}
+.preview-meta,
+.sample-note {
+  color: var(--on-room-faint);
+}
+.studio-title {
+  color: var(--title);
+}
+.lede {
+  color: var(--body);
+}
+.fine {
+  color: var(--quiet);
+}
+.text-button {
+  color: var(--link);
+}
+.section-head h2,
+.memory legend {
+  color: var(--title);
+}
+.section-head p,
+.hint {
+  color: var(--quiet);
+}
+
+.button {
+  flex: none;
+  white-space: nowrap;
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+.button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.button.ghost {
+  border-color: rgba(238, 240, 231, 0.5);
+  color: var(--on-room);
+}
+.button.ghost:hover {
+  background: var(--on-room);
+  border-color: var(--on-room);
+  color: var(--room);
+}
+.intake .button.ghost,
+.studio-page.send .button.ghost,
+.studio-page.manage .button.ghost {
+  border-color: var(--palm);
+  color: var(--palm);
+}
+.intake .button.ghost:hover,
+.studio-page.send .button.ghost:hover,
+.studio-page.manage .button.ghost:hover {
+  background: var(--palm);
+  color: var(--chalk);
+}
+.button.primary:disabled {
+  background: #2c463b;
+  color: #a9b8ae;
+}
+
+/* ---------- Home ---------- */
+
+.home {
+  position: relative;
+  max-width: 1320px;
+}
+.home .ambient {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.55;
+}
+.home-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.2fr);
+  align-items: center;
+  gap: clamp(28px, 5vw, 76px);
+  min-height: min(720px, calc(100dvh - 190px));
+  padding-bottom: clamp(36px, 6vw, 72px);
+  border-bottom: 0;
+}
+.home-hero .studio-title {
+  font-size: clamp(42px, 5.6vw, 84px);
+  line-height: 0.94;
+  letter-spacing: -0.025em;
+  margin-bottom: 22px;
+  max-width: 9.5em;
+  text-wrap: balance;
+}
+.home-hero .lede {
+  max-width: 27em;
+}
+.screen-wrap {
+  min-width: 0;
+}
+.screen {
+  aspect-ratio: 16 / 10;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #050304;
+  box-shadow:
+    0 0 0 1px var(--hairline),
+    0 50px 120px rgba(0, 0, 0, 0.6),
+    0 0 140px rgba(194, 42, 89, 0.2);
+  animation: screen-on 1.4s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes screen-on {
+  from {
+    opacity: 0;
+    transform: translateY(26px) scale(0.97);
+  }
+}
+.screen-note {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 12px 2px 0;
+  font-size: 14px;
+  color: var(--on-room-faint);
+}
+
+/* How it works, as three frames of film. */
+.home-steps {
+  margin: 0;
+  gap: 0;
+  padding: 26px 0;
+  background:
+    radial-gradient(circle, var(--room) 0 4px, transparent 4.5px) 0 6px / 26px 14px repeat-x,
+    radial-gradient(circle, var(--room) 0 4px, transparent 4.5px) 0 calc(100% - 6px) / 26px 14px repeat-x,
+    var(--room-2);
+  border-radius: 6px;
+}
+.home-steps li {
+  padding: 22px clamp(18px, 2.6vw, 34px) 24px;
+  border-left: 2px solid var(--room);
+}
+.home-steps li:first-child {
+  border-left: 0;
+}
+.home-steps h2 {
+  color: var(--on-room);
+  font-size: 26px;
+}
+.home-steps h2::before {
+  color: var(--candle);
+}
+.home-steps p {
+  color: var(--on-room-soft);
+}
+
+/* ---------- Paper ---------- */
+
+.intake,
+.studio-page.send,
+.studio-page.manage {
+  background: var(--chalk);
+  border-radius: 6px;
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.45);
+}
+.intake {
+  padding: clamp(22px, 4vw, 52px) clamp(18px, 4vw, 56px) 0;
+  animation: paper-in 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.studio-page.send,
+.studio-page.manage {
+  margin: clamp(18px, 4vw, 48px) auto 80px;
+  padding: clamp(24px, 5vw, 60px) clamp(18px, 5vw, 64px);
+  width: min(720px, calc(100% - 28px));
+  animation: paper-in 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes paper-in {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+}
+.intake > .intake-section:last-of-type {
+  padding-bottom: clamp(26px, 4vw, 48px);
+}
+.intake .intake-intro .studio-title,
+.studio-page.send .studio-title,
+.studio-page.manage .studio-title {
+  font-size: clamp(34px, 5vw, 58px);
+}
+input:not([type='radio']):not([type='file']):not([type='range']),
+textarea,
+select {
+  background: #fff;
+  color: var(--ink);
+}
+.photo-tile {
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--line), 0 10px 22px -14px rgba(20, 38, 31, 0.5);
+  animation: tile-in 0.5s cubic-bezier(0.2, 0.9, 0.2, 1.1) both;
+}
+@keyframes tile-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) rotate(-3deg) scale(0.94);
+  }
+}
+.share-box {
+  background: #f6f3ea;
+}
+.create .mobile-build {
+  margin: 0 calc(-1 * clamp(18px, 4vw, 56px));
+  padding: 12px clamp(18px, 4vw, 56px);
+  border-radius: 0 0 6px 6px;
+}
+
+/* ---------- Storyboard ---------- */
+
+.storyboard {
+  background-color: var(--room-2);
+  box-shadow: 0 0 0 1px var(--hairline);
+  --sprocket: radial-gradient(circle, var(--room) 0 3px, transparent 3.5px);
+}
+.storyboard-list li {
+  transition: background 0.4s, color 0.4s, transform 0.4s cubic-bezier(0.2, 0.9, 0.2, 1.2);
+}
+.storyboard-list .is-ready {
+  animation: ready 0.5s cubic-bezier(0.2, 0.9, 0.2, 1.2);
+}
+@keyframes ready {
+  from {
+    transform: scale(0.96);
+    background: var(--candle);
+  }
+}
+.is-ready .sb-name::after {
+  background: var(--hibiscus);
+}
+
+/* ---------- Preview ---------- */
+
+.preview-shell .studio-header {
+  background: #050304;
+  border-bottom-color: rgba(246, 233, 216, 0.1);
+}
+.adjust-panel {
+  animation: panel-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  transform-origin: top right;
+}
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+}
+
+@media (max-width: 960px) {
+  .home-hero {
+    grid-template-columns: 1fr;
+    min-height: 0;
+    gap: 30px;
+  }
+  .screen {
+    aspect-ratio: 4 / 5;
+    max-height: 78dvh;
+    margin: 0 auto;
+  }
+}
+@media (max-width: 720px) {
+  .home-steps li {
+    border-left: 0;
+    border-top: 2px solid var(--room);
+  }
+  .home-steps li:first-child {
+    border-top: 0;
+  }
+  .screen-note {
+    flex-direction: column;
+    gap: 2px;
+  }
+}

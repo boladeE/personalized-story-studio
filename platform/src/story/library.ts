@@ -45,7 +45,7 @@ const ticket: SceneDef = {
   type: 'ticket',
   name: 'The invitation',
   mood: 'warm',
-  description: 'A ticket with their name on it. Tapping it starts the story and the music.',
+  description: 'A ticket with their name on it. Tearing it starts the film and the music.',
   missing: (i) => (i.recipient.trim() ? null : 'Add their name'),
   build: ({ intake }) => [{ kind: 'ticket', recipient: intake.recipient.trim(), occasion: 'Your birthday' }],
 }
@@ -63,7 +63,7 @@ const hello: SceneDef = {
       title: say(ctx, ['Today is about you.', 'Get comfortable.', 'Happy birthday, {r}.']),
       body: say(ctx, [
         'A few things I have been meaning to say properly.',
-        'No rushing. Take it one tap at a time.',
+        'Sit back. This one plays by itself.',
         'Some of my favourite little things, all in one place.',
       ]),
     },

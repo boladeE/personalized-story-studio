@@ -108,7 +108,7 @@ function Create() {
             <p className="lede">
               Fill in what you have. You don’t need to write anything polished: short, specific and true works best.
             </p>
-            <p className="fine">This draft stays in this browser tab. Photos aren’t uploaded, and reloading clears everything.</p>
+            <p className="fine">This draft stays in this browser tab until you send it. Nothing is uploaded before then, and reloading clears it.</p>
           </div>
 
           <Section title="Who it’s for">

@@ -18,6 +18,8 @@ class TrackVoice {
   private melodyIndex = 0
   private nextMelodyTime = 0
   private readonly eighth: number
+  /** Audio-clock time of this track's first beat. */
+  startedAt = 0
 
   constructor(private ctx: AudioContext, readonly track: SynthTrack, destination: AudioNode) {
     this.output = ctx.createGain()
@@ -31,6 +33,7 @@ class TrackVoice {
     this.output.gain.setValueAtTime(0, now)
     this.output.gain.linearRampToValueAtTime(1, now + fade)
     this.nextEighth = now + 0.05
+    this.startedAt = this.nextEighth
     this.nextMelodyTime = this.nextEighth
     this.timer = setInterval(() => this.schedule(), 60)
     this.schedule()
@@ -95,6 +98,15 @@ export interface AudioState {
   trackId: string | null
   currentTime: number
   song: string | null
+  suspended: boolean
+}
+
+export interface Beat {
+  /** 0 at the start of a beat, rising to 1 just before the next. */
+  phase: number
+  /** Beats since the current track began. */
+  count: number
+  bpm: number
 }
 
 interface SongVoice {
@@ -139,14 +151,53 @@ export class AudioEngine {
     return this.ctx.state === 'running'
   }
 
-  play(trackId: string) {
-    if (!this.ctx || !this.master || this.voice?.track.id === trackId) return
+  /** `restart` begins the track again so film cuts stay on its bars after a jump. */
+  play(trackId: string, restart = false) {
+    if (!this.ctx || !this.master) return
+    if (this.voice?.track.id === trackId && !restart) return
     const track = trackById(trackId)
     if (!track) return
     this.stopSong(1.6)
-    this.voice?.stop(1.6)
+    const fade = restart ? 0.5 : 1.6
+    this.voice?.stop(fade)
     this.voice = new TrackVoice(this.ctx, track, this.master)
-    this.voice.start(1.6)
+    this.voice.start(fade)
+  }
+
+  /** Where we are in the music, for visuals that move with it. Null when no synth track is playing. */
+  beat(): Beat | null {
+    if (!this.ctx || !this.voice || this.ctx.state !== 'running') return null
+    const length = 60 / this.voice.track.bpm
+    const beats = (this.ctx.currentTime - this.voice.startedAt) / length
+    if (beats < 0) return null
+    return { phase: beats % 1, count: Math.floor(beats), bpm: this.voice.track.bpm }
+  }
+
+  /** Freeze or continue everything, in step with the film's pause. */
+  async setPaused(paused: boolean) {
+    if (!this.ctx) return
+    try {
+      if (paused) await this.ctx.suspend()
+      else await this.ctx.resume()
+    } catch {
+      // A closed context can't be paused; nothing to do.
+    }
+  }
+
+  /** A short tone, used for the film leader's countdown. */
+  blip(frequency: number, length = 0.12) {
+    if (!this.ctx || !this.master) return
+    const now = this.ctx.currentTime
+    const osc = this.ctx.createOscillator()
+    const env = this.ctx.createGain()
+    osc.type = 'sine'
+    osc.frequency.value = frequency
+    env.gain.setValueAtTime(0, now)
+    env.gain.linearRampToValueAtTime(0.16, now + 0.01)
+    env.gain.exponentialRampToValueAtTime(0.0001, now + length)
+    osc.connect(env).connect(this.master)
+    osc.start(now)
+    osc.stop(now + length + 0.05)
   }
 
   /** Play a whole-story song (generated or supplied), looping, in place of the score. */
@@ -231,6 +282,7 @@ export class AudioEngine {
       trackId: this.song ? 'song' : (this.voice?.track.id ?? null),
       currentTime: this.ctx?.currentTime ?? 0,
       song: this.song?.src ?? null,
+      suspended: this.ctx?.state === 'suspended',
     }
   }
 

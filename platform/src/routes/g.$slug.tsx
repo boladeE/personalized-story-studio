@@ -1,6 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useCallback, useEffect, useState } from 'react'
-import { StoryPlayer } from '../components/StoryPlayer'
+import { Ambient } from '../film/Ambient'
+import { Film } from '../film/Film'
+import { Type } from '../film/shots'
 import type { Story } from '../story/types'
 
 /** What the recipient opens. Nothing about the gift is shown until the answer is right. */
@@ -34,19 +36,20 @@ function Gift() {
   if (state.kind === 'open') {
     return (
       <div className="recipient-shell">
-        <StoryPlayer story={state.story} />
+        <Film story={state.story} />
       </div>
     )
   }
   return (
-    <div className="gate gift" data-look="screening">
+    <div className="gate">
+      <Ambient colors={{ a: '#14070d', b: '#4e1a2c', c: '#c9743e' }} />
       <main className="gate-card">
         {state.kind === 'loading' && <p className="gate-kicker">One moment…</p>}
         {state.kind === 'missing' && (
           <>
             <p className="gate-kicker">Little Things</p>
-            <h1 className="gift-heading">This gift isn’t here.</h1>
-            <p className="gift-body">The link may be incomplete, or the gift was taken down. Ask the person who sent it.</p>
+            <h1 className="gate-title">This gift isn’t here.</h1>
+            <p className="gate-body">The link may be incomplete, or the gift was taken down. Ask the person who sent it.</p>
           </>
         )}
         {state.kind === 'locked' && <Lock slug={slug} question={state.question} onOpen={load} />}
@@ -88,12 +91,12 @@ function Lock({ slug, question, onOpen }: { slug: string; question: string; onOp
       }}
     >
       <p className="gate-kicker">Someone made you something.</p>
-      <h1 className="gift-heading">First, a question only you can answer.</h1>
+      <Type as="h1" text="First, a question only you can answer." className="gate-title" delay={0.4} />
       <label htmlFor="gate-answer" className="gate-question">
         {question}
       </label>
       <input id="gate-answer" value={answer} onChange={(e) => setAnswer(e.target.value)} autoComplete="off" autoFocus />
-      <button type="submit" className="wish-button" disabled={busy || !answer.trim()}>
+      <button type="submit" disabled={busy || !answer.trim()}>
         {busy ? 'Checking…' : 'Open it'}
       </button>
       {error && (

@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
 import { HeadContent, Outlet, Scripts, createRootRoute } from '@tanstack/react-router'
 import appCss from '../styles/app.css?url'
+import filmCss from '../styles/film.css?url'
+import roomCss from '../styles/room.css?url'
 import { DraftProvider } from '../components/draft'
 
 export const Route = createRootRoute({
@@ -13,6 +15,8 @@ export const Route = createRootRoute({
     ],
     links: [
       { rel: 'stylesheet', href: appCss },
+      { rel: 'stylesheet', href: roomCss },
+      { rel: 'stylesheet', href: filmCss },
       { rel: 'icon', href: 'data:,' },
     ],
   }),
