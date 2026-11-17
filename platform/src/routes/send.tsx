@@ -93,7 +93,7 @@ function Send() {
           </div>
           <div>
             <dt>Music</dt>
-            <dd>{song ? `${song.label}, original AI song` : 'Studio score'}</dd>
+            <dd>{song ? `“${song.label}”, ${song.sung === false ? 'an original instrumental' : `written for ${story.recipient}`}` : 'Studio score'}</dd>
           </div>
         </dl>
 

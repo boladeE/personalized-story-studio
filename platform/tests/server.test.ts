@@ -7,6 +7,7 @@ process.env.DATA_DIR = mkdtempSync(path.join(tmpdir(), 'lt-gifts-'))
 
 const store = await import('../src/server/store')
 const music = await import('../src/server/music')
+const lyrics = await import('../src/server/lyrics')
 const vibes = await import('../src/story/vibes')
 const { parseIntake } = await import('../src/story/validate')
 const { SAMPLE_INTAKE } = await import('../src/story/sample')
@@ -170,5 +171,77 @@ describe('AI music', () => {
     for (let i = 0; i < 6; i++) expect(music.allowSong('client-a').allowed).toBe(true)
     expect(music.allowSong('client-a').allowed).toBe(false)
     expect(music.allowSong('client-b').allowed).toBe(true)
+  })
+
+  it('cleans lyrics: one sung line per row, known section tags only, capped', () => {
+    const tidy = vibes.tidyLyrics('[verse 1]\r\n  You steal   the duvet \n\n\n[Guitar solo]\n[CHORUS]\nHappy birthday, [Zara]\u0007\n[Bridge]\n')
+    expect(tidy).toBe('[Verse]\nYou steal the duvet\n\n[Chorus]\nHappy birthday, Zara')
+    expect(vibes.tidyLyrics('[Verse]\n\n[Chorus]')).toBe('')
+    expect(vibes.tidyLyrics(42)).toBe('')
+    const long = vibes.tidyLyrics(Array.from({ length: 80 }, (_, i) => `line ${i} ${'x'.repeat(200)}`).join('\n'))
+    expect(long.split('\n')).toHaveLength(vibes.LYRIC_LIMITS.lines)
+    expect(Math.max(...long.split('\n').map((l) => l.length))).toBeLessThanOrEqual(vibes.LYRIC_LIMITS.line)
+  })
+
+  it('briefs the lyric writer only from the sender’s details and steers it off the old birthday song', () => {
+    const details = vibes.songDetails(SAMPLE_INTAKE)!
+    const brief = vibes.lyricsBrief(details)
+    expect(brief).toContain('Tobi')
+    expect(brief).toContain('eats my chips')
+    expect(brief).toContain('Never write the exact phrase "happy birthday to you"')
+    expect(brief).not.toContain('holding everything together')
+    expect(brief).not.toContain('Golden hour')
+    expect(vibes.lyricsBrief(vibes.parseSongDetails({ recipient: 'Kemi' })!)).toContain('Do not make up a history')
+  })
+
+  it('asks the music model to sing the approved words exactly', () => {
+    const details = vibes.songDetails(SAMPLE_INTAKE)!
+    const words = '[Verse]\nYou steal the duvet, ask why I’m cold\n\n[Chorus]\nHappy birthday, Zara'
+    const prompt = vibes.lyricsPrompt(vibes.vibeById('highlife')!, details, words)
+    expect(prompt).toContain('word for word')
+    expect(prompt).toContain('highlife')
+    expect(prompt.endsWith(`Lyrics:\n${words}`)).toBe(true)
+    expect(prompt).not.toContain('eleven-minute')
+  })
+
+  it('reads written lyrics from the text model and never passes on a line the music model refuses', () => {
+    const reply = (value: unknown) => ({ candidates: [{ content: { parts: [{ text: 'thinking', thought: true }, { text: JSON.stringify(value) }] } }] })
+    const written = lyrics.lyricsFromGenerate(
+      reply({ title: 'Suspiciously "Good"', sections: [{ label: 'Verse 1', lines: ['One drink, then the rain'] }, { label: 'Chorus', lines: ['Happy birthday to you, Zara'] }] }),
+    )!
+    expect(written.title).toBe('Suspiciously Good')
+    expect(written.lyrics).toBe('[Verse]\nOne drink, then the rain\n\n[Chorus]\nHappy, happy birthday, Zara')
+    expect(vibes.hasRefusedLine(written.lyrics)).toBe(false)
+    expect(vibes.hasRefusedLine('happy  Birthday to YOU')).toBe(true)
+    expect(lyrics.lyricsFromGenerate(reply({ title: 'x', sections: [] }))).toBeNull()
+    expect(lyrics.lyricsFromGenerate({ candidates: [{ content: { parts: [{ text: 'not json' }] } }] })).toBeNull()
+    expect(music.isRecitationRefusal(400, '{"error":{"code":"recitation"}}')).toBe(true)
+    expect(music.isRecitationRefusal(500, 'recitation')).toBe(false)
+  })
+
+  it('keeps the approved words and title with a song made from them', async () => {
+    const before = { ...process.env }
+    process.env.MUSIC_PROVIDER = 'demo'
+    const details = vibes.songDetails(SAMPLE_INTAKE)!
+    expect(lyrics.lyricsProvider()).toBe('demo')
+    const words = await lyrics.writeLyrics(details)
+    expect(words.lyrics).toContain('Happy birthday, Zara')
+    expect(vibes.hasRefusedLine(words.lyrics)).toBe(false)
+    const song = await music.generateSong('piano', details, { lyrics: words.lyrics, title: words.title })
+    const stored = (await music.readSong(song.id))!
+    expect(stored.meta.lyrics).toBe(words.lyrics)
+    expect(stored.meta.title).toBe('For Zara')
+    expect(stored.meta.sung).toBe(true)
+    const plain = await music.generateSong('piano')
+    expect((await music.readSong(plain.id))!.meta.title).toBeUndefined()
+    delete process.env.MUSIC_PROVIDER
+    delete process.env.GEMINI_API_KEY
+    delete process.env.OPENROUTER_API_KEY
+    expect(lyrics.lyricsProvider()).toBe('off')
+    process.env.OPENROUTER_API_KEY = 'test'
+    expect(lyrics.lyricsProvider()).toBe('off')
+    process.env = before
+    for (let i = 0; i < 20; i++) expect(lyrics.allowLyrics('writer-a').allowed).toBe(true)
+    expect(lyrics.allowLyrics('writer-a').allowed).toBe(false)
   })
 })

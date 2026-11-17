@@ -1,0 +1,232 @@
+/* ---------- The song room: an exercise-book sheet for the words, a desk for the tune ---------- */
+
+.song-room .lede {
+  max-width: 36em;
+}
+.song-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
+  gap: clamp(24px, 4vw, 56px);
+  align-items: start;
+  margin-top: 28px;
+}
+
+/* The sheet: ruled paper with a single margin line, the way a song gets written down.
+   It is the one lit thing in the room, so it goes back to ink. */
+.song-sheet {
+  --rule: 34px;
+  --title: var(--palm);
+  --body: var(--ink);
+  --quiet: var(--muted);
+  --link: var(--hibiscus-deep);
+  --focus: var(--hibiscus);
+  color: var(--ink);
+  position: relative;
+  padding: 26px clamp(18px, 3vw, 34px) 22px clamp(46px, 6vw, 74px);
+  background:
+    linear-gradient(var(--hibiscus), var(--hibiscus)) clamp(30px, 4.4vw, 54px) 0 / 1.5px 100% no-repeat,
+    var(--chalk);
+  border-radius: 3px;
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.45);
+}
+.song-room .notice {
+  max-width: 36em;
+  color: var(--ink);
+}
+.song-sheet[data-muted] .sheet-title,
+.song-sheet[data-muted] .sheet-words {
+  opacity: 0.45;
+}
+.sheet-title {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  padding: 0 0 6px;
+  background: none;
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(28px, 3.6vw, 42px);
+  line-height: 1.1;
+  color: var(--wine);
+}
+.sheet-title:hover,
+.sheet-title:focus {
+  border-bottom-color: var(--line);
+}
+.sheet-words {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  border: 0;
+  padding: 0;
+  resize: none;
+  overflow: hidden;
+  font-size: 18px;
+  line-height: var(--rule);
+  background: repeating-linear-gradient(to bottom, transparent 0 calc(var(--rule) - 1px), var(--line) calc(var(--rule) - 1px) var(--rule));
+  background-attachment: local;
+  color: var(--ink);
+}
+.sheet-title:focus-visible,
+.sheet-words:focus-visible {
+  outline-offset: 6px;
+}
+.sheet-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 20px;
+  margin-top: 14px;
+}
+.sheet-foot .fine {
+  margin: 0;
+  max-width: 30em;
+}
+.sheet-empty {
+  min-height: calc(var(--rule) * 9);
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 18px;
+  background: repeating-linear-gradient(to bottom, transparent 0 calc(var(--rule) - 1px), var(--line) calc(var(--rule) - 1px) var(--rule));
+}
+.sheet-empty p {
+  margin: 0;
+  max-width: 26em;
+  font-size: 18px;
+  line-height: var(--rule);
+}
+
+/* The desk stays in the dark of the room. */
+.song-desk {
+  display: grid;
+  gap: 16px;
+}
+.song-desk fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.song-desk legend {
+  padding: 0;
+  margin-bottom: 8px;
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--title);
+}
+.song-desk .fine {
+  margin: 0;
+}
+.song-desk .field-error {
+  margin: 0;
+  color: var(--blush);
+}
+.tunes {
+  display: grid;
+  gap: 8px;
+}
+.tune,
+.takes li {
+  border: 1.5px solid var(--hairline);
+  border-radius: 12px;
+  background: var(--room-2);
+}
+.tune[data-picked],
+.takes li[data-picked] {
+  border-color: var(--candle);
+}
+.tune {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px 6px 14px;
+}
+.tune[data-picked] {
+  box-shadow: inset 4px 0 0 var(--candle);
+}
+.tune label {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  cursor: pointer;
+}
+.tune input {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  accent-color: var(--candle);
+}
+.tune b {
+  display: block;
+  font-weight: 650;
+}
+.tune small {
+  display: block;
+  font-size: 14px;
+  color: var(--quiet);
+  line-height: 1.3;
+}
+.tune-play {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--on-room);
+  cursor: pointer;
+}
+.tune-play:hover {
+  background: var(--candle);
+}
+.tune-play[aria-pressed='true'] {
+  background: var(--blush);
+}
+.glyph-play {
+  width: 0;
+  height: 0;
+  margin-left: 3px;
+  border-left: 12px solid var(--room);
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+}
+.glyph-stop {
+  width: 13px;
+  height: 13px;
+  background: var(--room);
+}
+.song-desk .choice input {
+  accent-color: var(--candle);
+}
+.choice.wordless {
+  font-weight: 500;
+}
+.takes ol {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.takes li {
+  padding: 10px 12px;
+}
+.takes audio {
+  display: block;
+  width: 100%;
+  height: 36px;
+  margin-top: 8px;
+}
+
+@media (max-width: 860px) {
+  .song-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

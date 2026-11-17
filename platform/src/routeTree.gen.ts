@@ -13,7 +13,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as CreateRouteImport } from './routes/create'
 import { Route as PreviewRouteImport } from './routes/preview'
 import { Route as SendRouteImport } from './routes/send'
+import { Route as SongRouteImport } from './routes/song'
 import { Route as ApiGiftsRouteImport } from './routes/api/gifts'
+import { Route as ApiLyricsRouteImport } from './routes/api/lyrics'
 import { Route as ApiMusicRouteImport } from './routes/api/music'
 import { Route as GSlugRouteImport } from './routes/g.$slug'
 import { Route as ManageSlugRouteImport } from './routes/manage.$slug'
@@ -43,9 +45,19 @@ const SendRoute = SendRouteImport.update({
   path: '/send',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SongRoute = SongRouteImport.update({
+  id: '/song',
+  path: '/song',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiGiftsRoute = ApiGiftsRouteImport.update({
   id: '/api/gifts',
   path: '/api/gifts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiLyricsRoute = ApiLyricsRouteImport.update({
+  id: '/api/lyrics',
+  path: '/api/lyrics',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiMusicRoute = ApiMusicRouteImport.update({
@@ -94,7 +106,9 @@ export interface FileRoutesByFullPath {
   '/create': typeof CreateRoute
   '/preview': typeof PreviewRoute
   '/send': typeof SendRoute
+  '/song': typeof SongRoute
   '/api/gifts': typeof ApiGiftsRoute
+  '/api/lyrics': typeof ApiLyricsRoute
   '/api/music': typeof ApiMusicRoute
   '/g/$slug': typeof GSlugRoute
   '/manage/$slug': typeof ManageSlugRoute
@@ -109,7 +123,9 @@ export interface FileRoutesByTo {
   '/create': typeof CreateRoute
   '/preview': typeof PreviewRoute
   '/send': typeof SendRoute
+  '/song': typeof SongRoute
   '/api/gifts': typeof ApiGiftsRoute
+  '/api/lyrics': typeof ApiLyricsRoute
   '/api/music': typeof ApiMusicRoute
   '/g/$slug': typeof GSlugRoute
   '/manage/$slug': typeof ManageSlugRoute
@@ -125,7 +141,9 @@ export interface FileRoutesById {
   '/create': typeof CreateRoute
   '/preview': typeof PreviewRoute
   '/send': typeof SendRoute
+  '/song': typeof SongRoute
   '/api/gifts': typeof ApiGiftsRoute
+  '/api/lyrics': typeof ApiLyricsRoute
   '/api/music': typeof ApiMusicRoute
   '/g/$slug': typeof GSlugRoute
   '/manage/$slug': typeof ManageSlugRoute
@@ -142,7 +160,9 @@ export interface FileRouteTypes {
     | '/create'
     | '/preview'
     | '/send'
+    | '/song'
     | '/api/gifts'
+    | '/api/lyrics'
     | '/api/music'
     | '/g/$slug'
     | '/manage/$slug'
@@ -157,7 +177,9 @@ export interface FileRouteTypes {
     | '/create'
     | '/preview'
     | '/send'
+    | '/song'
     | '/api/gifts'
+    | '/api/lyrics'
     | '/api/music'
     | '/g/$slug'
     | '/manage/$slug'
@@ -172,7 +194,9 @@ export interface FileRouteTypes {
     | '/create'
     | '/preview'
     | '/send'
+    | '/song'
     | '/api/gifts'
+    | '/api/lyrics'
     | '/api/music'
     | '/g/$slug'
     | '/manage/$slug'
@@ -188,7 +212,9 @@ export interface RootRouteChildren {
   CreateRoute: typeof CreateRoute
   PreviewRoute: typeof PreviewRoute
   SendRoute: typeof SendRoute
+  SongRoute: typeof SongRoute
   ApiGiftsRoute: typeof ApiGiftsRoute
+  ApiLyricsRoute: typeof ApiLyricsRoute
   ApiMusicRoute: typeof ApiMusicRoute
   GSlugRoute: typeof GSlugRoute
   ManageSlugRoute: typeof ManageSlugRoute
@@ -229,11 +255,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SendRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/song': {
+      id: '/song'
+      path: '/song'
+      fullPath: '/song'
+      preLoaderRoute: typeof SongRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/gifts': {
       id: '/api/gifts'
       path: '/api/gifts'
       fullPath: '/api/gifts'
       preLoaderRoute: typeof ApiGiftsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/lyrics': {
+      id: '/api/lyrics'
+      path: '/api/lyrics'
+      fullPath: '/api/lyrics'
+      preLoaderRoute: typeof ApiLyricsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/music': {
@@ -300,7 +340,9 @@ const rootRouteChildren: RootRouteChildren = {
   CreateRoute: CreateRoute,
   PreviewRoute: PreviewRoute,
   SendRoute: SendRoute,
+  SongRoute: SongRoute,
   ApiGiftsRoute: ApiGiftsRoute,
+  ApiLyricsRoute: ApiLyricsRoute,
   ApiMusicRoute: ApiMusicRoute,
   GSlugRoute: GSlugRoute,
   ManageSlugRoute: ManageSlugRoute,

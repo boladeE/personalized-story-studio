@@ -56,7 +56,7 @@ export const Route = createFileRoute('/api/gifts')({
           if (!song) return json({ error: 'That song has expired. Make a new one or use the studio score.' }, { status: 400 })
           files.push({ id: 'song', bytes: song.bytes })
           media.song = song.meta.contentType
-          soundtrack = { kind: 'song', src: `/api/media/${slug}/song`, label: vibeById(song.meta.vibe)?.name ?? 'Original song' }
+          soundtrack = { kind: 'song', src: `/api/media/${slug}/song`, label: song.meta.title || (vibeById(song.meta.vibe)?.name ?? 'Original song') }
         }
 
         const story = { ...generateStory(parsed.intake, seed), soundtrack }

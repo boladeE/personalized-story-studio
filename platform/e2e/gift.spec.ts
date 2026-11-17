@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { audioState, filmState, open, startFilm } from './helpers'
 
-test('end to end: build, add an AI song, lock, send, recipient unlocks and plays, sender deletes', async ({ page, browser, baseURL }) => {
+test('end to end: build, write and make a song, lock, send, recipient unlocks and plays, sender deletes', async ({ page, browser, baseURL }) => {
   // Against a running server (E2E_BASE_URL) the song may be a real one, which takes about a minute to make.
   const live = Boolean(process.env.E2E_BASE_URL)
   test.setTimeout(live ? 420_000 : 90_000)
@@ -13,28 +13,60 @@ test('end to end: build, add an AI song, lock, send, recipient unlocks and plays
   await page.getByRole('button', { name: 'Fill with the sample' }).click()
   await page.getByRole('button', { name: 'Build the story' }).click()
 
-  // Light edits: pick a look and make an original song (demo provider in tests).
+  // Light edits: pick a look.
   await page.getByRole('button', { name: 'Look & music' }).click()
   await page.getByRole('radio', { name: 'Paper' }).check()
   await expect(page.locator('.film')).toHaveAttribute('data-look', 'paper')
-  await page.getByLabel('Song style').selectOption('highlife')
-  // The song is sung about the recipient by default, written from the sender's details (never the letter).
-  await expect(page.getByLabel('Vocals')).toHaveValue('sung')
-  await expect(page.getByLabel('Vocals').locator('option:checked')).toHaveText('Sung, about Zara')
+
+  // The song. The studio writes the words from the sender's details (never the letter).
+  await page.getByRole('link', { name: 'Write Zara’s song' }).click()
+  await expect(page.getByRole('heading', { name: 'Zara’s song' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Make the song' })).toBeDisabled()
+  const wordsRequest = page.waitForRequest((r) => r.url().endsWith('/api/lyrics') && r.method() === 'POST')
+  await page.getByRole('button', { name: 'Write Zara’s song' }).click()
+  const brief = (await wordsRequest).postDataJSON() as { details?: Record<string, unknown> }
+  expect(brief.details).toMatchObject({ recipient: 'Zara', sender: 'Tobi' })
+  expect(JSON.stringify(brief)).not.toContain('holding everything together')
+  const sheet = page.getByLabel('Lyrics')
+  await expect(sheet).toHaveValue(/Zara/, { timeout: live ? 90_000 : 5_000 })
+  await expect(page.getByLabel('Song title')).not.toHaveValue('')
+
+  // The sender changes the words. A line from the old birthday song is caught before any music is made.
+  const written = await sheet.inputValue()
+  await sheet.fill(`${written}\nHappy birthday to you`)
+  await expect(page.getByRole('alert')).toContainText('line from another song')
+  await expect(page.getByRole('button', { name: 'Make the song' })).toBeDisabled()
+  await sheet.fill(`${written}\nAnd yes, you can have my chips`)
+  await expect(page.getByRole('alert')).toHaveCount(0)
+
+  // Pick a tune by ear.
+  const sample = page.waitForResponse((r) => r.url().endsWith('/tunes/highlife.mp3'))
+  await page.getByRole('button', { name: 'Hear Highlife guitar' }).click()
+  expect((await sample).status()).toBeLessThan(300)
+  await page.getByRole('button', { name: 'Stop Highlife guitar' }).click()
+  await page.getByRole('radio', { name: /^Highlife guitar/ }).check()
+
+  // Hear it sung: the approved words go to the music model as they are.
   const songRequest = page.waitForRequest((r) => r.url().endsWith('/api/music') && r.method() === 'POST')
-  await page.getByRole('button', { name: 'Make an original song' }).click()
-  const asked = (await songRequest).postDataJSON() as { vibe: string; details?: Record<string, unknown> }
+  await page.getByRole('button', { name: 'Make the song' }).click()
+  const asked = (await songRequest).postDataJSON() as { vibe: string; details?: Record<string, unknown>; lyrics?: string }
   expect(asked.vibe).toBe('highlife')
   expect(asked.details).toMatchObject({ recipient: 'Zara', sender: 'Tobi' })
+  expect(asked.lyrics).toContain('And yes, you can have my chips')
   expect(JSON.stringify(asked)).not.toContain('holding everything together')
-  await expect(page.getByRole('radio', { name: 'Highlife guitar, original AI song' })).toBeChecked({ timeout: live ? 260_000 : 5_000 })
-  await page.getByRole('button', { name: 'Done' }).click()
+  await expect(page.getByRole('radio', { name: 'Take 1, Highlife guitar' })).toBeChecked({ timeout: live ? 260_000 : 5_000 })
+  await expect(page.getByRole('button', { name: 'Make another take' })).toBeEnabled()
+  await page.getByRole('link', { name: 'Play the film with this song' }).click()
   await startFilm(page)
   await expect.poll(async () => (await audioState(page))?.trackId).toBe('song')
+  await page.getByRole('button', { name: 'Look & music' }).click()
+  await page.getByText('Read the lyrics').click()
+  await expect(page.locator('.song-lyrics')).toContainText('And yes, you can have my chips')
+  await page.getByRole('button', { name: 'Done' }).click()
 
   // Lock and send.
   await page.getByRole('link', { name: 'Send this gift' }).click()
-  await expect(page.locator('.gift-summary')).toContainText('Highlife guitar, original AI song')
+  await expect(page.locator('.gift-summary')).toContainText('written for Zara')
   await expect(page.locator('.gift-summary')).toContainText('Paper look')
   await page.getByLabel('A question only Zara can answer').fill('What did you call me at games night?')
   await page.getByLabel('The answer').fill('A cheat')

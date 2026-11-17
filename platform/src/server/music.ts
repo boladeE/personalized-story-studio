@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { songPrompt, sungPrompt, vibeById } from '../story/vibes'
+import { lyricsPrompt, songPrompt, sungPrompt, vibeById } from '../story/vibes'
 import type { SongDetails } from '../story/vibes'
 import { sniffAudio, songsDir } from './store'
 
@@ -60,18 +60,29 @@ export interface SongFile {
   provider: ProviderName
   /** True when the song is sung about the recipient; false for an instrumental. */
   sung?: boolean
-  /** The words the model says it sang, when it reports them. */
+  /** The words: the ones the sender approved, or else what the model says it sang. */
   lyrics?: string
+  /** The song's own name, when its words were written first. */
+  title?: string
 }
 
-/** With `details` the song is sung about the recipient; without, it is an instrumental. */
-export async function generateSong(vibeId: string, details: SongDetails | null = null): Promise<SongFile> {
+/** Words written (and perhaps edited) before the music is made. */
+export interface SongWords {
+  lyrics: string
+  title?: string
+}
+
+/**
+ * With `details` the song is sung about the recipient; without, it is an
+ * instrumental. With `words` the model sings those lyrics instead of writing its own.
+ */
+export async function generateSong(vibeId: string, details: SongDetails | null = null, words: SongWords | null = null): Promise<SongFile> {
   const vibe = vibeById(vibeId)
   if (!vibe) throw new MusicError('Unknown style', 400)
   const provider = musicProvider()
-  if (provider === 'off') throw new MusicError('AI songs aren’t switched on for this studio yet.', 503)
+  if (provider === 'off') throw new MusicError('Songs aren’t switched on for this studio yet.', 503)
 
-  const prompt = details ? sungPrompt(vibe, details) : songPrompt(vibe)
+  const prompt = details ? (words ? lyricsPrompt(vibe, details, words.lyrics) : sungPrompt(vibe, details)) : songPrompt(vibe)
   let bytes: Uint8Array
   let lyrics = ''
   if (provider === 'demo') bytes = demoSong(vibe.id)
@@ -83,7 +94,16 @@ export async function generateSong(vibeId: string, details: SongDetails | null =
   const id = `s${randomBytes(12).toString('hex')}`
   await mkdir(songsDir, { recursive: true })
   await writeFile(path.join(songsDir, id), bytes)
-  const meta: SongFile = { id, contentType, vibe: vibe.id, provider, sung: Boolean(details), ...(details && lyrics ? { lyrics } : {}) }
+  const sung = details && words ? words.lyrics : lyrics
+  const meta: SongFile = {
+    id,
+    contentType,
+    vibe: vibe.id,
+    provider,
+    sung: Boolean(details),
+    ...(details && sung ? { lyrics: sung } : {}),
+    ...(details && words?.title ? { title: words.title } : {}),
+  }
   await writeFile(path.join(songsDir, `${id}.json`), JSON.stringify({ ...meta, createdAt: new Date().toISOString() }))
   return meta
 }
@@ -122,6 +142,7 @@ async function geminiSong(prompt: string): Promise<{ audio: Uint8Array; lyrics: 
     if (!response.ok) {
       const detail = (await response.text().catch(() => '')).slice(0, 300)
       console.error(`[music] Gemini ${response.status}: ${detail}`)
+      if (isRecitationRefusal(response.status, detail)) throw new MusicError(REFUSED_WORDS, 422)
       throw new MusicError('The music service couldn’t make a song right now. Try again in a minute.', 502)
     }
     const body = await response.json()
@@ -136,6 +157,12 @@ async function geminiSong(prompt: string): Promise<{ audio: Uint8Array; lyrics: 
     clearTimeout(timer)
   }
 }
+
+export const REFUSED_WORDS =
+  'The music service won’t sing these words because a line matches an existing song. “Happy birthday to you” does this. Reword that line and try again.'
+
+/** Google answers 400 with code `recitation` when the lyrics quote an existing song. */
+export const isRecitationRefusal = (status: number, detail: string) => status === 400 && /recitation/i.test(detail)
 
 /** The last audio block from a Gemini Interactions response (`steps[].content[]`). */
 export function audioFromInteraction(body: unknown): Uint8Array | null {

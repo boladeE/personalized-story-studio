@@ -193,5 +193,13 @@ for (const [width, height] of [[360, 740], [768, 900], [1360, 800]]) {
       if (await next.isDisabled()) break
       await next.click()
     }
+    // The song page: the written sheet, the tunes and a take all fit, and no sung line is hidden.
+    await page.getByRole('link', { name: 'Add a song' }).click()
+    await page.getByRole('button', { name: 'Write Zara’s song' }).click()
+    await expect(page.getByLabel('Lyrics')).toHaveValue(/Zara/)
+    await page.getByRole('button', { name: 'Make the song' }).click()
+    await expect(page.getByRole('radio', { name: /^Take 1/ })).toBeChecked()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth), 'the song page is wider than the screen').toBeLessThanOrEqual(width)
+    expect(await page.getByLabel('Lyrics').evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(1)
   })
 }

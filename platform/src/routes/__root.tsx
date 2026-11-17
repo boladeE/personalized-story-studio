@@ -3,6 +3,7 @@ import { HeadContent, Outlet, Scripts, createRootRoute } from '@tanstack/react-r
 import appCss from '../styles/app.css?url'
 import filmCss from '../styles/film.css?url'
 import roomCss from '../styles/room.css?url'
+import songCss from '../styles/song.css?url'
 import writerCss from '../styles/writer.css?url'
 import { DraftProvider } from '../components/draft'
 
@@ -19,6 +20,7 @@ export const Route = createRootRoute({
       { rel: 'stylesheet', href: roomCss },
       { rel: 'stylesheet', href: filmCss },
       { rel: 'stylesheet', href: writerCss },
+      { rel: 'stylesheet', href: songCss },
       { rel: 'icon', href: 'data:,' },
     ],
   }),

@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Film } from '../film/Film'
 import { StudioHeader } from '../components/StudioHeader'
 import { useDraft } from '../components/draft'
@@ -7,7 +7,6 @@ import { canGenerate, generateStory, LOOKS } from '../story/generate'
 import { newSeed } from '../story/rng'
 import { SAMPLE_INTAKE, SAMPLE_LYRICS, SAMPLE_SOUNDTRACK } from '../story/sample'
 import type { Intake, LookId, Story } from '../story/types'
-import { songDetails, VIBES } from '../story/vibes'
 
 export const Route = createFileRoute('/preview')({
   validateSearch: (search: Record<string, unknown>): { sample?: 1 } =>
@@ -64,6 +63,11 @@ function Preview() {
             Edit<span className="wide-only">&nbsp;details</span>
           </Link>
         )}
+        {!useSample && (
+          <Link to="/song" className="button small ghost">
+            {song ? 'Song' : 'Add a song'}
+          </Link>
+        )}
         <button
           type="button"
           className="button small ghost"
@@ -104,8 +108,6 @@ function Preview() {
   )
 }
 
-type MusicStatus = { provider: 'gemini' | 'openrouter' | 'demo' | 'off' } | null
-
 function AdjustPanel({
   intake,
   sampleSong,
@@ -125,47 +127,8 @@ function AdjustPanel({
   onLook: (look: LookId) => void
   onClose: () => void
 }) {
-  const { song, setSong } = useDraft()
-  const [status, setStatus] = useState<MusicStatus>(null)
-  const [vibe, setVibe] = useState<string>(VIBES[0].id)
-  // A song about the person is the point; instrumental is there for senders who prefer it.
-  const [voice, setVoice] = useState<'sung' | 'instrumental'>('sung')
-  const details = songDetails(intake)
-  const sung = voice === 'sung' && details !== null
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    let live = true
-    fetch('/api/music')
-      .then((r) => r.json() as Promise<MusicStatus>)
-      .then((s) => live && setStatus(s))
-      .catch(() => live && setStatus({ provider: 'off' }))
-    return () => {
-      live = false
-    }
-  }, [])
-
-  const makeSong = async () => {
-    setBusy(true)
-    setError('')
-    try {
-      const response = await fetch('/api/music', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(sung ? { vibe, details } : { vibe }),
-      })
-      const body = (await response.json()) as { id?: string; src?: string; label?: string; sung?: boolean; lyrics?: string; error?: string }
-      if (!response.ok || !body.id || !body.src) throw new Error(body.error ?? 'The song didn’t come through.')
-      setSong({ id: body.id, src: body.src, label: body.label ?? 'Original song', sung: body.sung, lyrics: body.lyrics })
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'The song didn’t come through.')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const available = status && status.provider !== 'off'
+  const { song, setSong, takes } = useDraft()
+  const recipient = intake.recipient.trim()
   return (
     <section id="adjust-panel" className="adjust-panel" aria-label="Look & music">
       {canChangeLook && (
@@ -211,63 +174,27 @@ function AdjustPanel({
               {SAMPLE_SOUNDTRACK.label}, sung AI sample
             </label>
           )}
-          {song && (
-            <label className="choice">
-              <input type="radio" name="soundtrack" checked readOnly />
-              {song.label}, original AI song
+          {takes.map((take, i) => (
+            <label key={take.id} className="choice">
+              <input type="radio" name="soundtrack" checked={song?.id === take.id} onChange={() => setSong(take)} />
+              “{take.label}”{takes.length > 1 ? `, take ${i + 1}` : ''}
             </label>
-          )}
+          ))}
         </div>
-        {status === null ? (
-          <p className="fine">Checking the music studio…</p>
-        ) : available ? (
+        {sampleSong === null ? (
           <div className="song-maker">
-            <label className="visually-hidden" htmlFor="song-style">
-              Song style
-            </label>
-            <select id="song-style" value={vibe} onChange={(e) => setVibe(e.target.value)} disabled={busy}>
-              {VIBES.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.name}
-                </option>
-              ))}
-            </select>
-            <label className="visually-hidden" htmlFor="song-voice">
-              Vocals
-            </label>
-            <select id="song-voice" value={sung ? 'sung' : 'instrumental'} onChange={(e) => setVoice(e.target.value as 'sung' | 'instrumental')} disabled={busy}>
-              {details && <option value="sung">Sung, about {details.recipient}</option>}
-              <option value="instrumental">Instrumental, no words</option>
-            </select>
-            <button type="button" className="button small primary" onClick={makeSong} disabled={busy}>
-              {busy ? 'Writing your song…' : song ? 'Make a different song' : 'Make an original song'}
-            </button>
+            <Link to="/song" className="button small primary">
+              {takes.length ? 'Change the song' : `Write ${recipient}’s song`}
+            </Link>
           </div>
         ) : (
-          <p className="fine">Original AI songs aren’t switched on yet, so the studio score plays.</p>
-        )}
-        {available && sung && details && (
-          <p className="fine">
-            The song is written from {details.recipient}’s name and the reasons, habits, memories and wish you wrote. Those words are sent to Google’s
-            music model to make it. Your letter and photos are not.
-          </p>
-        )}
-        {busy && (
-          <p className="fine" role="status">
-            This usually takes about a minute. Keep this tab open.
-          </p>
+          <p className="fine">Start your own story and the studio writes a song like this about your person.</p>
         )}
         {(song?.lyrics || (!song && sampleSong)) && (
           <details className="song-lyrics">
             <summary>Read the lyrics</summary>
             <p>{song?.lyrics || SAMPLE_LYRICS}</p>
           </details>
-        )}
-        {status?.provider === 'demo' && <p className="fine">Test mode: songs are short placeholder tones.</p>}
-        {error && (
-          <p className="field-error" role="alert">
-            {error}
-          </p>
         )}
         <p className="fine">Tap the ticket again to hear a change.</p>
       </fieldset>
