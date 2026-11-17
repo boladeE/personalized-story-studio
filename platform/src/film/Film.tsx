@@ -122,6 +122,13 @@ export function Film({ story, embedded = false }: { story: Story; embedded?: boo
     return clearTimers
   }, [film])
 
+  // A finished song is a few megabytes: fetch it while the ticket is on screen, not after it is torn.
+  // An embedded film (the home page) waits for the tap, so visitors who never play it don't pay for the download.
+  const songSrc = story.soundtrack?.src
+  useEffect(() => {
+    if (songSrc && !embedded) engine.current?.preloadSong(songSrc)
+  }, [songSrc, embedded])
+
   useEffect(() => {
     window.__ltFilm = { time: () => clock.current.t, duration: film.duration, shot: () => clock.current.index, phase: () => live.current.phase }
     return () => {
@@ -257,6 +264,8 @@ export function Film({ story, embedded = false }: { story: Story; embedded?: boo
     if (live.current.phase !== 'ticket') return
     const ok = (await engine.current?.start()) ?? false
     setAudioBlocked(!ok)
+    // Decode during the countdown so the first shot doesn't open in silence.
+    if (ok && songSrc) engine.current?.prepareSong(songSrc)
     const play = () => {
       clock.current = { t: 0, index: 0, wishDone: false, track: '' }
       setLeaving(null)
@@ -275,7 +284,7 @@ export function Film({ story, embedded = false }: { story: Story; embedded?: boo
       }),
     )
     later(1250 + 3 * beat, play)
-  }, [])
+  }, [songSrc])
 
   const blow = useCallback(
     (flame: DOMRect | null) => {

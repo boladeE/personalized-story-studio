@@ -12,9 +12,9 @@ End to end, birthday only: a sender builds a story, adjusts it, locks it with a 
 
 ## Flow
 
-1. `/`: the studio home. The hero is the real film player showing the fictional sample.
+1. `/`: the studio home. The hero is the real film player showing the fictional sample, with a sung song the studio made for the fictional Zara (`public/sample/zara-song.mp3`, Lyria 3.5).
 2. `/create`: one question per screen (`?step=`), with a still of the scene it feeds beside it, filled with the sender's words as they type (`src/film/Still.tsx`, `src/film/previews.ts`). A strip of frames shows which scenes have enough to be in the film and jumps to any step. The draft stays in the tab (photos are `blob:` URLs) until it is sent.
-3. `/preview`: the generated film. Shuffle is a new seed. "Look & music" changes the look without reshuffling and can make an original AI song.
+3. `/preview`: the generated film. Shuffle is a new seed. "Look & music" changes the look without reshuffling and can make an original AI song. By default the song is sung about the recipient, written from the sender's name, reasons, habits, memories and wish (the panel says these go to Google's music model, and shows the lyrics afterwards). "Instrumental" sends nothing personal.
 4. `/send`: question and answer for the lock, then "Create the private link". Photos are redrawn as JPEGs (max 2000px, no EXIF or GPS) in the browser before upload.
 5. `/manage/<id>#k=<key>`: the sender's page with the link, a message to copy, and delete. The key stays in the URL fragment, so it isn't sent in requests or referrers. Only its hash is stored.
 6. `/g/<id>`: the recipient. Nothing about the gift shows until the answer is right. Answers ignore case, spacing and edge punctuation, and are stored as scrypt hashes. A correct answer sets an HttpOnly signed cookie for 30 days. Photos and the song are served only with that cookie. Guesses are limited to 10 per gift per 15 minutes.
@@ -37,16 +37,17 @@ The gift is a film that plays by itself, not a slideshow.
 - `src/routes/api/*`: plain Request/Response handlers (create, unlock, gift, media, manage, music, song).
 - `src/server/store.ts`: one folder per gift under `DATA_DIR` (`gift.json` and `media/`). It can be swapped for Postgres and R2 later behind the same functions.
 - `src/story/validate.ts`: server-side limits on every intake field. The server rebuilds the story from the intake and seed, so it never trusts a story sent by the browser.
-- `src/server/music.ts`: Lyria 3.5 through the Gemini Interactions API (preferred), or legacy Lyria 3 Pro through OpenRouter (Lyria 3.5 isn't on OpenRouter yet). Songs carry Google's inaudible SynthID watermark. Prompts are instrumental-only and never include names. There are per-client and daily caps. `MUSIC_PROVIDER=demo` makes short local tones for tests.
+- `src/server/music.ts`: Lyria 3.5 through the Gemini Interactions API (preferred), or legacy Lyria 3 Pro through OpenRouter (Lyria 3.5 isn't on OpenRouter yet). Songs carry Google's inaudible SynthID watermark. Sung prompts (`sungPrompt` in `src/story/vibes.ts`) carry the recipient's and sender's names and up to three reasons, three habits, two memories and the wish, cleaned and capped on the server; the letter and photos are never sent. Instrumental prompts carry nothing personal. The lyrics Lyria reports are stored with the song. There are per-client and daily caps. `MUSIC_PROVIDER=demo` makes short local tones for tests.
 - Production needs `SESSION_SECRET` (32+ characters). Without it, the server refuses to unlock gifts.
 
 ## Not done yet
 
 - Real payment (Paystack) and emailed receipts. Today the sender must bookmark the manage page.
-- Lyria has not been called with a real key. Both request shapes follow the providers' docs and the response parsers are unit-tested, but real responses are unverified.
+- Lyria 3.5 through the Gemini API has made real songs (about two minutes, MP3, 40 to 55 seconds to make). The OpenRouter path has never been called with a real key. Gemini keys must now be bound to a service account in Google Cloud, and the project needs prepaid credit.
 - AI writing and photo tagging, per-line edits, swapping photos, removing scenes.
 - The film has only been watched in headless Chrome captures and one real Chrome window. It has not been checked on real phones, Safari or Firefox, and nobody has listened to it.
 - AI songs don't have a beat map, so cuts follow a default tempo rather than the song.
+- Sung songs: nobody has checked how Lyria pronounces Nigerian names, and it sometimes adds a small line of its own despite being told to use only the sender's details. The sender can read the lyrics before sending but cannot edit them.
 - Other occasions, MP4 film export, accounts.
 - Clean-up of unused draft songs, and backups of `DATA_DIR`.
 - Railway: needs a service on this branch with a volume mounted at `DATA_DIR`, `SESSION_SECRET` set, build `npm run build` and start `npm start`.

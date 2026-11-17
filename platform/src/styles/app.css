@@ -454,8 +454,24 @@ select:focus-visible {
   flex-wrap: wrap;
 }
 .song-maker select {
-  flex: 1 1 150px;
+  /* One per row: "Sung, about <name>" needs the full width. */
+  flex: 1 1 100%;
   padding: 7px 10px;
+}
+.song-lyrics {
+  margin-top: 10px;
+  font-size: 14px;
+}
+.song-lyrics summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.song-lyrics p {
+  margin: 8px 0 0;
+  max-height: 220px;
+  overflow-y: auto;
+  white-space: pre-line;
+  line-height: 1.5;
 }
 
 /* ---------- Send and manage ---------- */

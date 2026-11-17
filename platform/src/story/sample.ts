@@ -1,4 +1,4 @@
-import type { Intake } from './types'
+import type { Intake, Soundtrack } from './types'
 
 /** Fictional sample intake (Zara and Tobi, AI-generated photos), reused from the v2 demo. */
 export const SAMPLE_INTAKE: Intake = {
@@ -52,6 +52,42 @@ export const SAMPLE_INTAKE: Intake = {
   wish: 'More afternoons that run late. More of your hand in mine on the way home. And yes, you can have my chips.',
   look: 'surprise',
 }
+
+/**
+ * The sample's song: a real song the studio made for the fictional Zara from
+ * the details above (Lyria 3.5, highlife, sung). The lyrics are what the model
+ * reported singing.
+ */
+export const SAMPLE_SOUNDTRACK: Soundtrack = { kind: 'song', src: '/sample/zara-song.mp3', label: 'Zara’s song' }
+
+export const SAMPLE_LYRICS = `Ordinary days get suspiciously good when you're around,
+You remember the small things I mention once, in passing.
+You know when I need advice, and when I just need you to listen.
+Like that rainy evening we were meant to stay for just one drink,
+But the rain can wait, and you moved your chair closer to me.
+You said nobody could be that lucky on a games night,
+Called me a cheat at Uno, made me shuffle again.
+Watched my hands very closely, shaking your head the whole time.
+
+Happy birthday, Zara, you know you are my favourite person,
+Zara, my hand in yours on the way home, always.
+I just want more afternoons with you that run late,
+Zara, you make every simple moment feel like a party.
+
+You send an eleven-minute voice note, call it a 'quick gist',
+You take all the duvet for yourself, and then you ask me why I'm cold.
+You look at my plate, you say, 'no, I am really not that hungry',
+And then you reach right over and you eat all my chips.
+But listen to me, on this special day of yours, my love,
+You can have my chips, Zara, I will order more for us both.
+
+Happy birthday, Zara, you know you are my favourite person,
+Zara, my hand in yours on the way home, always.
+I just want more afternoons with you that run late,
+Zara, you make every simple moment feel like a party.
+
+Yes, I love you and I wish you the very best.
+Tobi to Zara, with all my heart. (happy birthday)`
 
 export const emptyIntake = (): Intake => ({
   occasion: 'birthday',

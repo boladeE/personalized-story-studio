@@ -2,7 +2,9 @@ import { expect, test } from '@playwright/test'
 import { audioState, filmState, open, startFilm } from './helpers'
 
 test('end to end: build, add an AI song, lock, send, recipient unlocks and plays, sender deletes', async ({ page, browser, baseURL }) => {
-  test.setTimeout(90_000)
+  // Against a running server (E2E_BASE_URL) the song may be a real one, which takes about a minute to make.
+  const live = Boolean(process.env.E2E_BASE_URL)
+  test.setTimeout(live ? 420_000 : 90_000)
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
 
@@ -16,8 +18,16 @@ test('end to end: build, add an AI song, lock, send, recipient unlocks and plays
   await page.getByRole('radio', { name: 'Paper' }).check()
   await expect(page.locator('.film')).toHaveAttribute('data-look', 'paper')
   await page.getByLabel('Song style').selectOption('highlife')
+  // The song is sung about the recipient by default, written from the sender's details (never the letter).
+  await expect(page.getByLabel('Vocals')).toHaveValue('sung')
+  await expect(page.getByLabel('Vocals').locator('option:checked')).toHaveText('Sung, about Zara')
+  const songRequest = page.waitForRequest((r) => r.url().endsWith('/api/music') && r.method() === 'POST')
   await page.getByRole('button', { name: 'Make an original song' }).click()
-  await expect(page.getByRole('radio', { name: 'Highlife guitar, original AI song' })).toBeChecked()
+  const asked = (await songRequest).postDataJSON() as { vibe: string; details?: Record<string, unknown> }
+  expect(asked.vibe).toBe('highlife')
+  expect(asked.details).toMatchObject({ recipient: 'Zara', sender: 'Tobi' })
+  expect(JSON.stringify(asked)).not.toContain('holding everything together')
+  await expect(page.getByRole('radio', { name: 'Highlife guitar, original AI song' })).toBeChecked({ timeout: live ? 260_000 : 5_000 })
   await page.getByRole('button', { name: 'Done' }).click()
   await startFilm(page)
   await expect.poll(async () => (await audioState(page))?.trackId).toBe('song')

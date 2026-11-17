@@ -1,7 +1,8 @@
 import { randomBytes } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { songPrompt, vibeById } from '../story/vibes'
+import { songPrompt, sungPrompt, vibeById } from '../story/vibes'
+import type { SongDetails } from '../story/vibes'
 import { sniffAudio, songsDir } from './store'
 
 /**
@@ -57,23 +58,32 @@ export interface SongFile {
   contentType: string
   vibe: string
   provider: ProviderName
+  /** True when the song is sung about the recipient; false for an instrumental. */
+  sung?: boolean
+  /** The words the model says it sang, when it reports them. */
+  lyrics?: string
 }
 
-export async function generateSong(vibeId: string): Promise<SongFile> {
+/** With `details` the song is sung about the recipient; without, it is an instrumental. */
+export async function generateSong(vibeId: string, details: SongDetails | null = null): Promise<SongFile> {
   const vibe = vibeById(vibeId)
   if (!vibe) throw new MusicError('Unknown style', 400)
   const provider = musicProvider()
   if (provider === 'off') throw new MusicError('AI songs aren’t switched on for this studio yet.', 503)
 
-  const bytes =
-    provider === 'demo' ? demoSong(vibe.id) : provider === 'gemini' ? await geminiSong(songPrompt(vibe)) : await openRouterSong(songPrompt(vibe))
+  const prompt = details ? sungPrompt(vibe, details) : songPrompt(vibe)
+  let bytes: Uint8Array
+  let lyrics = ''
+  if (provider === 'demo') bytes = demoSong(vibe.id)
+  else if (provider === 'gemini') ({ audio: bytes, lyrics } = await geminiSong(prompt))
+  else bytes = await openRouterSong(prompt)
   const contentType = sniffAudio(bytes)
   if (!contentType) throw new MusicError('The music service sent back something that isn’t audio.', 502)
 
   const id = `s${randomBytes(12).toString('hex')}`
   await mkdir(songsDir, { recursive: true })
   await writeFile(path.join(songsDir, id), bytes)
-  const meta: SongFile = { id, contentType, vibe: vibe.id, provider }
+  const meta: SongFile = { id, contentType, vibe: vibe.id, provider, sung: Boolean(details), ...(details && lyrics ? { lyrics } : {}) }
   await writeFile(path.join(songsDir, `${id}.json`), JSON.stringify({ ...meta, createdAt: new Date().toISOString() }))
   return meta
 }
@@ -95,7 +105,7 @@ export class MusicError extends Error {
   }
 }
 
-async function geminiSong(prompt: string): Promise<Uint8Array> {
+async function geminiSong(prompt: string): Promise<{ audio: Uint8Array; lyrics: string }> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), Number(process.env.MUSIC_TIMEOUT_MS ?? 240_000))
   try {
@@ -114,9 +124,10 @@ async function geminiSong(prompt: string): Promise<Uint8Array> {
       console.error(`[music] Gemini ${response.status}: ${detail}`)
       throw new MusicError('The music service couldn’t make a song right now. Try again in a minute.', 502)
     }
-    const audio = audioFromInteraction(await response.json())
+    const body = await response.json()
+    const audio = audioFromInteraction(body)
     if (!audio) throw new MusicError('The music service finished without sending a song.', 502)
-    return audio
+    return { audio, lyrics: lyricsFromInteraction(body) }
   } catch (error) {
     if (error instanceof MusicError) throw error
     console.error('[music] request failed', error)
@@ -135,6 +146,36 @@ export function audioFromInteraction(body: unknown): Uint8Array | null {
     for (const block of step.content ?? []) if (block.type === 'audio' && block.data) data = block.data
   }
   return data ? Uint8Array.from(Buffer.from(data, 'base64')) : null
+}
+
+/**
+ * The sung words from a Gemini Interactions response. Lyria reports them in a
+ * text block: `[[A0]]` marks a section and `[:] ` starts each sung line.
+ */
+export function lyricsFromInteraction(body: unknown): string {
+  const steps = (body as { steps?: Array<{ type?: string; content?: Array<{ type?: string; text?: string }> }> })?.steps ?? []
+  const verses: string[][] = []
+  for (const step of steps) {
+    if (step.type !== 'model_output') continue
+    for (const block of step.content ?? []) {
+      if (block.type !== 'text' || typeof block.text !== 'string') continue
+      for (const raw of block.text.split('\n')) {
+        const line = raw.trim()
+        if (/^\[\[.*\]\]$/.test(line)) verses.push([])
+        else if (line.startsWith('[:]')) {
+          const words = line.slice(3).trim()
+          if (!words) continue
+          if (!verses.length) verses.push([])
+          verses[verses.length - 1].push(words)
+        }
+      }
+    }
+  }
+  return verses
+    .filter((v) => v.length)
+    .map((v) => v.join('\n'))
+    .join('\n\n')
+    .slice(0, 6000)
 }
 
 async function openRouterSong(prompt: string): Promise<Uint8Array> {

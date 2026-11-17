@@ -122,6 +122,8 @@ export class AudioEngine {
   private voice: TrackVoice | null = null
   private song: SongVoice | null = null
   private songLoading: string | null = null
+  private songBytes: { src: string; data: Promise<ArrayBuffer> } | null = null
+  private songBuffer: { src: string; ctx: AudioContext; data: Promise<AudioBuffer> } | null = null
   private muted = false
 
   /** Call inside the click handler that begins the story. */
@@ -200,16 +202,45 @@ export class AudioEngine {
     osc.stop(now + length + 0.05)
   }
 
+  /**
+   * Start downloading a song before the film begins, so it is ready when the
+   * ticket is torn. Makes no sound and needs no AudioContext, so it can run
+   * before the first tap.
+   */
+  preloadSong(src: string) {
+    if (this.songBytes?.src === src) return
+    const data = fetch(src, { credentials: 'same-origin' }).then((response) => {
+      if (!response.ok) throw new Error(`Song request failed: ${response.status}`)
+      return response.arrayBuffer()
+    })
+    data.catch(() => {})
+    this.songBytes = { src, data }
+    this.songBuffer = null
+  }
+
+  /** Decode a song ahead of its first note. Call after `start()`, e.g. while the leader counts in. */
+  prepareSong(src: string) {
+    if (this.ctx) void this.decoded(src, this.ctx)
+  }
+
+  private decoded(src: string, ctx: AudioContext): Promise<AudioBuffer> {
+    if (this.songBuffer?.src === src && this.songBuffer.ctx === ctx) return this.songBuffer.data
+    this.preloadSong(src)
+    // Decoding detaches the bytes it is given, so decode a copy and keep the download.
+    const data = this.songBytes!.data.then((bytes) => ctx.decodeAudioData(bytes.slice(0)))
+    data.catch(() => {})
+    this.songBuffer = { src, ctx, data }
+    return data
+  }
+
   /** Play a whole-story song (generated or supplied), looping, in place of the score. */
   async playSong(src: string): Promise<boolean> {
     if (!this.ctx || !this.songBus) return false
     if (this.song?.src === src || this.songLoading === src) return true
     this.songLoading = src
     try {
-      const response = await fetch(src, { credentials: 'same-origin' })
-      if (!response.ok) throw new Error(`Song request failed: ${response.status}`)
       const ctx = this.ctx
-      const buffer = await ctx.decodeAudioData(await response.arrayBuffer())
+      const buffer = await this.decoded(src, ctx)
       if (this.songLoading !== src || this.ctx !== ctx || !this.songBus) return false
       this.voice?.stop(1.2)
       this.voice = null
@@ -227,6 +258,11 @@ export class AudioEngine {
       return true
     } catch (error) {
       console.warn('[audio] song could not play', error)
+      // Forget the failed download so another attempt starts clean.
+      if (this.songBytes?.src === src) {
+        this.songBytes = null
+        this.songBuffer = null
+      }
       return false
     } finally {
       if (this.songLoading === src) this.songLoading = null
@@ -272,6 +308,8 @@ export class AudioEngine {
     this.ctx = null
     this.master = null
     this.songBus = null
+    this.songBytes = null
+    this.songBuffer = null
     setTimeout(() => void ctx?.close(), 600)
   }
 

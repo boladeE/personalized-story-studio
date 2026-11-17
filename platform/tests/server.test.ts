@@ -7,6 +7,7 @@ process.env.DATA_DIR = mkdtempSync(path.join(tmpdir(), 'lt-gifts-'))
 
 const store = await import('../src/server/store')
 const music = await import('../src/server/music')
+const vibes = await import('../src/story/vibes')
 const { parseIntake } = await import('../src/story/validate')
 const { SAMPLE_INTAKE } = await import('../src/story/sample')
 
@@ -101,6 +102,56 @@ describe('AI music', () => {
     expect(Buffer.from(music.audioFromInteraction(body)!).equals(Buffer.from(bytes))).toBe(true)
     expect(music.audioFromInteraction({ steps: [{ type: 'model_output', content: [{ type: 'text', text: 'hi' }] }] })).toBeNull()
     expect(music.audioFromInteraction(null)).toBeNull()
+  })
+
+  it('reads the sung words Lyria reports, by section', () => {
+    const text = '[[A0]]\n[[B1]]\n[:] You say you are not hungry.\n[:] Then you eat my chips.\n[[C2]]\n[:] Happy birthday, Zara.\n[[D3]]'
+    const body = { steps: [{ type: 'model_output', content: [{ type: 'text', text }] }, { type: 'model_output', content: [{ type: 'audio', data: 'AAAA' }] }] }
+    expect(music.lyricsFromInteraction(body)).toBe('You say you are not hungry.\nThen you eat my chips.\n\nHappy birthday, Zara.')
+    expect(music.lyricsFromInteraction({ steps: [{ type: 'model_output', content: [{ type: 'text', text: '[[A0]]\n[[B1]]' }] }] })).toBe('')
+    expect(music.lyricsFromInteraction(null)).toBe('')
+  })
+
+  it('writes a sung song only from the sender’s details, and an instrumental from none of them', () => {
+    const vibe = vibes.vibeById('highlife')!
+    const details = vibes.songDetails(SAMPLE_INTAKE)!
+    expect(details).toMatchObject({ recipient: 'Zara', sender: 'Tobi' })
+    expect(details.reasons).toHaveLength(3)
+    expect(details.habits).toHaveLength(3)
+    expect(details.moments).toHaveLength(2)
+    const sung = vibes.sungPrompt(vibe, details)
+    expect(sung).toContain('Sing the name "Zara"')
+    expect(sung).toContain('eats my chips')
+    expect(sung).toContain('You called me a cheat.')
+    expect(sung).toContain('Do not add places, events, nicknames or facts')
+    // The letter and photo captions stay in the studio.
+    expect(sung).not.toContain('holding everything together')
+    expect(sung).not.toContain('Golden hour')
+    const plain = vibes.songPrompt(vibe)
+    expect(plain).toContain('No vocals')
+    expect(plain).not.toMatch(/Zara|Tobi/)
+  })
+
+  it('cleans song details from the browser and needs a name', () => {
+    expect(vibes.parseSongDetails({ recipient: '  ', habits: ['x'] })).toBeNull()
+    expect(vibes.parseSongDetails('Zara')).toBeNull()
+    const parsed = vibes.parseSongDetails({
+      recipient: ' Kemi "K"\nAde ',
+      sender: 7,
+      habits: ['a', '', 'b', 'c', 'd'],
+      reasons: 'not a list',
+      moments: ['x'.repeat(1000)],
+      wish: 'line one\nline two',
+      letter: 'private',
+    })!
+    expect(parsed.recipient).toBe('Kemi K Ade')
+    expect(parsed.sender).toBe('')
+    expect(parsed.habits).toEqual(['a', 'b', 'c'])
+    expect(parsed.reasons).toEqual([])
+    expect(parsed.moments[0]).toHaveLength(vibes.SONG_LIMITS.moment)
+    expect(parsed.wish).toBe('line one line two')
+    expect(Object.keys(parsed)).not.toContain('letter')
+    expect(vibes.sungPrompt(vibes.vibeById('piano')!, vibes.parseSongDetails({ recipient: 'Kemi' })!)).toContain('keep the lyrics to warm birthday wishes')
   })
 
   it('prefers Lyria 3.5 on Gemini, is off without a key, and caps songs per client', () => {

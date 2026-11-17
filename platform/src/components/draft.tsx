@@ -11,6 +11,10 @@ export interface DraftSong {
   id: string
   src: string
   label: string
+  /** Sung about the recipient, or an instrumental. */
+  sung?: boolean
+  /** The sung words, when the music model reports them. */
+  lyrics?: string
 }
 
 interface DraftValue {
