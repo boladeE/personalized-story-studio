@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { StudioHeader } from '../components/StudioHeader'
+import { occasionOf } from '../story/occasions'
 
 export const Route = createFileRoute('/manage/$slug')({
   head: () => ({ meta: [{ title: 'Your gift - Little Things Digital' }, { name: 'referrer', content: 'no-referrer' }] }),
@@ -12,6 +13,7 @@ interface Summary {
   createdAt: string
   sender: string
   recipient: string
+  occasion?: string
   question: string
   scenes: number
   song: string | null
@@ -56,8 +58,8 @@ function Manage() {
               ? 'Its link no longer opens, and its photos and words are gone from the studio.'
               : 'The link may be incomplete, or the gift was deleted. Use the full link you saved when you sent it.'}
           </p>
-          <a className="button primary" href="/create">
-            Make a new story
+          <a className="button primary" href="/#occasions">
+            Make a new film
           </a>
         </main>
       </>
@@ -66,7 +68,7 @@ function Manage() {
 
   const { summary, key } = state
   const url = `${window.location.origin}/g/${summary.slug}`
-  const message = `I made you something for your birthday. Open it somewhere quiet, with the sound on: ${url}`
+  const message = `${occasionOf(summary.occasion).share} Open it somewhere quiet, with the sound on: ${url}`
   const copy = async (text: string, what: string) => {
     try {
       await navigator.clipboard.writeText(text)

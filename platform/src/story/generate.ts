@@ -1,4 +1,4 @@
-import { SCENES, SKELETONS } from './library'
+import { sceneLabel, SCENES, SKELETONS } from './library'
 import type { BuildContext } from './library'
 import { tracksForMood, TRACKS } from './music'
 import { createRng } from './rng'
@@ -19,13 +19,15 @@ export interface SceneStatus {
 
 /** Which scenes this intake can fill, in skeleton order. Drives the storyboard. */
 export function sceneStatus(intake: Intake): SceneStatus[] {
-  return SKELETONS[intake.occasion].flatMap((slot) =>
+  return skeletonFor(intake).flatMap((slot) =>
     slot.candidates.map((type) => {
       const def = SCENES[type]
-      return { type, name: def.name, description: def.description, missing: def.missing(intake) }
+      return { type, ...sceneLabel(def, intake), missing: def.missing(intake) }
     }),
   )
 }
+
+const skeletonFor = (intake: Intake) => SKELETONS[intake.occasion] ?? SKELETONS.birthday
 
 export const canGenerate = (intake: Intake) => Boolean(intake.sender.trim() && intake.recipient.trim())
 
@@ -63,7 +65,7 @@ export function generateStory(intake: Intake, seed: number): Story {
   const trackForMood = new Map<string, string>()
   const scenes: Story['scenes'] = []
 
-  for (const slot of SKELETONS[intake.occasion]) {
+  for (const slot of skeletonFor(intake)) {
     const fillable = slot.candidates.filter((type) => SCENES[type].missing(intake) === null)
     const ordered = slot.shuffle ? rng.shuffle(fillable) : fillable
     for (const type of ordered) {
@@ -74,7 +76,7 @@ export function generateStory(intake: Intake, seed: number): Story {
         const options = tracksForMood(def.mood)
         trackForMood.set(def.mood, (options.length ? rng.pick(options) : TRACKS[0]).id)
       }
-      scenes.push({ id: `${type}-${scenes.length}`, type, name: def.name, mood: def.mood, trackId: trackForMood.get(def.mood)!, frames })
+      scenes.push({ id: `${type}-${scenes.length}`, type, name: sceneLabel(def, intake).name, mood: def.mood, trackId: trackForMood.get(def.mood)!, frames })
     }
   }
 

@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { DragEvent, KeyboardEvent, ReactNode, TextareaHTMLAttributes } from 'react'
 import { flushSync } from 'react-dom'
 import { StudioHeader } from '../components/StudioHeader'
@@ -9,9 +9,11 @@ import { previewFor, previewLook } from '../film/previews'
 import type { StepFocus, StepId } from '../film/previews'
 import { canGenerate, LOOKS, sceneStatus } from '../story/generate'
 import type { SceneStatus } from '../story/generate'
+import { occasionOf, OCCASIONS } from '../story/occasions'
 import { newSeed } from '../story/rng'
 import { emptyIntake, SAMPLE_INTAKE } from '../story/sample'
-import type { Intake, Memory } from '../story/types'
+import { isOccasion } from '../story/types'
+import type { Intake, Memory, Occasion } from '../story/types'
 import { LIMITS } from '../story/validate'
 
 /**
@@ -34,11 +36,12 @@ const STEPS: Array<{ id: StepId; name: string; scenes: string[] }> = [
 const STEP_IDS = STEPS.map((s) => s.id)
 
 export const Route = createFileRoute('/create')({
-  validateSearch: (search: Record<string, unknown>): { step?: StepId } => {
+  // `occasion` arrives from the home page's tickets; it is written into the draft and then dropped from the address.
+  validateSearch: (search: Record<string, unknown>): { step?: StepId; occasion?: Occasion } => {
     const step = search.step as StepId
-    return STEP_IDS.includes(step) ? { step } : {}
+    return { ...(STEP_IDS.includes(step) ? { step } : {}), ...(isOccasion(search.occasion) ? { occasion: search.occasion } : {}) }
   },
-  head: () => ({ meta: [{ title: 'Start a birthday story - Little Things Digital' }] }),
+  head: () => ({ meta: [{ title: 'Start a film - Little Things Digital' }] }),
   component: Create,
 })
 
@@ -69,12 +72,22 @@ const NUDGES = {
 }
 
 function Create() {
-  const { intake, setIntake, setSeed } = useDraft()
+  const { intake: draft, setIntake, setSeed } = useDraft()
   const navigate = useNavigate()
-  const { step: stepParam } = Route.useSearch()
+  const { step: stepParam, occasion: asked } = Route.useSearch()
+  // An occasion picked on the home page shows at once, before it is saved to the draft below.
+  const intake = useMemo(() => (asked && asked !== draft.occasion ? { ...draft, occasion: asked } : draft), [draft, asked])
+  const occasion = occasionOf(intake.occasion)
+  const steps = useMemo(() => STEPS.map((s) => (s.id === 'wish' ? { ...s, name: occasion.ending.step } : s)), [occasion])
   const stepId: StepId = stepParam ?? 'who'
   const at = STEP_IDS.indexOf(stepId)
-  const step = STEPS[at]
+  const step = steps[at]
+
+  useEffect(() => {
+    if (!asked) return
+    setIntake((c) => (c.occasion === asked ? c : { ...c, occasion: asked }))
+    void navigate({ to: '/create', search: stepParam ? { step: stepParam } : {}, replace: true })
+  }, [asked])
 
   const [photoError, setPhotoError] = useState('')
   const [dragging, setDragging] = useState(false)
@@ -187,6 +200,17 @@ function Create() {
               <SentenceInput label="Your name" placeholder="your name" value={intake.sender} onChange={(v) => set('sender', v)} autoComplete="given-name" />
             </span>
           </p>
+          <fieldset className="occasion-pick">
+            <legend>What’s it for?</legend>
+            <div className="occasion-chips">
+              {OCCASIONS.map((o) => (
+                <label key={o.id} className="chip">
+                  <input type="radio" name="occasion" checked={intake.occasion === o.id} onChange={() => set('occasion', o.id)} />
+                  <span>{o.name}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
           <p className="fine">This draft stays in this browser tab until you send it. Nothing is uploaded before then, and reloading clears it.</p>
         </>
       ),
@@ -368,8 +392,8 @@ function Create() {
       ),
     },
     reasons: {
-      question: them ? `Why ${them}?` : 'Why them?',
-      hint: 'The reasons you love them, shown one at a time. Three or more. Small and specific beats big and general.',
+      question: occasion.reasons?.question(them) ?? (them ? `Why ${them}?` : 'Why them?'),
+      hint: occasion.reasons?.hint ?? 'The reasons you love them, shown one at a time. Three or more. Small and specific beats big and general.',
       body: (
         <>
           <ListEditor
@@ -403,8 +427,11 @@ function Create() {
       ),
     },
     wish: {
-      question: them ? `What should ${them} read after blowing out the candle?` : 'What should they read after blowing out the candle?',
-      hint: me && them ? `Your last line. Leave it empty and it will say “Happy birthday, ${them}. Love, ${me}.”` : 'Your last line, shown once the candle is out.',
+      question: occasion.ending.question(them),
+      hint:
+        me && them
+          ? `Your last line. Leave it empty and it will say “${occasion.ending.fallback.replaceAll('{r}', them).replaceAll('{s}', me)}”`
+          : `Your last line, shown once ${occasion.ending.shown}.`,
       body: (
         <textarea className="big" rows={4} aria-labelledby={qid} aria-describedby={hintId} maxLength={LIMITS.wish} value={intake.wish} onChange={(e) => set('wish', e.target.value)} />
       ),
@@ -438,7 +465,7 @@ function Create() {
             <h2>What’s in the film</h2>
             <ul>
               {status.map((s) => {
-                const home = STEPS.find((x) => x.scenes.includes(s.type))
+                const home = steps.find((x) => x.scenes.includes(s.type))
                 return (
                   <li key={s.type} className={s.missing ? 'is-out' : 'is-in'}>
                     <b>{s.name}</b>
@@ -475,23 +502,23 @@ function Create() {
     : waiting
       ? `Not in the film yet: ${waiting.name}. ${waiting.missing}.`
       : `In the film: ${sceneNames.join(' and ')}.`
-  const next = STEPS[at + 1]
+  const next = steps[at + 1]
   const last = !next
 
   return (
     <>
       <StudioHeader>
-        <button type="button" className="button small ghost" onClick={() => replaceDraft(structuredClone(SAMPLE_INTAKE))}>
+        <button type="button" className="button small ghost" onClick={() => replaceDraft({ ...structuredClone(SAMPLE_INTAKE), occasion: intake.occasion })}>
           Fill with the sample
         </button>
-        <button type="button" className="button small ghost" onClick={() => replaceDraft(emptyIntake())}>
+        <button type="button" className="button small ghost" onClick={() => replaceDraft({ ...emptyIntake(), occasion: intake.occasion })}>
           Clear
         </button>
       </StudioHeader>
       <main className="writer">
         <nav className="reel" aria-label="Steps">
           <ol ref={reel}>
-            {STEPS.map((s, i) => {
+            {steps.map((s, i) => {
               const done = s.scenes.length > 0 && s.scenes.every((t) => !scene(t).missing)
               return (
                 <li key={s.id}>
@@ -540,7 +567,7 @@ function Create() {
             </div>
             <div className="page-nav">
               {at > 0 ? (
-                <button type="button" className="button ghost" onClick={() => go(STEPS[at - 1].id)}>
+                <button type="button" className="button ghost" onClick={() => go(steps[at - 1].id)}>
                   Back
                 </button>
               ) : (

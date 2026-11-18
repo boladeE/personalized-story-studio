@@ -1,5 +1,5 @@
 import { trackById } from '../story/music'
-import type { Mood, Photo, PhotoLayout, Story } from '../story/types'
+import type { EndingProp, Mood, Photo, PhotoLayout, Story } from '../story/types'
 
 /**
  * A story becomes a film: an ordered list of timed shots that plays by itself.
@@ -19,7 +19,7 @@ interface ShotBase {
   trackId: string
   start: number
   duration: number
-  /** The film waits here for the viewer (the candle, or the end). */
+  /** The film waits here for the viewer (the candle or the note, or the end). */
   hold?: boolean
   /** How the shot's main words arrive and leave. */
   enter: 'type' | 'assemble' | 'cut'
@@ -38,7 +38,7 @@ export type Shot = ShotBase &
     | { kind: 'reason'; text: string; n: number; total: number }
     | { kind: 'montage'; kicker: string; title: string; photos: Photo[] }
     | { kind: 'letter'; greeting: string; paragraphs: string[]; signoff: string }
-    | { kind: 'wish'; title: string; body: string }
+    | { kind: 'wish'; title: string; body: string; prop: EndingProp; action: string }
     | { kind: 'reveal'; words: string }
     | { kind: 'credits'; lines: Array<{ role: string; name: string }>; last: string; note?: string }
   )
@@ -80,7 +80,7 @@ export function buildFilm(story: Story): Film {
     const playful = scene.mood === 'playful'
     const drafts: Draft[] = []
 
-    // Chapters between the opening and the candle get a numbered title card.
+    // Chapters between the opening and the ending get a numbered title card.
     const isChapter = scene.type !== 'hello' && scene.type !== 'wish'
     if (isChapter) {
       drafts.push({ kind: 'card', number: `Scene ${ORDINALS[numbered] ?? numbered + 1}`, title: scene.name, seconds: 3, enter: 'type', exit: 'fade' })
@@ -159,7 +159,8 @@ export function buildFilm(story: Story): Film {
           })
           break
         case 'wish':
-          drafts.push({ kind: 'wish', title: frame.title, body: frame.body, seconds: 5, hold: true, enter: 'type', exit: 'fade' })
+          // Gifts stored before occasions existed are birthdays, and carry no prop of their own.
+          drafts.push({ kind: 'wish', title: frame.title, body: frame.body, prop: frame.prop ?? 'candle', action: frame.action ?? 'Blow out the candle', seconds: 5, hold: true, enter: 'type', exit: 'fade' })
           drafts.push({ kind: 'reveal', words: frame.reveal, seconds: read(words(frame.reveal)) + 3, enter: 'assemble', exit: 'fade' })
           break
       }

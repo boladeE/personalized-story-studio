@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { audioState, filmState, open, startFilm, trackErrors, walk } from './helpers'
+import { OCCASIONS } from '../src/story/occasions'
 
 // Tiny valid PNG (1x1) for upload tests.
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64')
@@ -8,7 +9,8 @@ test('the sample becomes a film that plays by itself, with sound, to the wish an
   test.setTimeout(90_000)
   const errors = trackErrors(page)
   await open(page, '/')
-  await page.getByRole('link', { name: 'Start a birthday story' }).first().click()
+  await page.getByRole('link', { name: 'Start a film' }).first().click()
+  await expect(page.getByRole('radio', { name: 'Birthday' })).toBeChecked()
   await expect(page.locator('.reel-count')).toHaveText('0 of 9 scenes ready')
   await expect(page.getByRole('button', { name: 'Build the story' })).toBeDisabled()
   await page.getByRole('button', { name: 'Fill with the sample' }).click()
@@ -130,7 +132,7 @@ test('shuffle rebuilds from the ticket with the same content, and edit keeps the
 
 test('sound can be muted and the preview has an honest empty state', async ({ page }) => {
   await open(page, '/preview')
-  await expect(page.getByRole('heading', { name: 'There’s no story to preview yet.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'There’s no film to preview yet.' })).toBeVisible()
   await page.getByRole('link', { name: 'Play the sample' }).click()
   // The header carries only the controls: no scene count and no notice crowding it.
   await expect(page.locator('.studio-header')).not.toContainText(/scenes|Fictional|AI/)
@@ -171,6 +173,17 @@ for (const [width, height] of [[360, 740], [768, 900], [1360, 800]]) {
   test(`nothing spills off screen at ${width}px`, async ({ page }) => {
     test.setTimeout(90_000)
     await page.setViewportSize({ width, height })
+    // The home page, top to bottom.
+    await open(page, '/')
+    await expect(page.locator('.contact-sheet .still-box[data-fit]')).toHaveCount(8)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth), 'the home page is wider than the screen').toBeLessThanOrEqual(width)
+    const cramped = await page.evaluate(() =>
+      Array.from(document.querySelectorAll<HTMLElement>('.rack .stub, .home-nav a, .home-header .button'))
+        .filter((el) => el.offsetParent !== null)
+        .map((el) => el.getBoundingClientRect())
+        .filter((r) => r.left < -1 || r.right > window.innerWidth + 1).length,
+    )
+    expect(cramped, 'a ticket or header link runs off the home page').toBe(0)
     await open(page, '/create')
     await page.getByRole('button', { name: 'Fill with the sample' }).click()
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
@@ -218,3 +231,71 @@ for (const [width, height] of [[360, 740], [768, 900], [1360, 800]]) {
     expect(await page.getByLabel('Lyrics').evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(1)
   })
 }
+
+test('the home page offers every occasion, and a ticket starts a film written for it', async ({ page }) => {
+  test.setTimeout(90_000)
+  const errors = trackErrors(page)
+  await open(page, '/')
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('turned into a film')
+  const tickets = page.locator('.rack a')
+  await expect(tickets).toHaveCount(OCCASIONS.length)
+  for (const occasion of OCCASIONS) await expect(tickets.filter({ hasText: occasion.name })).toHaveAttribute('href', `/create?occasion=${occasion.id}`)
+
+  // The occasion is written into the draft and leaves the address, so it can be changed in the form.
+  await tickets.filter({ hasText: 'Thank you' }).click()
+  await expect(page).toHaveURL(/\/create$/)
+  await expect(page.getByRole('radio', { name: 'Thank you' })).toBeChecked()
+  await page.getByLabel('Their name').fill('Kemi')
+  await page.getByLabel('Your name').fill('Ada')
+  await expect(page.locator('.projection .ticket-foot')).toContainText('A thank-you')
+  await page.getByRole('button', { name: 'Reasons' }).click()
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('What are you thanking Kemi for?')
+  await page.getByRole('button', { name: 'Last line' }).click()
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('What should Kemi read when the note opens?')
+  await expect(page.locator('.question-hint')).toContainText('Thank you, Kemi. Love, Ada.')
+
+  // The film says what it is for on the ticket, and ends on a sealed note, not a candle.
+  await page.getByRole('button', { name: 'Build the story' }).first().click()
+  await expect(page.locator('.film .ticket-foot')).toContainText('A thank-you')
+  await startFilm(page)
+  const shots = await walk(page, (shot) => shot.kind === 'wish')
+  expect(shots.map((s) => s.text).join(' ')).not.toMatch(/birthday/i)
+  await expect(page.locator('.shot.is-current .note')).toBeVisible()
+  await expect(page.locator('.shot.is-current .candle')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Open the note' }).click()
+  await expect(page.getByRole('status')).toContainText('Thank you, Kemi. Love, Ada.')
+
+  // Switching the occasion in the form changes the film.
+  await page.getByRole('link', { name: 'Edit details' }).click()
+  await page.getByRole('radio', { name: 'Birthday' }).check()
+  await expect(page.locator('.projection .ticket-foot')).toContainText('Your birthday')
+  await expect(page.getByRole('button', { name: 'The wish' })).toBeVisible()
+  expect(errors).toEqual([])
+})
+
+test('on the home page the sample’s song and the film take turns', async ({ page }) => {
+  const errors = trackErrors(page)
+  await open(page, '/')
+  const song = () =>
+    page.evaluate(() => {
+      const audio = document.querySelector<HTMLAudioElement>('.song-player audio')!
+      return { paused: audio.paused, time: audio.currentTime }
+    })
+  // The song plays from a real tap, and its clock moves.
+  await page.getByRole('button', { name: 'Play Zara’s song' }).click()
+  await expect.poll(async () => (await song()).time, { timeout: 15_000 }).toBeGreaterThan(0.3)
+  await expect(page.getByRole('button', { name: 'Pause Zara’s song' })).toBeVisible()
+
+  // Starting the film stops the song.
+  await page.getByRole('button', { name: /Tap to begin/ }).click()
+  await expect.poll(async () => (await song()).paused).toBe(true)
+  await page.waitForFunction(() => window.__ltFilm?.phase() === 'playing', undefined, { timeout: 15_000 })
+  await expect.poll(async () => (await audioState(page))?.running).toBe(true)
+
+  // Playing the song again holds the film and its sound.
+  await page.getByRole('button', { name: 'Play Zara’s song' }).click()
+  await expect(page.locator('.screen .film')).toHaveClass(/is-paused/)
+  await expect.poll(async () => (await audioState(page))?.suspended).toBe(true)
+  await expect.poll(async () => (await song()).paused).toBe(false)
+  expect(errors).toEqual([])
+})

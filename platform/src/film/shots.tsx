@@ -195,15 +195,24 @@ function ShotBody({ shot, actions, leaving }: { shot: Shot; actions: ShotActions
     case 'wish':
       return (
         <div className={`wish${leaving ? ' is-blown' : ''}`}>
-          <div className="candle" aria-hidden="true">
-            <span className="halo" />
-            <span className="smoke" />
-            <span className="flame" data-flame="">
-              <i />
-            </span>
-            <span className="wick" />
-            <span className="stick" />
-          </div>
+          {shot.prop === 'seal' ? (
+            <div className="note" aria-hidden="true">
+              <span className="halo" />
+              <span className="note-back" />
+              <span className="note-flap" />
+              <span className="note-seal" data-flame="" />
+            </div>
+          ) : (
+            <div className="candle" aria-hidden="true">
+              <span className="halo" />
+              <span className="smoke" />
+              <span className="flame" data-flame="">
+                <i />
+              </span>
+              <span className="wick" />
+              <span className="stick" />
+            </div>
+          )}
           <div className="words center" aria-hidden="true">
             <Type as="h2" text={shot.title} className="headline" delay={0.9} />
             <Type text={shot.body} className="sub" by="word" delay={1.9} step={60} />
@@ -214,7 +223,7 @@ function ShotBody({ shot, actions, leaving }: { shot: Shot; actions: ShotActions
               className="blow"
               onClick={(e) => actions.onBlow(e.currentTarget.closest('.wish')?.querySelector('[data-flame]')?.getBoundingClientRect() ?? null)}
             >
-              Blow out the candle
+              {shot.action}
             </button>
           )}
         </div>

@@ -16,14 +16,18 @@ const WIDTH = 960
 const HEIGHT = 600
 const noop = { onBlow: () => {}, onReplay: () => {}, waiting: false, ended: false }
 
-export type StillContent = { kind: 'ticket'; recipient: string } | { kind: 'shot'; shot: Shot }
+export type StillContent = { kind: 'ticket'; recipient: string; occasion?: string } | { kind: 'shot'; shot: Shot }
 
 export function Still({ look, content, ghost = false }: { look: LookId; content: StillContent; ghost?: boolean }) {
   const box = useRef<HTMLDivElement>(null)
   useLayoutEffect(() => {
     const el = box.current
     if (!el) return
-    const fit = () => el.style.setProperty('--still-scale', String(el.clientWidth / WIDTH))
+    const fit = () => {
+      el.style.setProperty('--still-scale', String(el.clientWidth / WIDTH))
+      // Until it has been measured the frame is the wrong size, so the stylesheet keeps it hidden.
+      el.dataset.fit = ''
+    }
     fit()
     const watch = new ResizeObserver(fit)
     watch.observe(el)
@@ -64,7 +68,7 @@ export function Still({ look, content, ghost = false }: { look: LookId; content:
         <div className="film-bar bottom" />
         {content.kind === 'ticket' && (
           <div className="opening">
-            <TicketArt recipient={content.recipient} />
+            <TicketArt recipient={content.recipient} occasion={content.occasion} />
           </div>
         )}
       </div>

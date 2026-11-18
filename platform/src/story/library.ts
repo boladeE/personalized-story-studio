@@ -1,5 +1,7 @@
-import type { Frame, Intake, Memory, Mood, Photo, PhotoLayout } from './types'
+import { OCCASION_IDS } from './types'
+import type { Frame, Intake, Memory, Mood, Occasion, Photo, PhotoLayout } from './types'
 import type { Rng } from './rng'
+import { occasionOf } from './occasions'
 
 /**
  * The scene library. Each scene type is a designed beat: it declares what it
@@ -22,6 +24,8 @@ export interface SceneDef {
   mood: Mood
   /** Shown on the storyboard while the sender fills in details. */
   description: string
+  /** A name and description that depend on the occasion, where the scene's do. */
+  label?(intake: Intake): { name: string; description: string }
   /** null when the intake can fill this scene, otherwise what is still missing. */
   missing(intake: Intake): string | null
   build(ctx: BuildContext): Frame[]
@@ -47,7 +51,7 @@ const ticket: SceneDef = {
   mood: 'warm',
   description: 'A ticket with their name on it. Tearing it starts the film and the music.',
   missing: (i) => (i.recipient.trim() ? null : 'Add their name'),
-  build: ({ intake }) => [{ kind: 'ticket', recipient: intake.recipient.trim(), occasion: 'Your birthday' }],
+  build: ({ intake }) => [{ kind: 'ticket', recipient: intake.recipient.trim(), occasion: occasionOf(intake.occasion).ticket }],
 }
 
 const hello: SceneDef = {
@@ -60,7 +64,7 @@ const hello: SceneDef = {
     {
       kind: 'title',
       kicker: fill('For {r}. From {s}.', ctx.intake),
-      title: say(ctx, ['Today is about you.', 'Get comfortable.', 'Happy birthday, {r}.']),
+      title: say(ctx, occasionOf(ctx.intake.occasion).opening),
       body: say(ctx, [
         'A few things I have been meaning to say properly.',
         'Sit back. This one plays by itself.',
@@ -88,7 +92,7 @@ const spotlight: SceneDef = {
       {
         kind: 'photo',
         photo,
-        kicker: say(ctx, ['The main character', 'Exhibit A', 'The birthday person']),
+        kicker: say(ctx, ['The main character', 'Exhibit A', occasionOf(ctx.intake.occasion).star]),
         title: say(ctx, ['There’s {r}.', 'Look who it is.', '{r}, everybody.']),
         body: ctx.intake.spotlight.trim(),
         layout: ctx.rng.pick<PhotoLayout>(['left', 'right']),
@@ -147,7 +151,7 @@ const redFlags: SceneDef = {
       {
         kind: 'title',
         kicker: 'The verdict',
-        title: say(ctx, ['Flags noted. Staying anyway.', 'Still my favourite person.', 'Would ignore them all again.']),
+        title: say(ctx, occasionOf(ctx.intake.occasion).verdicts ?? ['Flags noted. Staying anyway.', 'Still my favourite person.', 'Would ignore them all again.']),
       },
     ]
   },
@@ -165,7 +169,7 @@ const reasons: SceneDef = {
       {
         kind: 'title',
         kicker: 'For the avoidance of doubt',
-        title: say(ctx, ['Reasons, in no particular order.', 'Why it’s you.', 'Just a few reasons.']),
+        title: say(ctx, occasionOf(ctx.intake.occasion).reasons?.titles ?? ['Reasons, in no particular order.', 'Why it’s you.', 'Just a few reasons.']),
       },
       ...list.map<Frame>((text, index) => ({ kind: 'item', marker: 'reason', kicker: `Reason ${index + 1}`, text, index, total: list.length })),
     ]
@@ -214,19 +218,25 @@ const wish: SceneDef = {
   name: 'Make a wish',
   mood: 'glow',
   description: 'A candle to blow out, and your last line.',
+  // A birthday ends on a candle; every other occasion ends on a sealed note.
+  label: (i) => {
+    const { scene, description } = occasionOf(i.occasion).ending
+    return { name: scene, description }
+  },
   missing: (i) => (i.sender.trim() && i.recipient.trim() ? null : 'Add both names'),
-  build: (ctx) => [
-    {
-      kind: 'wish',
-      title: say(ctx, ['Make a wish.', 'One more thing.', 'Close your eyes.']),
-      body: say(ctx, [
-        'Don’t tell me. Just close your eyes for a second.',
-        'Take a breath. Then blow.',
-        'Whatever it is, I hope it finds you.',
-      ]),
-      reveal: ctx.intake.wish.trim() || fill('Happy birthday, {r}. Love, {s}.', ctx.intake),
-    },
-  ],
+  build: (ctx) => {
+    const ending = occasionOf(ctx.intake.occasion).ending
+    return [
+      {
+        kind: 'wish',
+        title: say(ctx, ending.titles),
+        body: say(ctx, ending.bodies),
+        reveal: ctx.intake.wish.trim() || fill(ending.fallback, ctx.intake),
+        prop: ending.prop,
+        action: ending.action,
+      },
+    ]
+  },
 }
 
 export const SCENES: Record<string, SceneDef> = Object.fromEntries(
@@ -239,14 +249,18 @@ export interface Slot {
   shuffle?: boolean
 }
 
-export const SKELETONS: Record<Intake['occasion'], Slot[]> = {
-  birthday: [
-    { candidates: ['ticket'] },
-    { candidates: ['hello'] },
-    { candidates: ['spotlight'] },
-    { candidates: ['memoryLane'] },
-    { candidates: ['redFlags', 'cameraRoll', 'reasons'], shuffle: true },
-    { candidates: ['letter'] },
-    { candidates: ['wish'] },
-  ],
-}
+const STANDARD: Slot[] = [
+  { candidates: ['ticket'] },
+  { candidates: ['hello'] },
+  { candidates: ['spotlight'] },
+  { candidates: ['memoryLane'] },
+  { candidates: ['redFlags', 'cameraRoll', 'reasons'], shuffle: true },
+  { candidates: ['letter'] },
+  { candidates: ['wish'] },
+]
+
+/** Every occasion tells the story in the same order for now; the wording is what changes. */
+export const SKELETONS = Object.fromEntries(OCCASION_IDS.map((id) => [id, STANDARD])) as Record<Occasion, Slot[]>
+
+/** The scene's name and description for this intake. */
+export const sceneLabel = (def: SceneDef, intake: Intake) => def.label?.(intake) ?? { name: def.name, description: def.description }

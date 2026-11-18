@@ -1,4 +1,6 @@
-import type { Intake } from './types'
+import { occasionOf } from './occasions'
+import { isOccasion } from './types'
+import type { Intake, Occasion } from './types'
 
 /** Song styles a sender can ask for. */
 export const VIBES = [
@@ -37,10 +39,10 @@ export const vibeById = (id: string) => VIBES.find((v) => v.id === id)
 export const tunePreview = (id: VibeId) => `/tunes/${id}.mp3`
 
 /** Instrumental: nothing about the people is sent to the music model. */
-export function songPrompt(vibe: Vibe) {
+export function songPrompt(vibe: Vibe, occasion: Occasion = 'birthday') {
   return [
     `An original instrumental piece: ${vibe.prompt}.`,
-    'It scores a short, affectionate birthday surprise: joyful but tender, with room for words on screen.',
+    `It scores a short, affectionate ${occasionOf(occasion).song.adjective} surprise: joyful but tender, with room for words on screen.`,
     'No vocals, no lyrics, no spoken words. Do not imitate any existing song or artist.',
     'About two minutes long with a gentle intro and a clean ending.',
   ].join(' ')
@@ -54,6 +56,8 @@ export function songPrompt(vibe: Vibe) {
  * letter and photo captions are never included.
  */
 export interface SongDetails {
+  /** What the song is for. Older requests carry none and are birthdays. */
+  occasion: Occasion
   recipient: string
   sender: string
   reasons: string[]
@@ -90,6 +94,7 @@ export function parseSongDetails(raw: unknown): SongDetails | null {
   const recipient = tidy(r.recipient, SONG_LIMITS.name)
   if (!recipient) return null
   return {
+    occasion: isOccasion(r.occasion) ? r.occasion : 'birthday',
     recipient,
     sender: tidy(r.sender, SONG_LIMITS.name),
     reasons: lines(r.reasons, SONG_LIMITS.reasons, SONG_LIMITS.line),
@@ -102,6 +107,7 @@ export function parseSongDetails(raw: unknown): SongDetails | null {
 /** The parts of an intake a song is written from. */
 export function songDetails(intake: Intake): SongDetails | null {
   return parseSongDetails({
+    occasion: intake.occasion,
     recipient: intake.recipient,
     sender: intake.sender,
     reasons: intake.reasons,
@@ -113,21 +119,24 @@ export function songDetails(intake: Intake): SongDetails | null {
 
 const bullets = (items: string[]) => items.map((item) => `- ${item}`).join('\n')
 
-/** A sung birthday song for one person, written only from the sender's details. */
+const an = (phrase: string) => `${/^[aeiou]/i.test(phrase) ? 'an' : 'a'} ${phrase}`
+
+/** A sung song for one person and one occasion, written only from the sender's details. */
 export function sungPrompt(vibe: Vibe, d: SongDetails) {
+  const { adjective, greeting, wish } = occasionOf(d.occasion).song
   const singer = d.sender ? `The singer is ${d.sender}, singing directly to ${d.recipient}.` : `The singer sings directly to ${d.recipient}.`
-  const gift = d.sender ? `It is a birthday gift from ${d.sender} to ${d.recipient}.` : `It is a birthday gift for ${d.recipient}.`
+  const gift = d.sender ? `It is ${an(adjective)} gift from ${d.sender} to ${d.recipient}.` : `It is ${an(adjective)} gift for ${d.recipient}.`
   const parts = [
-    `An original birthday song with a sung lead vocal: ${vibe.prompt}.`,
-    `${gift} ${singer} Sing the name "${d.recipient}" clearly in every chorus, and say "happy birthday".`,
+    `An original ${adjective} song with a sung lead vocal: ${vibe.prompt}.`,
+    `${gift} ${singer} Sing the name "${d.recipient}" clearly in every chorus${greeting ? `, and say "${greeting}"` : ''}.`,
     'Write the lyrics only from the true details below, in plain, affectionate, slightly teasing everyday English. Do not add places, events, nicknames or facts that are not listed.',
   ]
   if (d.reasons.length) parts.push(`What ${d.sender || 'the singer'} loves about ${d.recipient}:\n${bullets(d.reasons)}`)
   if (d.habits.length) parts.push(`${d.recipient}'s funny habits:\n${bullets(d.habits)}`)
   if (d.moments.length) parts.push(`Moments they shared:\n${bullets(d.moments)}`)
-  if (d.wish) parts.push(`The birthday wish for ${d.recipient}: ${d.wish}`)
+  if (d.wish) parts.push(`${wish(d.sender || 'the singer', d.recipient)}${d.occasion === 'birthday' ? ` for ${d.recipient}` : ''}: ${d.wish}`)
   if (!d.reasons.length && !d.habits.length && !d.moments.length && !d.wish) {
-    parts.push('No other details were given, so keep the lyrics to warm birthday wishes and the name.')
+    parts.push(`No other details were given, so keep the lyrics to ${d.occasion === 'birthday' ? 'warm birthday wishes' : 'warm, simple affection'} and the name.`)
   }
   parts.push(
     'Keep the vocal clear and in front so every word is easy to hear. Structure: short intro, verse, chorus, verse, chorus, brief outro. About two minutes, with a clean ending. Do not imitate any existing song or artist.',
@@ -318,11 +327,22 @@ Why it works: it sounds like a track, not a card. The whole song stands on one p
 export function lyricsBrief(d: SongDetails, tone: LyricTone = 'smooth') {
   const singer = d.sender || 'the singer'
   const who = d.recipient
+  const { adjective, greeting, purpose, wish } = occasionOf(d.occasion).song
+  const birthday = d.occasion === 'birthday'
+  const Greeting = greeting ? greeting.charAt(0).toUpperCase() + greeting.slice(1) : ''
+  // Both worked examples are birthday songs; say so, or every occasion gets a "happy birthday".
+  const exampleNote = birthday
+    ? []
+    : [
+        greeting
+          ? `The example was written for a birthday. This song is not: where the example says "happy birthday", this one says "${greeting}", and nothing in it mentions a birthday.`
+          : `The example was written for a birthday. This song is not, and there is no occasion to name: it has no greeting line at all, and the bridge carries the last thing ${singer} wants to say.`,
+      ]
   const facts: string[] = []
   if (d.reasons.length) facts.push(`What ${singer} loves about ${who}:\n${bullets(d.reasons)}`)
   if (d.habits.length) facts.push(`${who}'s funny habits:\n${bullets(d.habits)}`)
   if (d.moments.length) facts.push(`Moments they shared:\n${bullets(d.moments)}`)
-  if (d.wish) facts.push(`The birthday wish: ${d.wish}`)
+  if (d.wish) facts.push(`${wish(singer, who)}: ${d.wish}`)
   if (!facts.length) facts.push('No other details were given.')
   const truth = `Everything true you have to work with is below, in ${singer}'s own words. Do not add places, events, people, nicknames or facts. The details also show what kind of love this is (partner, parent, child, sibling, friend): write for that, and never make it romantic unless the details are. Write in the same kind of English ${singer} uses.`
   const banned = '- No greeting-card words: blessings, journey, treasure, special, shine, celebrate, amazing, wonderful, forever, dreams.'
@@ -331,7 +351,7 @@ export function lyricsBrief(d: SongDetails, tone: LyricTone = 'smooth') {
 
   if (tone === 'smooth') {
     return [
-      `Write the lyrics of a short song for ${who}'s birthday. ${singer} is giving it to ${who} and sings it straight to ${who} ("I", "you"). It should sound like a track an artist would release that happens to be about ${who}: understated, warm, a little cool. Not a jingle, not a greeting card, not a comedy song. If a stranger would wince at a line, it does not belong.`,
+      `Write the lyrics of a short song ${purpose(singer, who)}. ${singer} is giving it to ${who} and sings it straight to ${who} ("I", "you"). It should sound like a track an artist would release that happens to be about ${who}: understated, warm, a little cool. Not a jingle, not a greeting card, not a comedy song. If a stranger would wince at a line, it does not belong.`,
       truth,
       facts.join('\n\n'),
       [
@@ -348,7 +368,11 @@ export function lyricsBrief(d: SongDetails, tone: LyricTone = 'smooth') {
         contractions,
         '- No set-up-and-punchline jokes. One light, throwaway wink is enough for the whole song.',
         `- The name "${who}" at most twice in the whole song, never in the hook line.`,
-        '- "Happy birthday" appears only in the bridge and the outro. Never the exact phrase "happy birthday to you", which belongs to another song.',
+        birthday
+          ? '- "Happy birthday" appears only in the bridge and the outro. Never the exact phrase "happy birthday to you", which belongs to another song.'
+          : greeting
+            ? `- "${Greeting}" appears only in the bridge and the outro.`
+            : '- There is no occasion to name, so no greeting line of any kind.',
         banned,
         '- Rhyme is optional. Never bend a line or add a word to get one.',
       ].join('\n'),
@@ -360,19 +384,20 @@ export function lyricsBrief(d: SongDetails, tone: LyricTone = 'smooth') {
         '[Verse 2] 4 lines',
         '[Pre-Chorus] the same 2 lines',
         '[Chorus]',
-        '[Bridge] 3 or 4 lines carrying the wish; this is where "happy birthday" and the name come in',
+        greeting ? `[Bridge] 3 or 4 lines carrying the wish; this is where "${greeting}" and the name come in` : '[Bridge] 3 or 4 lines carrying the last thing to say; this is where the name comes in',
         '[Chorus]',
-        '[Outro] the hook once, with (happy birthday, ' + who + ') as a backing vocal',
+        `[Outro] the hook once, with (${greeting ? `${greeting}, ` : ''}${who}) as a backing vocal`,
         'Backing vocals go in parentheses at the end of a line, at most three in the whole song.',
         'Title: the hook.',
       ].join('\n'),
       SMOOTH_EXAMPLE,
+      ...exampleNote,
       `${check}, and any line that explains instead of showing.`,
     ].join('\n\n')
   }
 
   return [
-    `Write the lyrics of a short birthday song. ${singer} is giving it to ${who} and sings it straight to ${who} ("I", "you"). ${who} should recognise their own life in it, laugh once, and be moved once.`,
+    `Write the lyrics of a short ${adjective} song. ${singer} is giving it to ${who} and sings it straight to ${who} ("I", "you"). ${who} should recognise their own life in it, laugh once, and be moved once.`,
     truth,
     facts.join('\n\n'),
     [
@@ -398,7 +423,13 @@ export function lyricsBrief(d: SongDetails, tone: LyricTone = 'smooth') {
       'Form, exactly:',
       '[Verse 1] 4 lines',
       '[Pre-Chorus] 2 lines that lift toward the hook',
-      `[Chorus] 4 lines. Lines 1 and 3 are the same hook line and end on the name "${who}". One line is the birthday line: it says "happy birthday" and ties it to the hook or the wish, not to a stock phrase such as "have a great day". Never write the exact phrase "happy birthday to you", which belongs to another song. Plain enough to sing back after one hearing.`,
+      `[Chorus] 4 lines. Lines 1 and 3 are the same hook line and end on the name "${who}". ${
+        birthday
+          ? 'One line is the birthday line: it says "happy birthday" and ties it to the hook or the wish, not to a stock phrase such as "have a great day". Never write the exact phrase "happy birthday to you", which belongs to another song. '
+          : greeting
+            ? `One line says "${greeting}" and ties it to the hook or the wish, not to a stock phrase. `
+            : ''
+      }Plain enough to sing back after one hearing.`,
       '[Verse 2] 4 lines',
       '[Pre-Chorus] the same 2 lines',
       '[Chorus] the same 4 lines',
@@ -409,6 +440,7 @@ export function lyricsBrief(d: SongDetails, tone: LyricTone = 'smooth') {
       'Title: the hook, two to four words.',
     ].join('\n'),
     STORY_EXAMPLE,
+    ...exampleNote,
     `${check}, and any verse line that could be sung to someone else.`,
   ].join('\n\n')
 }
@@ -416,7 +448,7 @@ export function lyricsBrief(d: SongDetails, tone: LyricTone = 'smooth') {
 /** Ask the music model to sing words that are already written. */
 export function lyricsPrompt(vibe: Vibe, d: SongDetails, lyrics: string) {
   return [
-    `A birthday song with a sung lead vocal: ${vibe.prompt}.`,
+    `${occasionOf(d.occasion).song.music} with a sung lead vocal: ${vibe.prompt}.`,
     `Sing exactly the lyrics below, word for word and in this order. Do not add, drop or change any words. Words in parentheses are backing vocals. Pronounce the name "${d.recipient}" clearly.`,
     'Keep the vocal clear and in front so every word is easy to hear. Short instrumental intro and a clean ending. Do not imitate any existing song or artist.',
     `Lyrics:\n${lyrics}`,

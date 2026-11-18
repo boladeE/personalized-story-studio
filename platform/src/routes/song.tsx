@@ -67,7 +67,7 @@ function SongRoom() {
           <h1 className="studio-title">There’s no one to sing about yet.</h1>
           <p className="lede">Add both names and a few details first. The song is written from them.</p>
           <Link to="/create" className="button primary">
-            Start a birthday story
+            Start a film
           </Link>
         </main>
       </>
@@ -112,7 +112,7 @@ function SongRoom() {
       const response = await fetch('/api/music', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(sung ? { vibe, details, lyrics: words!.lyrics, title: words!.title } : { vibe }),
+        body: JSON.stringify(sung ? { vibe, details, lyrics: words!.lyrics, title: words!.title } : { vibe, occasion: intake.occasion }),
       })
       const body = (await response.json()) as { id?: string; src?: string; label?: string; sung?: boolean; lyrics?: string; error?: string }
       if (!response.ok || !body.id || !body.src) throw new Error(body.error ?? 'The song didn’t come through.')
@@ -206,7 +206,7 @@ function SongRoom() {
               ) : (
                 <div className="sheet-empty">
                   <p>
-                    The words come from the reasons, habits, memories and wish you wrote for {details.recipient}. Nothing is made up, and you can
+                    The words come from the reasons, habits, memories and last line you wrote for {details.recipient}. Nothing is made up, and you can
                     change every line before it’s sung.
                   </p>
                   {tonePicker}
@@ -287,7 +287,7 @@ function SongRoom() {
               )}
 
               <p className="fine">
-                The words are drafted and the song is sung by Google’s AI models, using the names and the reasons, habits, memories and wish you
+                The words are drafted and the song is sung by Google’s AI models, using the names and the reasons, habits, memories and last line you
                 wrote. Your letter and photos are never sent.
               </p>
               {status.provider === 'demo' && <p className="fine">Test mode: placeholder words and a short tone stand in for the real thing.</p>}

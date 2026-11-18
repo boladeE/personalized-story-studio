@@ -833,6 +833,77 @@
   25% { opacity: 0.9; }
   100% { opacity: 0; transform: scaleY(1.5) translateX(14px) skewX(-18deg); }
 }
+/* The sealed note: how every film that isn't a birthday ends. */
+.note {
+  position: relative;
+  width: clamp(150px, 36cqh, 270px);
+  aspect-ratio: 3 / 2;
+  margin-top: clamp(18px, 6cqh, 56px);
+  perspective: 700px;
+  animation: w-in 1.2s 0.2s both;
+}
+.note .halo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: clamp(260px, 78cqh, 660px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%) scale(calc(1 + var(--beat) * 0.04));
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 214, 130, 0.34), rgba(242, 161, 58, 0.12) 38%, transparent 68%);
+  pointer-events: none;
+  animation: halo 2.8s ease-in-out infinite alternate;
+  transition: opacity 0.5s;
+}
+.note-back {
+  position: absolute;
+  inset: 0;
+  border-radius: 5px;
+  background:
+    linear-gradient(to top right, transparent calc(50% - 1px), rgba(120, 90, 60, 0.3) 50%, transparent calc(50% + 1px)),
+    linear-gradient(to top left, transparent calc(50% - 1px), rgba(120, 90, 60, 0.3) 50%, transparent calc(50% + 1px)),
+    linear-gradient(160deg, #fffaf0, #ecdcc4);
+  box-shadow:
+    0 0 0 1px rgba(120, 90, 60, 0.18),
+    0 24px 50px rgba(0, 0, 0, 0.4);
+}
+.note-flap {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 60%;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  background: linear-gradient(180deg, #f6e9d4, #e0cbab);
+  transform-origin: 50% 0;
+  transition: transform 0.7s cubic-bezier(0.3, 0.7, 0.2, 1), opacity 0.4s 0.35s;
+}
+.note-seal {
+  position: absolute;
+  left: 50%;
+  top: 60%;
+  width: 24%;
+  aspect-ratio: 1;
+  translate: -50% -58%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 30%, #e86b93, #c22a59 46%, #8f173f);
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.16),
+    inset 0 0 0 7px rgba(110, 16, 46, 0.5),
+    0 3px 8px rgba(0, 0, 0, 0.4);
+  transition: transform 0.3s ease-in, opacity 0.3s ease-in;
+}
+.wish.is-blown .note-seal {
+  transform: scale(1.7);
+  opacity: 0;
+}
+.wish.is-blown .note-flap {
+  transform: rotateX(165deg);
+  opacity: 0;
+}
+.wish.is-blown .note .halo {
+  opacity: 0;
+  animation: none;
+}
+
 .blow,
 .again,
 .gate-form button {
@@ -1529,6 +1600,9 @@
   aspect-ratio: 16 / 10;
   overflow: hidden;
   background: #050304;
+}
+.still-box:not([data-fit]) .film.still {
+  visibility: hidden;
 }
 .film.still {
   position: absolute;

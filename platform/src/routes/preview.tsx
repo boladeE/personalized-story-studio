@@ -36,11 +36,11 @@ function Preview() {
       <>
         <StudioHeader />
         <main className="studio-page narrow empty">
-          <h1 className="studio-title">There’s no story to preview yet.</h1>
+          <h1 className="studio-title">There’s no film to preview yet.</h1>
           <p className="lede">Add both names and whatever details you have, then build it.</p>
           <div className="actions">
             <Link to="/create" className="button primary">
-              Start a birthday story
+              Start a film
             </Link>
             <Link to="/preview" search={{ sample: 1 }} className="button ghost">
               Play the sample

@@ -1,0 +1,518 @@
+/* ==========================================================================
+   The home page: the sample film first, then what a film can be for, what
+   goes into one, the song, the steps and the questions. It stays in the dark
+   of the screening room; the lit things are the film, the tickets and the
+   sheet the song is written on.
+   Loaded last, so it can restate the older home rules in app.css and room.css.
+   ========================================================================== */
+
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.home-shell) {
+    scroll-behavior: smooth;
+  }
+}
+
+.home-shell {
+  --gutter: clamp(16px, 4vw, 40px);
+}
+
+/* ---------- Header ---------- */
+
+.home-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  flex-wrap: nowrap;
+  gap: clamp(12px, 2vw, 28px);
+  background: color-mix(in srgb, var(--room) 84%, transparent);
+  backdrop-filter: blur(12px);
+}
+.home-header .wordmark {
+  white-space: nowrap;
+}
+.home-nav {
+  display: flex;
+  gap: clamp(14px, 2vw, 28px);
+  margin-left: auto;
+}
+.home-nav a {
+  color: var(--on-room-soft);
+  font-size: 16px;
+  font-weight: 550;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.home-nav a:hover {
+  color: var(--on-room);
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+
+/* ---------- Page ---------- */
+
+.home {
+  position: relative;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: clamp(24px, 5vw, 56px) var(--gutter) 0;
+}
+.home-hero .studio-title {
+  font-size: clamp(38px, 4.7vw, 70px);
+  line-height: 0.96;
+  max-width: 11em;
+}
+.home-hero .lede {
+  max-width: 30em;
+}
+
+.home-section {
+  padding-top: clamp(64px, 9vw, 128px);
+  scroll-margin-top: 40px;
+}
+.section-intro {
+  margin-bottom: clamp(26px, 3.4vw, 44px);
+}
+.section-intro h2,
+.home-close h2 {
+  margin: 0;
+  color: var(--on-room);
+  font-weight: 760;
+  font-stretch: 78%;
+  font-size: clamp(34px, 4.4vw, 60px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.section-intro p {
+  margin: 14px 0 0;
+  max-width: 34em;
+  text-wrap: pretty;
+  color: var(--on-room-soft);
+  font-size: 19px;
+}
+.home-section > .fine {
+  margin-top: 22px;
+}
+
+/* ---------- Occasions: a rack of tickets, one per occasion ---------- */
+
+.rack {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(14px, 1.8vw, 24px);
+}
+.rack li {
+  display: grid;
+  filter: drop-shadow(0 16px 22px rgba(0, 0, 0, 0.42));
+}
+.stub {
+  --notch: 9px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 54px;
+  color: #fff4e6;
+  text-decoration: none;
+  border-radius: 10px;
+  transition: transform 0.22s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.stub:hover {
+  transform: translateY(-4px) rotate(-0.7deg);
+}
+.stub:focus-visible {
+  outline: 3px solid var(--candle);
+  outline-offset: 4px;
+}
+.stub-body,
+.stub-tear {
+  background:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .12 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"),
+    var(--stock);
+  mask-composite: intersect;
+}
+.stub-body {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  min-height: 132px;
+  padding: 16px 20px 18px 22px;
+  border-radius: 10px 0 0 10px;
+  /* Half of each notch where the ticket tears; the stub cuts the other half. */
+  mask-image:
+    radial-gradient(circle var(--notch) at 100% 0, transparent 96%, #000),
+    radial-gradient(circle var(--notch) at 100% 100%, transparent 96%, #000);
+}
+.stub-tear {
+  display: grid;
+  place-items: center;
+  border-radius: 0 10px 10px 0;
+  border-left: 2px dotted var(--perf);
+  mask-image:
+    radial-gradient(circle var(--notch) at 0 0, transparent 96%, #000),
+    radial-gradient(circle var(--notch) at 0 100%, transparent 96%, #000);
+}
+.stub-tear span {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-weight: 750;
+  font-size: 15px;
+  transition: letter-spacing 0.22s;
+}
+.stub:hover .stub-tear span {
+  letter-spacing: 0.08em;
+}
+.stub-admit {
+  font: italic 500 17px / 1.2 var(--serif);
+  opacity: 0.9;
+}
+.stub-name {
+  font-weight: 760;
+  font-stretch: 78%;
+  font-size: clamp(27px, 2.5vw, 35px);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+.stub-line {
+  margin-top: 8px;
+  font-size: 15.5px;
+  line-height: 1.35;
+  opacity: 0.92;
+}
+.rack [data-stock='hibiscus'] .stub {
+  --stock: linear-gradient(135deg, #cf2f61, #a51c49 70%, #8f173f);
+  --perf: rgba(40, 6, 18, 0.55);
+}
+.rack [data-stock='chalk'] .stub {
+  --stock: linear-gradient(135deg, #fffdf8, #efe6d3);
+  --perf: rgba(20, 38, 31, 0.4);
+  color: var(--ink);
+}
+.rack [data-stock='chalk'] .stub-admit {
+  color: var(--hibiscus-deep);
+  opacity: 1;
+}
+.rack [data-stock='chalk'] .stub-name {
+  color: var(--palm);
+}
+.rack [data-stock='candle'] .stub {
+  --stock: linear-gradient(135deg, #f7d590, #ecb955);
+  --perf: rgba(58, 20, 32, 0.45);
+  color: #33121d;
+}
+
+/* ---------- What's in the film: stills from the sample ---------- */
+
+.contact-sheet {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(26px, 3vw, 40px) clamp(14px, 1.8vw, 24px);
+}
+.contact-frame {
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px var(--hairline),
+    0 18px 40px rgba(0, 0, 0, 0.45);
+}
+.contact-sheet li > h3 {
+  margin: 14px 0 4px;
+  color: var(--on-room);
+  font-size: 21px;
+  font-stretch: 80%;
+  font-weight: 720;
+}
+.contact-sheet li > p {
+  margin: 0;
+  color: var(--on-room-soft);
+  font-size: 15.5px;
+  line-height: 1.45;
+}
+
+/* ---------- The song: what was written, and what it became ---------- */
+
+.song-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: clamp(24px, 4vw, 64px);
+  align-items: center;
+}
+.song-pair figure {
+  margin: 0;
+}
+.song-pair figcaption {
+  margin-bottom: 12px;
+  font-size: 15px;
+  font-weight: 650;
+}
+.song-source figcaption {
+  color: var(--on-room-faint);
+}
+.song-source blockquote {
+  margin: 0;
+  padding-left: clamp(16px, 2vw, 26px);
+  border-left: 2px solid var(--blush);
+}
+.song-source blockquote p {
+  margin: 0;
+  color: var(--on-room-soft);
+  font-size: clamp(19px, 1.7vw, 23px);
+  line-height: 1.45;
+}
+.song-source blockquote p:first-child {
+  margin-bottom: 8px;
+  color: var(--on-room);
+  font: italic 500 clamp(28px, 3vw, 42px) / 1.1 var(--serif);
+}
+.song-result {
+  rotate: 1deg;
+  padding-bottom: 26px;
+}
+.song-result figcaption {
+  color: var(--muted);
+}
+.song-result .sheet-title {
+  margin: 0 0 4px;
+}
+.song-lines {
+  margin: 14px 0 0;
+  color: var(--ink);
+  font: italic 500 clamp(20px, 1.9vw, 25px) / 1.42 var(--serif);
+}
+.song-player {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.song-play {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--hibiscus);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+.song-play:hover {
+  background: var(--hibiscus-deep);
+}
+.song-play:active {
+  transform: scale(0.96);
+}
+.song-meter {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+.song-meter b {
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  color: var(--palm);
+}
+.song-bar {
+  height: 3px;
+  border-radius: 3px;
+  background: var(--line);
+  overflow: hidden;
+}
+.song-bar i {
+  display: block;
+  height: 100%;
+  background: var(--hibiscus);
+}
+
+/* ---------- How it works: four frames of film ---------- */
+
+.home-steps {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.home-steps h3 {
+  margin: 0 0 6px;
+  color: var(--on-room);
+  font-size: 25px;
+  font-stretch: 80%;
+}
+.home-steps h3::before {
+  content: counter(step) '. ';
+  color: var(--candle);
+}
+.home-steps p {
+  max-width: 22em;
+}
+
+/* ---------- Questions ---------- */
+
+.questions {
+  display: grid;
+  grid-template-columns: minmax(0, 0.6fr) minmax(0, 1.4fr);
+  gap: clamp(20px, 4vw, 64px);
+  align-items: start;
+}
+.questions .section-intro {
+  margin: 0;
+}
+.question-list {
+  border-top: 1px solid var(--hairline);
+}
+.question-list details {
+  border-bottom: 1px solid var(--hairline);
+}
+.question-list summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  padding: 20px 2px;
+  color: var(--on-room);
+  font-size: clamp(20px, 1.8vw, 24px);
+  font-stretch: 84%;
+  font-weight: 660;
+  line-height: 1.2;
+  cursor: pointer;
+  list-style: none;
+}
+.question-list summary::-webkit-details-marker {
+  display: none;
+}
+.question-list summary::after {
+  content: '';
+  flex: none;
+  width: 14px;
+  height: 14px;
+  background:
+    linear-gradient(var(--blush), var(--blush)) center / 100% 2px no-repeat,
+    linear-gradient(var(--blush), var(--blush)) center / 2px 100% no-repeat;
+  transition: transform 0.25s;
+}
+.question-list details[open] summary::after {
+  transform: rotate(45deg);
+}
+.question-list summary:hover {
+  color: var(--blush);
+}
+.question-list details p {
+  margin: -4px 0 22px;
+  max-width: 38em;
+  color: var(--on-room-soft);
+  font-size: 18px;
+}
+
+/* ---------- Closing ---------- */
+
+.home-close {
+  margin-top: clamp(72px, 10vw, 140px);
+  padding: clamp(44px, 7vw, 96px) 0 clamp(56px, 8vw, 110px);
+  border-top: 1px solid var(--hairline);
+}
+.home-close h2 {
+  font-size: clamp(40px, 6.6vw, 96px);
+  line-height: 0.94;
+  max-width: 11em;
+  margin-bottom: clamp(24px, 3vw, 38px);
+}
+.home-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px 28px;
+  flex-wrap: wrap;
+  width: min(calc(1320px - 2 * var(--gutter)), calc(100% - 2 * var(--gutter)));
+  margin: 0 auto;
+  padding: 22px 0 34px;
+  border-top: 1px solid var(--hairline);
+}
+.home-footer .wordmark {
+  font-size: 19px;
+}
+.home-footer p {
+  margin: 0;
+  color: var(--on-room-faint);
+  font-size: 14px;
+}
+
+/* ---------- Narrower screens ---------- */
+
+@media (max-width: 1080px) {
+  .home-nav {
+    display: none;
+  }
+  .home-header .button {
+    margin-left: auto;
+  }
+  .contact-sheet {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .home-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .home-steps li:nth-child(odd) {
+    border-left: 0;
+  }
+  .home-steps li:nth-child(n + 3) {
+    border-top: 2px solid var(--room);
+  }
+}
+@media (max-width: 900px) {
+  .rack {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .song-pair,
+  .questions {
+    grid-template-columns: 1fr;
+  }
+  .song-result {
+    rotate: none;
+  }
+}
+@media (max-width: 720px) {
+  .home-steps {
+    grid-template-columns: 1fr;
+  }
+  .home-steps li:nth-child(n + 2) {
+    border-top: 2px solid var(--room);
+  }
+  /* The stills become a strip to swipe through. */
+  .contact-sheet {
+    display: flex;
+    gap: 14px;
+    margin-inline: calc(var(--gutter) * -1);
+    padding: 4px var(--gutter) 10px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+  .contact-sheet li {
+    flex: 0 0 80%;
+    scroll-snap-align: center;
+  }
+}
+@media (max-width: 560px) {
+  .rack {
+    grid-template-columns: 1fr;
+  }
+  .stub-body {
+    min-height: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stub,
+  .stub-tear span,
+  .question-list summary::after {
+    transition: none;
+  }
+  .stub:hover {
+    transform: none;
+  }
+}

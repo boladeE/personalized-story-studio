@@ -1,3 +1,4 @@
+import { isOccasion } from './types'
 import type { Intake, LookId } from './types'
 
 /**
@@ -49,7 +50,7 @@ export function parseIntake(raw: unknown): { ok: true; intake: Intake } | { ok: 
   try {
     if (!raw || typeof raw !== 'object') throw new IntakeError('Missing story details')
     const r = raw as Record<string, unknown>
-    if (r.occasion !== 'birthday') throw new IntakeError('Only birthday stories are supported')
+    if (!isOccasion(r.occasion)) throw new IntakeError('Unknown occasion')
 
     const photos = list(r.photos, 'Photos').map((p, i) => {
       const photo = (p ?? {}) as Record<string, unknown>
@@ -82,7 +83,7 @@ export function parseIntake(raw: unknown): { ok: true; intake: Intake } | { ok: 
     if (!LOOK_IDS.includes(look)) throw new IntakeError('Unknown look')
 
     const intake: Intake = {
-      occasion: 'birthday',
+      occasion: r.occasion,
       sender: text(r.sender, LIMITS.name, 'Your name'),
       recipient: text(r.recipient, LIMITS.name, 'Their name'),
       photos,

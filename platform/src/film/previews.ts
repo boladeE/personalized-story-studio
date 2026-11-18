@@ -1,3 +1,4 @@
+import { occasionOf } from '../story/occasions'
 import type { Intake, LookId, Mood, Photo } from '../story/types'
 import type { StillContent } from './Still'
 import type { Shot } from './timeline'
@@ -39,6 +40,8 @@ function pick(values: string[], focus: number): { text: string; index: number } 
   return { text: '', index: Math.max(at, 0) }
 }
 
+const fillNames = (text: string, r: string, s: string) => text.replaceAll('{r}', r).replaceAll('{s}', s)
+
 export const previewLook = (intake: Intake): LookId => (intake.look === 'surprise' ? 'screening' : intake.look)
 
 export function previewFor(step: StepId, intake: Intake, focus: StepFocus, look: LookId = previewLook(intake)): StepPreview {
@@ -46,10 +49,11 @@ export function previewFor(step: StepId, intake: Intake, focus: StepFocus, look:
   const s = intake.sender.trim()
   const photos = intake.photos
   const first: Photo | undefined = photos[0]
+  const occasion = occasionOf(intake.occasion)
 
   switch (step) {
     case 'who':
-      return { look, ghost: !r, content: { kind: 'ticket', recipient: r || 'Their name' } }
+      return { look, ghost: !r, content: { kind: 'ticket', recipient: r || 'Their name', occasion: occasion.ticket } }
 
     case 'photos':
       if (!photos.length) {
@@ -129,11 +133,11 @@ export function previewFor(step: StepId, intake: Intake, focus: StepFocus, look:
 
     case 'wish': {
       const words = intake.wish.trim()
-      const fallback = r && s ? `Happy birthday, ${r}. Love, ${s}.` : 'Your last line goes here.'
+      const fallback = r && s ? occasion.ending.fallback.replaceAll('{r}', r).replaceAll('{s}', s) : 'Your last line goes here.'
       return { look, ghost: !words && !(r && s), content: shot<'reveal'>('wish', 'glow', { kind: 'reveal', words: words || fallback }) }
     }
 
     case 'look':
-      return { look, ghost: !r, content: shot<'name'>(`name-${look}`, 'warm', { kind: 'name', name: r || 'Their name', sub: 'Today is about you.' }) }
+      return { look, ghost: !r, content: shot<'name'>(`name-${look}`, 'warm', { kind: 'name', name: r || 'Their name', sub: fillNames(occasion.opening[0], r || 'you', s) }) }
   }
 }

@@ -1,3 +1,4 @@
+import { occasionOf } from '../story/occasions'
 import { hasRefusedLine, lyricsBrief, tidyLyrics, tidyTitle } from '../story/vibes'
 import type { LyricTone, SongDetails } from '../story/vibes'
 import { MusicError, musicProvider } from './music'
@@ -129,7 +130,9 @@ export function lyricsFromGenerate(body: unknown): WrittenLyrics | null {
 
 /** Placeholder words for development and tests: only the names, nothing made up. */
 export function demoLyrics(d: SongDetails): WrittenLyrics {
-  const chorus = ['[Chorus]', `Happy birthday, ${d.recipient}`, 'This little song is yours', `Happy birthday, ${d.recipient}`, 'Sung in placeholder words']
+  const greeting = occasionOf(d.occasion).song.greeting
+  const line = greeting ? `${greeting.charAt(0).toUpperCase()}${greeting.slice(1)}, ${d.recipient}` : `This one is for ${d.recipient}`
+  const chorus = ['[Chorus]', line, 'This little song is yours', line, 'Sung in placeholder words']
   return {
     title: `For ${d.recipient}`,
     lyrics: tidyLyrics(

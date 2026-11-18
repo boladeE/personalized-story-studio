@@ -29,7 +29,7 @@ function Send() {
           <h1 className="studio-title">There’s nothing to send yet.</h1>
           <p className="lede">Build a story first. When it feels right, you’ll send it from the preview.</p>
           <Link to="/create" className="button primary">
-            Start a birthday story
+            Start a film
           </Link>
         </main>
       </>

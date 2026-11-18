@@ -6,7 +6,10 @@
  * the sender's own words and photos into them. It never invents facts.
  */
 
-export type Occasion = 'birthday'
+/** What a film can be made for. The wording each one changes lives in occasions.ts. */
+export const OCCASION_IDS = ['birthday', 'anniversary', 'valentine', 'just-because', 'mothers-day', 'fathers-day', 'thank-you', 'congratulations', 'missing-you'] as const
+export type Occasion = (typeof OCCASION_IDS)[number]
+export const isOccasion = (value: unknown): value is Occasion => (OCCASION_IDS as readonly unknown[]).includes(value)
 
 export type LookId = 'screening' | 'garden' | 'paper'
 
@@ -38,6 +41,8 @@ export interface Intake {
   look: LookId | 'surprise'
 }
 
+export type EndingProp = 'candle' | 'seal'
+
 export type PhotoLayout = 'left' | 'right' | 'wide'
 
 export type Frame =
@@ -47,7 +52,8 @@ export type Frame =
   | { kind: 'item'; kicker: string; text: string; index: number; total: number; marker: 'flag' | 'reason' }
   | { kind: 'montage'; kicker: string; title: string; photos: Photo[] }
   | { kind: 'letter'; title: string; paragraphs: string[]; signoff: string }
-  | { kind: 'wish'; title: string; body: string; reveal: string }
+  /** The film's last beat: something to do (blow out a candle, open a note), then the sender's last line. */
+  | { kind: 'wish'; title: string; body: string; reveal: string; prop?: EndingProp; action?: string }
 
 export type Mood = 'warm' | 'playful' | 'tender' | 'glow'
 

@@ -14,6 +14,7 @@ export const Route = createFileRoute('/api/manage/$slug')({
           createdAt: gift.createdAt,
           sender: gift.story.sender,
           recipient: gift.story.recipient,
+          occasion: gift.story.occasion,
           question: gift.question,
           scenes: gift.story.scenes.length,
           look: gift.story.look,

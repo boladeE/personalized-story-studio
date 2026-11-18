@@ -25,7 +25,7 @@ test('end to end: build, write and make a song, lock, send, recipient unlocks an
   const wordsRequest = page.waitForRequest((r) => r.url().endsWith('/api/lyrics') && r.method() === 'POST')
   await page.getByRole('button', { name: 'Write Zara’s song' }).click()
   const brief = (await wordsRequest).postDataJSON() as { details?: Record<string, unknown> }
-  expect(brief.details).toMatchObject({ recipient: 'Zara', sender: 'Tobi' })
+  expect(brief.details).toMatchObject({ occasion: 'birthday', recipient: 'Zara', sender: 'Tobi' })
   expect(JSON.stringify(brief)).not.toContain('holding everything together')
   const sheet = page.getByLabel('Lyrics')
   await expect(sheet).toHaveValue(/Zara/, { timeout: live ? 90_000 : 5_000 })

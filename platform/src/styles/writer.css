@@ -768,3 +768,55 @@ textarea.grow {
     max-width: 46%;
   }
 }
+
+/* What the film is for, picked on the first page. */
+.occasion-pick {
+  border: 0;
+  padding: 0;
+  margin: 0 0 26px;
+  min-width: 0;
+}
+.occasion-pick legend {
+  padding: 0;
+  margin-bottom: 10px;
+  font-weight: 700;
+  color: var(--title);
+}
+.occasion-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip {
+  position: relative;
+  cursor: pointer;
+}
+.chip input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.chip span {
+  display: block;
+  padding: 8px 15px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.chip:hover span {
+  border-color: var(--palm);
+}
+.chip input:checked + span {
+  background: var(--palm);
+  border-color: var(--palm);
+  color: var(--chalk);
+}
+.chip input:focus-visible + span {
+  outline: 3px solid var(--hibiscus);
+  outline-offset: 2px;
+}

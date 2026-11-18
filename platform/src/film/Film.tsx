@@ -20,6 +20,11 @@ declare global {
 type Phase = 'ticket' | 'leader' | 'playing' | 'ended'
 
 /** The gift, as a film that plays by itself once the ticket is torn. */
+/** Sent when a film starts making sound, so other audio on the page can stop. */
+export const FILM_SOUND = 'lt:film-sound'
+/** Send this to pause any film that is playing, before other audio on the page starts. */
+export const FILM_HUSH = 'lt:film-hush'
+
 export function Film({ story, embedded = false }: { story: Story; embedded?: boolean }) {
   const film = useMemo(() => buildFilm(story), [story])
   const [phase, setPhase] = useState<Phase>('ticket')
@@ -262,6 +267,7 @@ export function Film({ story, embedded = false }: { story: Story; embedded?: boo
 
   const begin = useCallback(async () => {
     if (live.current.phase !== 'ticket') return
+    window.dispatchEvent(new Event(FILM_SOUND))
     const ok = (await engine.current?.start()) ?? false
     setAudioBlocked(!ok)
     // Buffer during the countdown so the first shot doesn't open in silence.
@@ -302,6 +308,7 @@ export function Film({ story, embedded = false }: { story: Story; embedded?: boo
 
   const togglePause = useCallback(() => {
     if (live.current.phase !== 'playing') return
+    if (live.current.paused) window.dispatchEvent(new Event(FILM_SOUND))
     setPaused((p) => {
       void engine.current?.setPaused(!p)
       backdrop.current?.setPaused(!p)
@@ -309,6 +316,15 @@ export function Film({ story, embedded = false }: { story: Story; embedded?: boo
       return !p
     })
   }, [])
+
+  // Something else on the page wants to be heard.
+  useEffect(() => {
+    const hush = () => {
+      if (live.current.phase === 'playing' && !live.current.paused) togglePause()
+    }
+    window.addEventListener(FILM_HUSH, hush)
+    return () => window.removeEventListener(FILM_HUSH, hush)
+  }, [togglePause])
 
   // A hidden tab stops drawing, so hold the film and the music until it's back.
   const autoPaused = useRef(false)
@@ -434,7 +450,7 @@ export function Film({ story, embedded = false }: { story: Story; embedded?: boo
         </p>
       )}
 
-      {!started && <Opening recipient={story.recipient} torn={phase === 'leader'} count={count} onBegin={begin} />}
+      {!started && <Opening recipient={story.recipient} occasion={ticketLabel(story)} torn={phase === 'leader'} count={count} onBegin={begin} />}
 
       <p className="visually-hidden" role="status" aria-live="polite">
         {started ? shot.text : ''}
@@ -494,7 +510,13 @@ export function Film({ story, embedded = false }: { story: Story; embedded?: boo
 }
 
 /** The ticket. Tapping it pushes in, tears it down the perforation and counts the film in. */
-function Opening({ recipient, torn, count, onBegin }: { recipient: string; torn: boolean; count: number; onBegin: () => void }) {
+/** The corner of the ticket: what the film is for. Gifts stored before occasions existed are birthdays. */
+function ticketLabel(story: Story) {
+  for (const scene of story.scenes) for (const frame of scene.frames) if (frame.kind === 'ticket') return frame.occasion
+  return 'Your birthday'
+}
+
+function Opening({ recipient, occasion, torn, count, onBegin }: { recipient: string; occasion: string; torn: boolean; count: number; onBegin: () => void }) {
   const tilt = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.pointerType !== 'mouse' || torn) return
     const box = event.currentTarget.getBoundingClientRect()
@@ -516,14 +538,14 @@ function Opening({ recipient, torn, count, onBegin }: { recipient: string; torn:
         )}
       </div>
       <button type="button" className="ticket-hit" onClick={onBegin} disabled={torn} aria-label={`Admit one: ${recipient}. Tap to begin`} />
-      <TicketArt recipient={recipient} />
+      <TicketArt recipient={recipient} occasion={occasion} />
       <p className="opening-hint">Sound on, if you can. It plays by itself.</p>
     </div>
   )
 }
 
 /** The ticket as an object, without the tap target. Also used by the studio's scene previews. */
-export function TicketArt({ recipient }: { recipient: string }) {
+export function TicketArt({ recipient, occasion = 'Your birthday' }: { recipient: string; occasion?: string }) {
   return (
     <div className="ticket-float" aria-hidden="true">
       <div className="ticket">
@@ -533,7 +555,7 @@ export function TicketArt({ recipient }: { recipient: string }) {
           <span className="ticket-name">{recipient}</span>
           <span className="ticket-foot">
             <span>Front row, centre</span>
-            <span>Your birthday</span>
+            <span>{occasion}</span>
           </span>
         </span>
         <span className="ticket-stub">
