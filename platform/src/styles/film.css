@@ -453,6 +453,13 @@
 .layout-wide .plate {
   position: absolute;
   inset: 0;
+  /* The plate is centred in the side-by-side layouts. Browsers now apply that
+     to positioned boxes too, which would shrink this one to nothing. */
+  justify-self: stretch;
+  align-self: stretch;
+  width: 100%;
+  height: 100%;
+  max-width: none;
   animation: wide-in 1.6s ease-out both;
 }
 @keyframes wide-in {

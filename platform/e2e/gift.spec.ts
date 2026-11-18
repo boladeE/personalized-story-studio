@@ -4,7 +4,7 @@ import { audioState, filmState, open, startFilm } from './helpers'
 test('end to end: build, write and make a song, lock, send, recipient unlocks and plays, sender deletes', async ({ page, browser, baseURL }) => {
   // Against a running server (E2E_BASE_URL) the song may be a real one, which takes about a minute to make.
   const live = Boolean(process.env.E2E_BASE_URL)
-  test.setTimeout(live ? 420_000 : 90_000)
+  test.setTimeout(live ? 600_000 : 90_000)
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
 
@@ -71,7 +71,8 @@ test('end to end: build, write and make a song, lock, send, recipient unlocks an
   await page.getByLabel('A question only Zara can answer').fill('What did you call me at games night?')
   await page.getByLabel('The answer').fill('A cheat')
   await page.getByRole('button', { name: 'Create the private link' }).click()
-  await expect(page.getByRole('heading', { name: 'Zara’s gift is ready.' })).toBeVisible({ timeout: 30_000 })
+  // Against a live server the photos go over a real uplink, which can be slow.
+  await expect(page.getByRole('heading', { name: 'Zara’s gift is ready.' })).toBeVisible({ timeout: live ? 180_000 : 30_000 })
   await expect(page.getByText('Made in the test version: nothing was charged.')).toBeVisible()
   const link = await page.getByLabel('Their private link').inputValue()
   expect(link).toMatch(new RegExp(`^${baseURL}/g/[a-z0-9]{12}$`))

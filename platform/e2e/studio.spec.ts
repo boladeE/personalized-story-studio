@@ -189,10 +189,21 @@ for (const [width, height] of [[360, 740], [768, 900], [1360, 800]]) {
         const spill = Array.from(document.querySelectorAll<HTMLElement>('.shot.is-current .type, .shot.is-current .blow, .shot.is-current .again'))
           .map((el) => el.getBoundingClientRect())
           .filter((r) => r.width > 0 && (r.left < frame.left - 1 || r.right > frame.right + 1))
-        return { page: document.documentElement.scrollWidth, spill: spill.length, kind: document.querySelector<HTMLElement>('.shot.is-current')?.dataset.shotKind }
+        // A photo that has collapsed to a sliver, or a caption squeezed to one word a line, is as broken as text off screen.
+        const crushed = Array.from(document.querySelectorAll<HTMLElement>('.shot.is-current img, .shot.is-current figcaption'))
+          .map((el) => ({ el, r: el.getBoundingClientRect() }))
+          .filter(({ el, r }) => (el.tagName === 'IMG' ? r.width < 80 || r.height < 80 : (el.textContent ?? '').length > 12 && r.width < 110))
+        return {
+          page: document.documentElement.scrollWidth,
+          spill: spill.length,
+          crushed: crushed.length,
+          kind: document.querySelector<HTMLElement>('.shot.is-current')?.dataset.shotKind,
+          text: document.querySelector<HTMLElement>('.shot.is-current')?.dataset.text?.slice(0, 40),
+        }
       })
       expect(fit.page).toBeLessThanOrEqual(width)
       expect(fit.spill, `text off screen in a ${fit.kind} shot`).toBe(0)
+      expect(fit.crushed, `a photo or caption has collapsed in a ${fit.kind} shot: ${fit.text}`).toBe(0)
       const next = page.getByRole('button', { name: 'Next' })
       if (await next.isDisabled()) break
       await next.click()
