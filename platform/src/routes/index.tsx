@@ -94,25 +94,32 @@ function Home() {
 
       <main className="home">
         <section className="home-hero">
-          <div>
-            <h1 className="studio-title">The little things about someone you love, turned into a film.</h1>
+          <h1 className="studio-title">The little things about someone you love, turned into a film.</h1>
+          <div className="hero-row">
             <p className="lede">
               Give us your photos, a few memories and the habits only you would notice. The studio cuts them into a private film with
               its own song, and you send it as one link.
             </p>
-            <div className="actions">
-              <Link to="/start" className="button primary">
-                Start a film
-              </Link>
-              <Link to="/preview" search={{ sample: 1 }} className="button ghost">
-                Watch the sample
-              </Link>
+            <div className="hero-go">
+              <div className="actions">
+                <Link to="/start" className="button primary">
+                  Start a film
+                </Link>
+                <Link to="/preview" search={{ sample: 1 }} className="button ghost">
+                  Watch the sample
+                </Link>
+              </div>
+              <p className="fine">A few taps and a few sentences. No account needed.</p>
             </div>
-            <p className="fine">A few taps and a few sentences. No account needed.</p>
           </div>
           <div className="screen-wrap">
-            <div className="screen">
-              <Film story={sample} embedded />
+            <div className="marquee">
+              <p className="marquee-sign">
+                Now showing <b>{SAMPLE_INTAKE.recipient}’s birthday film</b>
+              </p>
+              <div className="screen">
+                <Film story={sample} embedded />
+              </div>
             </div>
             <p className="screen-note">
               <span>Tap the ticket. Sound on.</span>
@@ -233,7 +240,7 @@ function Home() {
           </div>
         </section>
 
-        <section className="home-close band band-hibiscus" aria-labelledby="close-title">
+        <section className="home-close band band-palm" aria-labelledby="close-title">
           <h2 id="close-title">Someone you love has a day coming up.</h2>
           <div className="actions">
             <Link to="/start" className="button primary">

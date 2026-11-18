@@ -5,13 +5,13 @@ import { useDraft } from '../components/draft'
 import { usePhotos } from '../components/photos'
 import { canGenerate } from '../story/generate'
 import { applyNotes, keepTheirWords, NOTES_LIMIT, sortLocally } from '../story/notes'
-import { OCCASIONS } from '../story/occasions'
+import { occasionOf, OCCASIONS } from '../story/occasions'
 import { RELATIONSHIPS } from '../story/relationships'
 import { newSeed } from '../story/rng'
 import { isOccasion } from '../story/types'
 import type { Occasion } from '../story/types'
 import { LIMITS } from '../story/validate'
-import { VIBES, VOICES } from '../story/vibes'
+import { vibeById, VIBES, VOICES } from '../story/vibes'
 
 /**
  * The short way to make a film: three taps, two names, some photos and one
@@ -299,20 +299,58 @@ function Start() {
 
   const page = pages[stepId]
   const working = Boolean(busy)
+  // The counter shows the film's ticket being made out, and what has been handed over so far.
+  const occasionKnown = skipOccasion || at > steps.indexOf('occasion')
+  const note = about.trim()
+  const songKnown = stepId === 'song' && songs !== false
+  const songLine = [plan.vibe === 'surprise' ? 'The studio’s choice' : vibeById(plan.vibe)?.name, plan.voice === 'surprise' ? null : VOICES.find((v) => v.id === plan.voice)?.name.toLowerCase()].filter(Boolean).join(', ')
   return (
     <div className="start-shell">
-      <header className="start-header">
+      <aside className="start-counter" aria-label="The film so far">
         <Link to="/" className="wordmark" aria-label="Little Things Digital, home">
           little things <span>digital</span>
         </Link>
-        <p className="start-step">
-          Step {at + 1} of {steps.length}
-        </p>
-      </header>
-      <div className="start-bar" role="progressbar" aria-valuemin={0} aria-valuemax={steps.length} aria-valuenow={at + 1} aria-label="Progress">
-        <i style={{ width: `${((at + 1) / steps.length) * 100}%` }} />
-      </div>
+        <div className="maker">
+          <div className="maker-ticket">
+            <span className="maker-body">
+              <span className="maker-label">A very private screening</span>
+              <span className="maker-admit">Admit one</span>
+              <span key={them ? 'named' : 'blank'} className={`maker-name${them ? '' : ' is-blank'}`}>
+                {them || 'their name'}
+              </span>
+              <span className="maker-foot">
+                <span key={me ? 'signed' : 'unsigned'} className={me ? undefined : 'is-blank'}>
+                  {me ? `From ${me}` : 'From you'}
+                </span>
+                {occasionKnown && <span className="maker-occasion">{occasionOf(intake.occasion).ticket}</span>}
+              </span>
+            </span>
+            <span className="maker-stub">
+              <span className="start-step">
+                Step {at + 1} of {steps.length}
+              </span>
+            </span>
+          </div>
+          {(intake.photos.length > 0 || note || songKnown) && (
+            <ul className="gathered" aria-hidden="true">
+              {intake.photos.length > 0 && (
+                <li className="gathered-prints">
+                  {intake.photos.slice(0, 5).map((photo) => (
+                    <img key={photo.id} src={photo.src} alt="" />
+                  ))}
+                  {intake.photos.length > 5 && <b>+{intake.photos.length - 5}</b>}
+                </li>
+              )}
+              {note && <li className="gathered-note">“{note.length > 120 ? `${note.slice(0, 120).trimEnd()}…` : note}”</li>}
+              {songKnown && <li className="gathered-song">{songLine}</li>}
+            </ul>
+          )}
+        </div>
+      </aside>
       <main className="start-main">
+        <div className="start-bar" role="progressbar" aria-valuemin={0} aria-valuemax={steps.length} aria-valuenow={at + 1} aria-label="Progress">
+          <i style={{ width: `${((at + 1) / steps.length) * 100}%` }} />
+        </div>
         <form
           className="start-page"
           key={stepId}

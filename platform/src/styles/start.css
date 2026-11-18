@@ -1,11 +1,13 @@
 /* ==========================================================================
-   The short way to make a film: one question on a bright page, answered by a
-   tap or a few words. It shares the home page's light canvas so the first
-   click from there doesn't change rooms.
+   The short way to make a film is a box-office counter. On the dark green
+   side the film's ticket is made out as the sender answers: the name, who it
+   is from, the occasion, then their photos and words gather beneath it. On
+   the bright side there is one question at a time, answered by a tap or a
+   few words.
    ========================================================================== */
 
 body:has(.start-shell) {
-  background: var(--mist);
+  background: var(--chalk);
 }
 body:has(.start-shell)::before {
   display: none;
@@ -16,62 +18,237 @@ body:has(.start-shell)::before {
   --quiet: var(--muted);
   --link: var(--hibiscus-deep);
   --focus: var(--hibiscus);
+  display: grid;
+  grid-template-columns: minmax(340px, 0.82fr) minmax(0, 1.18fr);
   min-height: 100dvh;
-  background: var(--mist);
+  background: var(--chalk);
   color: var(--ink);
 }
-.start-header {
+
+/* ---------- The counter ---------- */
+
+.start-counter {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100dvh;
+  padding: 20px clamp(20px, 3.4vw, 48px) 28px;
+  overflow: hidden;
+  background:
+    radial-gradient(80% 55% at 30% 38%, rgba(111, 174, 124, 0.3), transparent 72%),
+    radial-gradient(60% 40% at 100% 100%, rgba(194, 42, 89, 0.28), transparent 70%),
+    var(--palm-deep);
+  color: var(--chalk);
+}
+.start-shell .start-counter .wordmark {
+  color: var(--chalk);
+}
+.start-shell .start-counter .wordmark span {
+  color: var(--candle);
+}
+/* Pinned a little above the middle, so the ticket stays put while things gather under it. */
+.maker {
+  align-self: start;
+  margin-top: clamp(36px, 15vh, 170px);
+  display: grid;
+  gap: clamp(22px, 4vh, 40px);
+  justify-items: center;
+}
+.maker-ticket {
+  --notch: 11px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(46px, 5vw, 62px);
+  width: min(460px, 100%);
+  color: #fff4e6;
+  rotate: -2.4deg;
+  filter: drop-shadow(0 30px 36px rgba(0, 0, 0, 0.42));
+  animation: ticket-out 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes ticket-out {
+  from {
+    opacity: 0;
+    transform: translateY(26px) rotate(4deg);
+  }
+}
+.maker-body,
+.maker-stub {
+  background:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .14 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"),
+    linear-gradient(135deg, #d43366, #b3214f 70%, #9c1d46);
+  mask-composite: intersect;
+}
+.maker-body {
+  display: grid;
+  gap: 2px;
+  padding: clamp(18px, 2.6vw, 30px) clamp(18px, 2.6vw, 32px);
+  border-radius: 12px 0 0 12px;
+  mask-image:
+    radial-gradient(circle var(--notch) at 100% 0, transparent 96%, #000),
+    radial-gradient(circle var(--notch) at 100% 100%, transparent 96%, #000);
+}
+.maker-stub {
+  display: grid;
+  place-items: center;
+  border-radius: 0 12px 12px 0;
+  border-left: 3px dotted rgba(40, 6, 18, 0.55);
+  mask-image:
+    radial-gradient(circle var(--notch) at 0 0, transparent 96%, #000),
+    radial-gradient(circle var(--notch) at 0 100%, transparent 96%, #000);
+}
+.start-step {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: clamp(13px, 1.1vw, 15.5px);
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.maker-label {
+  font-size: clamp(12px, 1vw, 14.5px);
+  font-weight: 600;
+  opacity: 0.88;
+}
+.maker-admit {
+  font: italic 500 clamp(44px, 5.4vw, 76px) / 0.95 var(--serif);
+  letter-spacing: -0.02em;
+}
+.maker-name {
+  justify-self: start;
+  min-height: 1.15em;
+  font-weight: 760;
+  font-stretch: 80%;
+  font-size: clamp(26px, 3vw, 42px);
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+  animation: inked 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+/* A line still to be filled in on the ticket. */
+.maker-ticket .is-blank {
+  border-bottom: 2px dashed rgba(255, 244, 230, 0.6);
+  color: rgba(255, 244, 230, 0.62);
+  font-weight: 500;
+}
+@keyframes inked {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.maker-foot {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 16px;
-  padding: 16px clamp(16px, 4vw, 40px) 12px;
+  gap: 14px;
+  margin-top: clamp(12px, 2.4vh, 26px);
+  font-size: clamp(12px, 1.05vw, 14.5px);
+  font-weight: 550;
 }
-.start-shell .wordmark {
-  color: var(--palm);
+.maker-foot span {
+  animation: inked 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
-.start-shell .wordmark span {
-  color: var(--hibiscus);
+.maker-foot .is-blank {
+  font-weight: 500;
 }
-.start-step {
+
+/* What has been handed over so far. */
+.gathered {
+  list-style: none;
   margin: 0;
-  color: var(--muted);
+  padding: 0;
+  display: grid;
+  gap: 16px;
+  justify-items: center;
+  width: min(420px, 100%);
+}
+.gathered li {
+  animation: inked 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.gathered-prints {
+  display: flex;
+  align-items: center;
+  padding-left: 14px;
+}
+.gathered-prints img {
+  width: clamp(54px, 5.6vw, 78px);
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  margin-left: -14px;
+  border: 4px solid #fffdf8;
+  border-bottom-width: 12px;
+  border-radius: 2px;
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.35);
+}
+.gathered-prints img:nth-child(odd) {
+  rotate: -5deg;
+}
+.gathered-prints img:nth-child(even) {
+  rotate: 4deg;
+  translate: 0 5px;
+}
+.gathered-prints b {
+  margin-left: 10px;
   font-size: 15px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
+  color: var(--candle);
+}
+.gathered-note {
+  padding: 12px 16px;
+  border-radius: 3px;
+  background: var(--chalk);
+  color: var(--wine);
+  font: italic 500 clamp(16px, 1.4vw, 19px) / 1.35 var(--serif);
+  rotate: 1.2deg;
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.3);
+}
+.gathered-song {
+  padding: 7px 16px 8px;
+  border-radius: 999px;
+  background: var(--candle);
+  color: #33121d;
+  font-size: 15px;
+  font-weight: 650;
+}
+.gathered-song::before {
+  content: '♪ ';
+}
+
+/* ---------- The question ---------- */
+
+.start-main {
+  min-width: 0;
+  padding: 0 clamp(20px, 5vw, 80px) 72px;
 }
 .start-bar {
-  height: 4px;
-  background: var(--line);
+  height: 5px;
+  margin: 0 calc(clamp(20px, 5vw, 80px) * -1);
+  background: #eceadf;
 }
 .start-bar i {
   display: block;
   height: 100%;
   background: var(--hibiscus);
-  border-radius: 0 4px 4px 0;
-  transition: width 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
-}
-.start-main {
-  width: min(680px, calc(100% - 2 * clamp(16px, 4vw, 40px)));
-  margin: 0 auto;
-  padding: clamp(28px, 7vh, 72px) 0 72px;
+  border-radius: 0 5px 5px 0;
+  transition: width 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 .start-page {
-  animation: start-in 0.35s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  max-width: 640px;
+  padding-top: clamp(40px, 13vh, 132px);
+  animation: start-in 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 @keyframes start-in {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateX(14px);
   }
 }
 .start-page h1 {
   margin: 0;
   color: var(--palm);
-  font-weight: 760;
+  font-weight: 800;
   font-stretch: 78%;
-  font-size: clamp(36px, 6vw, 58px);
-  line-height: 0.98;
+  font-size: clamp(38px, 4.6vw, 66px);
+  line-height: 0.95;
   letter-spacing: -0.02em;
   text-wrap: balance;
 }
@@ -79,42 +256,45 @@ body:has(.start-shell)::before {
   outline: 0;
 }
 .start-hint {
-  margin: 14px 0 0;
-  max-width: 32em;
+  margin: 16px 0 0;
+  max-width: 30em;
   font-size: 19px;
   color: var(--ink);
   text-wrap: pretty;
 }
 
-/* Choices that answer with a tap. */
+/* Choices that answer with a tap: big enough to hit without aiming. */
 .pills {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(172px, 1fr));
   gap: 10px;
-  margin-top: clamp(22px, 4vh, 34px);
+  margin-top: clamp(24px, 4vh, 36px);
 }
 .pill {
-  min-height: 50px;
-  padding: 0 22px;
-  border: 2px solid var(--line);
-  border-radius: 999px;
-  background: var(--chalk);
+  min-height: 62px;
+  padding: 10px 18px;
+  border: 2px solid #dcd9cc;
+  border-radius: 14px;
+  background: #fff;
   color: var(--ink);
-  font-size: 17px;
-  font-weight: 620;
+  font-size: 18px;
+  font-weight: 650;
+  text-align: left;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.15s;
+  transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.15s, box-shadow 0.15s;
 }
 .pill:hover {
   border-color: var(--palm);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(18, 58, 46, 0.12);
 }
 .pill:active {
   transform: scale(0.97);
 }
 .pill[aria-pressed='true'] {
-  background: var(--palm);
-  border-color: var(--palm);
-  color: var(--chalk);
+  background: var(--hibiscus);
+  border-color: var(--hibiscus);
+  color: #fff;
 }
 .start-choice {
   border: 0;
@@ -126,7 +306,7 @@ body:has(.start-shell)::before {
   padding: 0;
   color: var(--palm);
   font-size: 17px;
-  font-weight: 700;
+  font-weight: 750;
 }
 .start-choice .pills {
   margin-top: 10px;
@@ -138,26 +318,26 @@ body:has(.start-shell)::before {
 /* Names */
 .start-fields {
   display: grid;
-  gap: 18px;
-  margin-top: clamp(22px, 4vh, 34px);
+  gap: 20px;
+  margin-top: clamp(24px, 4vh, 36px);
 }
 .start-fields label {
   display: grid;
   gap: 6px;
 }
 .start-fields span {
-  font-weight: 700;
+  font-weight: 750;
   color: var(--palm);
 }
 .start-fields input,
 .start-about {
   width: 100%;
-  padding: 14px 16px;
-  border: 2px solid var(--line);
-  border-radius: 12px;
+  padding: 15px 18px;
+  border: 2px solid #dcd9cc;
+  border-radius: 14px;
   background: #fff;
   color: var(--ink);
-  font-size: 20px;
+  font-size: 21px;
 }
 .start-fields input:focus-visible,
 .start-about:focus-visible {
@@ -172,11 +352,11 @@ body:has(.start-shell)::before {
 /* Photos */
 .start-photos {
   list-style: none;
-  margin: clamp(22px, 4vh, 34px) 0 0;
+  margin: clamp(24px, 4vh, 36px) 0 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+  gap: 12px;
 }
 .start-photos li {
   position: relative;
@@ -186,7 +366,7 @@ body:has(.start-shell)::before {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 10px;
+  border-radius: 12px;
   box-shadow: 0 6px 14px rgba(18, 58, 46, 0.18);
 }
 .start-photos li > button[aria-label] {
@@ -215,7 +395,7 @@ body:has(.start-shell)::before {
   height: 100%;
   padding: 8px;
   border: 2px dashed #9eab9a;
-  border-radius: 10px;
+  border-radius: 12px;
   background: transparent;
   color: var(--palm);
   text-align: center;
@@ -238,10 +418,10 @@ body:has(.start-shell)::before {
   aspect-ratio: auto;
 }
 .start-add.is-empty button {
-  min-height: 150px;
+  min-height: 170px;
 }
 .start-add.is-empty b {
-  font-size: 19px;
+  font-size: 20px;
 }
 .start-add.is-empty span {
   font-size: 15px;
@@ -250,7 +430,7 @@ body:has(.start-shell)::before {
 /* The one box */
 .start-prompts {
   list-style: none;
-  margin: clamp(18px, 3vh, 26px) 0 12px;
+  margin: clamp(20px, 3vh, 28px) 0 12px;
   padding: 0;
   display: flex;
   flex-wrap: wrap;
@@ -266,7 +446,7 @@ body:has(.start-shell)::before {
 }
 .start-about {
   display: block;
-  min-height: 190px;
+  min-height: 200px;
   font-size: 18px;
   line-height: 1.5;
   resize: vertical;
@@ -284,7 +464,12 @@ body:has(.start-shell)::before {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  margin-top: clamp(26px, 5vh, 40px);
+  margin-top: clamp(28px, 5vh, 44px);
+}
+.start-shell .button {
+  min-height: 54px;
+  padding: 0 28px;
+  font-size: 18px;
 }
 .start-shell .button.ghost {
   border-color: var(--palm);
@@ -295,11 +480,11 @@ body:has(.start-shell)::before {
   color: var(--chalk);
 }
 .start-shell .button.primary {
-  min-width: 132px;
+  min-width: 150px;
 }
 .start-shell .button.primary:disabled {
-  background: #c9cfc4;
-  color: #5a665f;
+  background: #d8d6ca;
+  color: #6b736d;
 }
 .start-skip {
   display: block;
@@ -309,6 +494,7 @@ body:has(.start-shell)::before {
   text-align: right;
 }
 .start-other {
+  max-width: 640px;
   margin: clamp(36px, 8vh, 64px) 0 0;
   font-size: 15px;
   color: var(--muted);
@@ -317,12 +503,97 @@ body:has(.start-shell)::before {
   color: var(--hibiscus-deep);
   font-weight: 650;
 }
-@media (prefers-reduced-motion: reduce) {
+
+/* ---------- Narrow screens: the counter becomes a band across the top ---------- */
+
+@media (max-width: 860px) {
+  .start-shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+  .start-counter {
+    position: static;
+    height: auto;
+    grid-template-rows: auto auto;
+    gap: 14px;
+    padding: 14px 16px 22px;
+  }
+  .maker {
+    gap: 14px;
+    margin-top: 0;
+  }
+  .maker-ticket {
+    --notch: 8px;
+    width: min(330px, 92%);
+    grid-template-columns: minmax(0, 1fr) 40px;
+    rotate: -1.6deg;
+    filter: drop-shadow(0 14px 18px rgba(0, 0, 0, 0.4));
+  }
+  .maker-body {
+    padding: 12px 16px 13px;
+    border-radius: 9px 0 0 9px;
+  }
+  .maker-stub {
+    border-radius: 0 9px 9px 0;
+    border-left-width: 2px;
+  }
+  .maker-label {
+    display: none;
+  }
+  .maker-admit {
+    font-size: 30px;
+  }
+  .maker-name {
+    font-size: 22px;
+  }
+  .maker-foot {
+    margin-top: 6px;
+    font-size: 12px;
+  }
+  .start-step {
+    font-size: 12px;
+  }
+  /* Only the photos are shown here; the words are in the box right below. */
+  .gathered-note,
+  .gathered-song {
+    display: none;
+  }
+  .gathered-prints img {
+    width: 40px;
+    border-width: 3px;
+    border-bottom-width: 8px;
+  }
+  .start-main {
+    padding: 0 16px 56px;
+  }
+  .start-bar {
+    margin: 0 -16px;
+  }
   .start-page {
+    padding-top: 26px;
+  }
+  .pills {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pill {
+    min-height: 56px;
+    padding: 8px 14px;
+    font-size: 17px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .start-page,
+  .maker-ticket,
+  .maker-name,
+  .maker-foot span,
+  .gathered li {
     animation: none;
   }
   .start-bar i,
   .pill {
     transition: none;
+  }
+  .pill:hover {
+    transform: none;
   }
 }
