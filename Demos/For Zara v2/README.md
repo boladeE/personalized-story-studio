@@ -20,7 +20,7 @@ Opening `index.html` directly also works for the story, local fonts, photos and 
 - Ticket → skippable 2.1-second theatrical countdown → a read-at-your-own-pace story. No automatic scene advancement, forced playback or rushed timeline.
 - Previous/Next, Left/Right arrows, Space for next, M for music, accessible named chapter dots.
 - Native scrolling within long chapters, particularly the personal letter and mobile layouts. Nothing advances just because you are reading slowly.
-- The original invented story includes Uno at a friend's games night, a rainy café date, the 11:07 “quick gist”, stolen chips, sunset by the water, a photo montage/lightbox, affectionate reviews, a tiny complaints department, a personal letter and birthday wishes.
+- The original invented story includes a card game at a friend's games night, a rainy café date, the 11:07 “quick gist”, stolen chips, sunset by the water, a photo montage/lightbox, affectionate reviews, a tiny complaints department, a personal letter and birthday wishes.
 - The final candle button extinguishes its small flame cue, records the wish for this page session and reveals a bonus love note. Revisiting the finale keeps the wish state until reload.
 - Credits and photograph dialogs support Escape. The music panel is non-modal so navigation remains usable.
 - Reduced-motion support, responsive photography crops and keyboard focus indicators. On narrow screens the landscape photographs become full-width, face-safe cinematic windows that fade into the story, rather than cropping both faces out of a tall background.
