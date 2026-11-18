@@ -20,7 +20,7 @@ export const SAMPLE_INTAKE: Intake = {
     {
       id: 'm1',
       title: 'You called me a cheat.',
-      story: 'Games night. Uno. You said nobody could be that lucky, then made me shuffle again while you watched my hands.',
+      story: 'Games night. Cards. You said nobody could be that lucky, then made me shuffle again while you watched my hands.',
       photoId: 'p-selfie',
     },
     {

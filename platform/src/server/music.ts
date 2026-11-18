@@ -177,8 +177,10 @@ export function audioFromInteraction(body: unknown): Uint8Array | null {
 
 /**
  * The sung words from a Gemini Interactions response. Lyria reports them in a
- * text block: `[[A0]]` marks a section and `[:] ` starts each sung line.
+ * text block: `[[A0]]` marks a section and `[:] ` starts each sung line, or
+ * `[12.9:] ` when it also says the second the line begins.
  */
+const SUNG_LINE = /^\[\d*(?:\.\d+)?:\]/
 export function lyricsFromInteraction(body: unknown): string {
   const steps = (body as { steps?: Array<{ type?: string; content?: Array<{ type?: string; text?: string }> }> })?.steps ?? []
   const verses: string[][] = []
@@ -189,8 +191,8 @@ export function lyricsFromInteraction(body: unknown): string {
       for (const raw of block.text.split('\n')) {
         const line = raw.trim()
         if (/^\[\[.*\]\]$/.test(line)) verses.push([])
-        else if (line.startsWith('[:]')) {
-          const words = line.slice(3).trim()
+        else if (SUNG_LINE.test(line)) {
+          const words = line.replace(SUNG_LINE, '').trim()
           if (!words) continue
           if (!verses.length) verses.push([])
           verses[verses.length - 1].push(words)

@@ -100,6 +100,28 @@
   line-height: var(--rule);
 }
 
+.tone {
+  border: 0;
+  padding: 0;
+  margin: 14px 0 0;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 15px;
+}
+.tone legend {
+  padding: 0;
+  margin-bottom: 4px;
+  font-weight: 700;
+  color: var(--title);
+}
+.tone .choice {
+  font-weight: 500;
+}
+.sheet-empty .tone {
+  margin: 0;
+}
+
 /* The desk stays in the dark of the room. */
 .song-desk {
   display: grid;

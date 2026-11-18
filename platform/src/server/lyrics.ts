@@ -1,5 +1,5 @@
 import { hasRefusedLine, lyricsBrief, tidyLyrics, tidyTitle } from '../story/vibes'
-import type { SongDetails } from '../story/vibes'
+import type { LyricTone, SongDetails } from '../story/vibes'
 import { MusicError, musicProvider } from './music'
 
 /**
@@ -58,7 +58,7 @@ const SCHEMA = {
   required: ['title', 'sections'],
 }
 
-export async function writeLyrics(details: SongDetails): Promise<WrittenLyrics> {
+export async function writeLyrics(details: SongDetails, tone: LyricTone = 'smooth'): Promise<WrittenLyrics> {
   const provider = lyricsProvider()
   if (provider === 'off') throw new MusicError('Songs aren’t switched on for this studio yet.', 503)
   if (provider === 'demo') return demoLyrics(details)
@@ -66,18 +66,19 @@ export async function writeLyrics(details: SongDetails): Promise<WrittenLyrics> 
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), Number(process.env.LYRICS_TIMEOUT_MS ?? 60_000))
   try {
-    const model = process.env.GEMINI_LYRICS_MODEL ?? 'gemini-3.8-flash'
+    // The Pro model keeps to the sender's facts; Flash at this speed invents details to reach a rhyme.
+    const model = process.env.GEMINI_LYRICS_MODEL ?? 'gemini-pro-latest'
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST',
       signal: controller.signal,
       headers: { 'x-goog-api-key': process.env.GEMINI_API_KEY ?? '', 'content-type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: lyricsBrief(details) }] }],
+        contents: [{ role: 'user', parts: [{ text: lyricsBrief(details, tone) }] }],
         generationConfig: {
           responseMimeType: 'application/json',
           responseSchema: SCHEMA,
           temperature: 0.9,
-          // Without this the model thinks for over a minute about a 22-line song.
+          // Higher levels write no better here and take two minutes.
           thinkingConfig: { thinkingLevel: 'low' },
         },
       }),
@@ -116,7 +117,9 @@ export function lyricsFromGenerate(body: unknown): WrittenLyrics | null {
   const rows: string[] = []
   for (const section of parsed.sections as Array<{ label?: unknown; lines?: unknown }>) {
     if (!Array.isArray(section?.lines)) continue
-    rows.push(`[${String(section.label ?? 'Verse')}]`, ...section.lines.map((line) => String(line)), '')
+    // The label arrives as "Verse 1" or, from some models, already bracketed as "[Verse 1]".
+    const label = String(section.label ?? 'Verse').replace(/[[\]]/g, '').trim() || 'Verse'
+    rows.push(`[${label}]`, ...section.lines.map((line) => String(line)), '')
   }
   // The brief forbids the old song's opening line; if it slips through, the music model would refuse the lot.
   const lyrics = tidyLyrics(rows.join('\n').replace(/happy\s+birthday\s+to\s+(you|ya)/gi, (m) => (m[0] === 'H' ? 'Happy, happy birthday' : 'happy, happy birthday')))

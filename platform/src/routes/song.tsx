@@ -4,7 +4,7 @@ import { StudioHeader } from '../components/StudioHeader'
 import { useDraft } from '../components/draft'
 import { canGenerate } from '../story/generate'
 import { hasRefusedLine, LYRIC_LIMITS, songDetails, tunePreview, vibeById, VIBES } from '../story/vibes'
-import type { VibeId } from '../story/vibes'
+import type { LyricTone, VibeId } from '../story/vibes'
 
 export const Route = createFileRoute('/song')({
   head: () => ({ meta: [{ title: 'Their song - Little Things Digital' }] }),
@@ -24,6 +24,8 @@ function SongRoom() {
   const [status, setStatus] = useState<MusicStatus>(null)
   const [vibe, setVibe] = useState<VibeId>((takes[takes.length - 1]?.vibe as VibeId) ?? VIBES[0].id)
   const [wordless, setWordless] = useState(false)
+  // Smooth: a spare track built on one feeling. Story: a told memory with the jokes left in.
+  const [tone, setTone] = useState<LyricTone>('smooth')
   const [writing, setWriting] = useState(false)
   const [making, setMaking] = useState(false)
   const [error, setError] = useState('')
@@ -90,7 +92,7 @@ function SongRoom() {
     setWriting(true)
     setError('')
     try {
-      const response = await fetch('/api/lyrics', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ details }) })
+      const response = await fetch('/api/lyrics', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ details, tone }) })
       const body = (await response.json()) as { title?: string; lyrics?: string; error?: string }
       if (!response.ok || !body.lyrics) throw new Error(body.error ?? 'The words didn’t come through.')
       setWords({ title: body.title ?? '', lyrics: body.lyrics })
@@ -127,6 +129,19 @@ function SongRoom() {
   const sungLines = words ? words.lyrics.split('\n').filter((line) => line.trim() && !/^\[.+\]$/.test(line.trim())).length : 0
   const canMake = available && !making && !writing && (wordless || (sungLines > 0 && !refused))
   const busy = writing || making
+  const tonePicker = (
+    <fieldset className="tone">
+      <legend>How it’s written</legend>
+      <label className="choice">
+        <input type="radio" name="tone" checked={tone === 'smooth'} disabled={busy} onChange={() => setTone('smooth')} />
+        Smooth: a few details, mostly feeling
+      </label>
+      <label className="choice">
+        <input type="radio" name="tone" checked={tone === 'story'} disabled={busy} onChange={() => setTone('story')} />
+        Story: a memory told, with the jokes left in
+      </label>
+    </fieldset>
+  )
 
   return (
     <>
@@ -186,6 +201,7 @@ function SongRoom() {
                       {writing ? 'Writing…' : 'Write a different version'}
                     </button>
                   </div>
+                  {tonePicker}
                 </>
               ) : (
                 <div className="sheet-empty">
@@ -193,6 +209,7 @@ function SongRoom() {
                     The words come from the reasons, habits, memories and wish you wrote for {details.recipient}. Nothing is made up, and you can
                     change every line before it’s sung.
                   </p>
+                  {tonePicker}
                   <button type="button" className="button primary" onClick={write} disabled={busy}>
                     {writing ? 'Writing the words…' : `Write ${details.recipient}’s song`}
                   </button>
@@ -228,6 +245,11 @@ function SongRoom() {
               <button type="button" className="button primary block" onClick={make} disabled={!canMake}>
                 {making ? 'Making the song…' : takes.length ? 'Make another take' : 'Make the song'}
               </button>
+              {writing && (
+                <p className="fine" role="status">
+                  Writing the words takes about 20 seconds.
+                </p>
+              )}
               {making && (
                 <p className="fine" role="status">
                   This takes about a minute. Keep this tab open.

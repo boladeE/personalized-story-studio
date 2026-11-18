@@ -53,6 +53,26 @@ describe('gift lock', () => {
   })
 })
 
+describe('media responses', () => {
+  it('serves whole files and byte ranges, so a song can be streamed', async () => {
+    const bytes = Uint8Array.from({ length: 1000 }, (_, i) => i % 256)
+    const ask = (range?: string) => store.mediaResponse(new Request('http://x/song', { headers: range ? { range } : {} }), bytes, 'audio/mpeg')
+    const whole = ask()
+    expect(whole.status).toBe(200)
+    expect(whole.headers.get('accept-ranges')).toBe('bytes')
+    expect(whole.headers.get('content-length')).toBe('1000')
+    const part = ask('bytes=100-199')
+    expect(part.status).toBe(206)
+    expect(part.headers.get('content-range')).toBe('bytes 100-199/1000')
+    expect(new Uint8Array(await part.arrayBuffer())).toEqual(bytes.slice(100, 200))
+    expect(ask('bytes=900-').headers.get('content-range')).toBe('bytes 900-999/1000')
+    expect(ask('bytes=-50').headers.get('content-range')).toBe('bytes 950-999/1000')
+    expect(ask('bytes=0-5000').headers.get('content-range')).toBe('bytes 0-999/1000')
+    expect(ask('bytes=2000-').status).toBe(416)
+    expect(ask('bytes=abc').status).toBe(200)
+  })
+})
+
 describe('intake validation', () => {
   it('accepts the sample and rejects bad shapes', () => {
     expect(parseIntake(SAMPLE_INTAKE).ok).toBe(true)
@@ -110,6 +130,9 @@ describe('AI music', () => {
     const body = { steps: [{ type: 'model_output', content: [{ type: 'text', text }] }, { type: 'model_output', content: [{ type: 'audio', data: 'AAAA' }] }] }
     expect(music.lyricsFromInteraction(body)).toBe('You say you are not hungry.\nThen you eat my chips.\n\nHappy birthday, Zara.')
     expect(music.lyricsFromInteraction({ steps: [{ type: 'model_output', content: [{ type: 'text', text: '[[A0]]\n[[B1]]' }] }] })).toBe('')
+    // Lyria sometimes gives the second each line starts instead of a bare marker.
+    const timed = { steps: [{ type: 'model_output', content: [{ type: 'text', text: '[[A0]]\n[[B1]]\n[12.9:] Eleven-minute voice note (quick gist)\n[19:] Said you weren’t hungry\n[[C2]]\n[47.1:] Another sweet year, Zara' }] }] }
+    expect(music.lyricsFromInteraction(timed)).toBe('Eleven-minute voice note (quick gist)\nSaid you weren’t hungry\n\nAnother sweet year, Zara')
     expect(music.lyricsFromInteraction(null)).toBe('')
   })
 
@@ -183,15 +206,28 @@ describe('AI music', () => {
     expect(Math.max(...long.split('\n').map((l) => l.length))).toBeLessThanOrEqual(vibes.LYRIC_LIMITS.line)
   })
 
-  it('briefs the lyric writer only from the sender’s details and steers it off the old birthday song', () => {
+  it('briefs the lyric writer only from the sender’s details, in either tone, and steers it off the old birthday song', () => {
     const details = vibes.songDetails(SAMPLE_INTAKE)!
-    const brief = vibes.lyricsBrief(details)
-    expect(brief).toContain('Tobi')
-    expect(brief).toContain('eats my chips')
-    expect(brief).toContain('Never write the exact phrase "happy birthday to you"')
-    expect(brief).not.toContain('holding everything together')
-    expect(brief).not.toContain('Golden hour')
-    expect(vibes.lyricsBrief(vibes.parseSongDetails({ recipient: 'Kemi' })!)).toContain('Do not make up a history')
+    for (const tone of vibes.LYRIC_TONES) {
+      const brief = vibes.lyricsBrief(details, tone)
+      expect(brief).toContain('Tobi')
+      expect(brief).toContain('eats my chips')
+      expect(brief).toContain('exact phrase "happy birthday to you"')
+      expect(brief).not.toContain('holding everything together')
+      expect(brief).not.toContain('Golden hour')
+      // The worked example is about other people and must not leak into a song as fact.
+      expect(brief).toContain('written for two other people')
+      expect(brief).toMatch(/do not reuse its hook/)
+      const bare = vibes.lyricsBrief(vibes.parseSongDetails({ recipient: 'Kemi' })!, tone)
+      expect(bare).toContain('No other details were given.')
+      expect(bare).toMatch(/do not (pad it with invented|invent a) history/)
+    }
+    // Smooth is the default: few details, the name and the birthday held back.
+    expect(vibes.lyricsBrief(details)).toBe(vibes.lyricsBrief(details, 'smooth'))
+    expect(vibes.lyricsBrief(details, 'smooth')).toContain('Choose at most three details')
+    expect(vibes.lyricsBrief(details, 'story')).toContain('Verse 2 teases')
+    expect(vibes.isLyricTone('story')).toBe(true)
+    expect(vibes.isLyricTone('loud')).toBe(false)
   })
 
   it('asks the music model to sing the approved words exactly', () => {
@@ -213,6 +249,9 @@ describe('AI music', () => {
     expect(written.lyrics).toBe('[Verse]\nOne drink, then the rain\n\n[Chorus]\nHappy, happy birthday, Zara')
     expect(vibes.hasRefusedLine(written.lyrics)).toBe(false)
     expect(vibes.hasRefusedLine('happy  Birthday to YOU')).toBe(true)
+    // Some models bracket the labels themselves; the parts must still be named, not dropped.
+    const bracketed = lyrics.lyricsFromGenerate(reply({ title: 'x', sections: [{ label: '[Pre-Chorus]', lines: ['You know when to listen'] }, { label: '[Chorus]', lines: ['Suspiciously good, Zara (Zara)'] }] }))!
+    expect(bracketed.lyrics).toBe('[Pre-chorus]\nYou know when to listen\n\n[Chorus]\nSuspiciously good, Zara (Zara)')
     expect(lyrics.lyricsFromGenerate(reply({ title: 'x', sections: [] }))).toBeNull()
     expect(lyrics.lyricsFromGenerate({ candidates: [{ content: { parts: [{ text: 'not json' }] } }] })).toBeNull()
     expect(music.isRecitationRefusal(400, '{"error":{"code":"recitation"}}')).toBe(true)

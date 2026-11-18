@@ -200,3 +200,28 @@ export function json(body: unknown, init: ResponseInit = {}) {
   headers.set('cache-control', 'no-store')
   return new Response(JSON.stringify(body), { ...init, headers })
 }
+
+/**
+ * A private media file, with byte-range support so a browser can stream a
+ * song (and so Safari will play it at all) instead of waiting for the whole file.
+ */
+export function mediaResponse(request: Request, bytes: Uint8Array, contentType: string) {
+  const headers: Record<string, string> = {
+    'content-type': contentType,
+    'accept-ranges': 'bytes',
+    'cache-control': 'private, max-age=3600',
+    'x-content-type-options': 'nosniff',
+  }
+  const size = bytes.byteLength
+  const range = /^bytes=(\d*)-(\d*)$/.exec(request.headers.get('range')?.trim() ?? '')
+  if (range && (range[1] || range[2])) {
+    // "bytes=-500" is the last 500 bytes; "bytes=500-" runs to the end.
+    const start = range[1] ? Number(range[1]) : Math.max(0, size - Number(range[2]))
+    const end = range[1] && range[2] ? Math.min(Number(range[2]), size - 1) : size - 1
+    if (start >= size || start > end) return new Response(null, { status: 416, headers: { 'content-range': `bytes */${size}` } })
+    const part = bytes.slice(start, end + 1)
+    return new Response(part, { status: 206, headers: { ...headers, 'content-range': `bytes ${start}-${end}/${size}`, 'content-length': String(part.byteLength) } })
+  }
+  return new Response(new Uint8Array(bytes), { headers: { ...headers, 'content-length': String(size) } })
+}
+

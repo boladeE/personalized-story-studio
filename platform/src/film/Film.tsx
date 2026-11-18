@@ -122,11 +122,11 @@ export function Film({ story, embedded = false }: { story: Story; embedded?: boo
     return clearTimers
   }, [film])
 
-  // A finished song is a few megabytes: fetch it while the ticket is on screen, not after it is torn.
-  // An embedded film (the home page) waits for the tap, so visitors who never play it don't pay for the download.
+  // A finished song is a few megabytes. It is streamed, and starts buffering while the ticket is on screen.
+  // An embedded film (the home page) fetches nothing until the tap, so visitors who never play it don't pay for it.
   const songSrc = story.soundtrack?.src
   useEffect(() => {
-    if (songSrc && !embedded) engine.current?.preloadSong(songSrc)
+    if (songSrc) engine.current?.preloadSong(songSrc, !embedded)
   }, [songSrc, embedded])
 
   useEffect(() => {
@@ -264,7 +264,7 @@ export function Film({ story, embedded = false }: { story: Story; embedded?: boo
     if (live.current.phase !== 'ticket') return
     const ok = (await engine.current?.start()) ?? false
     setAudioBlocked(!ok)
-    // Decode during the countdown so the first shot doesn't open in silence.
+    // Buffer during the countdown so the first shot doesn't open in silence.
     if (ok && songSrc) engine.current?.prepareSong(songSrc)
     const play = () => {
       clock.current = { t: 0, index: 0, wishDone: false, track: '' }

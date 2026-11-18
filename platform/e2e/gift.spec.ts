@@ -105,6 +105,8 @@ test('end to end: build, write and make a song, lock, send, recipient unlocks an
   await recipient.waitForTimeout(500)
   expect((await audioState(recipient))!.currentTime).toBeGreaterThan(t1)
   expect((await audioState(recipient))!.song).toBe(`/api/media/${slug}/song`)
+  // The locked song is streamed with the unlock cookie, not downloaded whole first.
+  expect((await audioState(recipient))!.songMode).toBe('stream')
   await expect(recipient.locator('.film')).toHaveAttribute('data-look', 'paper')
 
   // Walk to a photo and check it loaded from the private store.

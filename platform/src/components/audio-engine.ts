@@ -98,6 +98,10 @@ export interface AudioState {
   trackId: string | null
   currentTime: number
   song: string | null
+  /** How the song is playing: streamed as it downloads, or decoded whole first (the fallback). */
+  songMode: 'stream' | 'buffer' | null
+  /** Seconds into the song, when it is streamed. */
+  songTime: number | null
   suspended: boolean
 }
 
@@ -111,8 +115,18 @@ export interface Beat {
 
 interface SongVoice {
   src: string
-  source: AudioBufferSourceNode
   gain: GainNode
+  /** Streamed through a media element... */
+  el?: HTMLAudioElement
+  /** ...or, when that fails, a fully decoded buffer. */
+  source?: AudioBufferSourceNode
+}
+
+interface SongStream {
+  src: string
+  el: HTMLAudioElement
+  /** A media element can be wired into Web Audio only once, so the node is kept with it. */
+  node: MediaElementAudioSourceNode | null
 }
 
 export class AudioEngine {
@@ -122,6 +136,7 @@ export class AudioEngine {
   private voice: TrackVoice | null = null
   private song: SongVoice | null = null
   private songLoading: string | null = null
+  private stream: SongStream | null = null
   private songBytes: { src: string; data: Promise<ArrayBuffer> } | null = null
   private songBuffer: { src: string; ctx: AudioContext; data: Promise<AudioBuffer> } | null = null
   private muted = false
@@ -145,6 +160,9 @@ export class AudioEngine {
       this.songBus.gain.value = this.muted ? 0 : 0.9
       this.songBus.connect(this.ctx.destination)
     }
+    // Still inside the tap: let the song's element play once, silently, so browsers
+    // that only allow sound from a gesture will let it start when the film does.
+    this.unlockStream()
     try {
       await this.ctx.resume()
     } catch {
@@ -179,8 +197,13 @@ export class AudioEngine {
   async setPaused(paused: boolean) {
     if (!this.ctx) return
     try {
-      if (paused) await this.ctx.suspend()
-      else await this.ctx.resume()
+      if (paused) {
+        this.song?.el?.pause()
+        await this.ctx.suspend()
+      } else {
+        await this.ctx.resume()
+        await this.song?.el?.play()
+      }
     } catch {
       // A closed context can't be paused; nothing to do.
     }
@@ -203,11 +226,117 @@ export class AudioEngine {
   }
 
   /**
-   * Start downloading a song before the film begins, so it is ready when the
-   * ticket is torn. Makes no sound and needs no AudioContext, so it can run
-   * before the first tap.
+   * Get a song ready before the film begins. With `download` it starts
+   * buffering straight away (the ticket is on screen); without, nothing is
+   * fetched until the tap, so visitors who never press play pay nothing.
+   * Makes no sound and needs no AudioContext.
    */
-  preloadSong(src: string) {
+  preloadSong(src: string, download = true) {
+    if (this.stream?.src !== src) {
+      this.dropStream()
+      const el = new Audio()
+      el.loop = true
+      el.preload = download ? 'auto' : 'none'
+      el.src = src
+      this.stream = { src, el, node: null }
+    }
+    if (download && this.stream.el.preload !== 'auto') {
+      this.stream.el.preload = 'auto'
+      this.stream.el.load()
+    }
+  }
+
+  /** Make sure the song is downloading. Call after `start()`, e.g. while the leader counts in. */
+  prepareSong(src: string) {
+    this.preloadSong(src, true)
+  }
+
+  private unlockStream() {
+    const stream = this.stream
+    if (!stream || this.song?.el === stream.el) return
+    const { el } = stream
+    el.preload = 'auto'
+    el.muted = true
+    el.play()
+      .then(() => {
+        // If the film has already asked for the song, leave it playing.
+        if (this.song?.el !== el && this.songLoading !== stream.src) {
+          el.pause()
+          el.currentTime = 0
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        el.muted = false
+      })
+  }
+
+  private dropStream() {
+    const stream = this.stream
+    if (!stream) return
+    this.stream = null
+    stream.el.pause()
+    stream.node?.disconnect()
+    stream.el.removeAttribute('src')
+    stream.el.load()
+  }
+
+  /**
+   * Play a whole-story song (generated or supplied), looping, in place of the
+   * score. It is streamed, so it starts as soon as the first second has
+   * arrived; if the browser refuses that, the whole file is decoded instead.
+   */
+  async playSong(src: string): Promise<boolean> {
+    if (!this.ctx || !this.songBus) return false
+    if (this.song?.src === src || this.songLoading === src) return true
+    this.songLoading = src
+    try {
+      const streamed = await this.streamSong(src)
+      if (streamed !== 'failed') return streamed === 'playing'
+      return await this.bufferSong(src)
+    } finally {
+      if (this.songLoading === src) this.songLoading = null
+    }
+  }
+
+  private async streamSong(src: string): Promise<'playing' | 'cancelled' | 'failed'> {
+    const ctx = this.ctx
+    const bus = this.songBus
+    if (!ctx || !bus) return 'cancelled'
+    let gain: GainNode | null = null
+    try {
+      this.preloadSong(src, true)
+      const stream = this.stream!
+      const { el } = stream
+      stream.node ??= ctx.createMediaElementSource(el)
+      gain = ctx.createGain()
+      gain.gain.value = 0
+      stream.node.connect(gain).connect(bus)
+      el.muted = false
+      if (el.currentTime > 0) el.currentTime = 0
+      await el.play()
+      if (this.songLoading !== src || this.ctx !== ctx || this.stream !== stream) {
+        if (this.stream === stream && this.song?.el !== el) el.pause()
+        gain.disconnect()
+        return 'cancelled'
+      }
+      this.voice?.stop(1.2)
+      this.voice = null
+      this.stopSong(0.6)
+      const now = ctx.currentTime
+      gain.gain.setValueAtTime(0, now)
+      gain.gain.linearRampToValueAtTime(1, now + 0.6)
+      this.song = { src, gain, el }
+      return 'playing'
+    } catch (error) {
+      console.warn('[audio] song could not be streamed; decoding it instead', error)
+      gain?.disconnect()
+      if (this.stream?.src === src) this.dropStream()
+      return this.songLoading === src && this.ctx === ctx ? 'failed' : 'cancelled'
+    }
+  }
+
+  private fetchSong(src: string) {
     if (this.songBytes?.src === src) return
     const data = fetch(src, { credentials: 'same-origin' }).then((response) => {
       if (!response.ok) throw new Error(`Song request failed: ${response.status}`)
@@ -218,14 +347,9 @@ export class AudioEngine {
     this.songBuffer = null
   }
 
-  /** Decode a song ahead of its first note. Call after `start()`, e.g. while the leader counts in. */
-  prepareSong(src: string) {
-    if (this.ctx) void this.decoded(src, this.ctx)
-  }
-
   private decoded(src: string, ctx: AudioContext): Promise<AudioBuffer> {
     if (this.songBuffer?.src === src && this.songBuffer.ctx === ctx) return this.songBuffer.data
-    this.preloadSong(src)
+    this.fetchSong(src)
     // Decoding detaches the bytes it is given, so decode a copy and keep the download.
     const data = this.songBytes!.data.then((bytes) => ctx.decodeAudioData(bytes.slice(0)))
     data.catch(() => {})
@@ -233,13 +357,10 @@ export class AudioEngine {
     return data
   }
 
-  /** Play a whole-story song (generated or supplied), looping, in place of the score. */
-  async playSong(src: string): Promise<boolean> {
-    if (!this.ctx || !this.songBus) return false
-    if (this.song?.src === src || this.songLoading === src) return true
-    this.songLoading = src
+  private async bufferSong(src: string): Promise<boolean> {
+    const ctx = this.ctx
+    if (!ctx || !this.songBus) return false
     try {
-      const ctx = this.ctx
       const buffer = await this.decoded(src, ctx)
       if (this.songLoading !== src || this.ctx !== ctx || !this.songBus) return false
       this.voice?.stop(1.2)
@@ -264,8 +385,6 @@ export class AudioEngine {
         this.songBuffer = null
       }
       return false
-    } finally {
-      if (this.songLoading === src) this.songLoading = null
     }
   }
 
@@ -299,7 +418,15 @@ export class AudioEngine {
     song.gain.gain.cancelScheduledValues(now)
     song.gain.gain.setValueAtTime(song.gain.gain.value, now)
     song.gain.gain.linearRampToValueAtTime(0, now + fade)
-    song.source.stop(now + fade + 0.05)
+    song.source?.stop(now + fade + 0.05)
+    const { el, gain } = song
+    if (el) {
+      setTimeout(() => {
+        // The same element may already be playing the song again from the top.
+        if (this.song?.el !== el && this.songLoading !== song.src) el.pause()
+        gain.disconnect()
+      }, (fade + 0.05) * 1000)
+    }
   }
 
   close() {
@@ -308,6 +435,7 @@ export class AudioEngine {
     this.ctx = null
     this.master = null
     this.songBus = null
+    this.dropStream()
     this.songBytes = null
     this.songBuffer = null
     setTimeout(() => void ctx?.close(), 600)
@@ -320,6 +448,8 @@ export class AudioEngine {
       trackId: this.song ? 'song' : (this.voice?.track.id ?? null),
       currentTime: this.ctx?.currentTime ?? 0,
       song: this.song?.src ?? null,
+      songMode: this.song ? (this.song.el ? 'stream' : 'buffer') : null,
+      songTime: this.song?.el?.currentTime ?? null,
       suspended: this.ctx?.state === 'suspended',
     }
   }

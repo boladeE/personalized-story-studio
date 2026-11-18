@@ -137,6 +137,10 @@ test('sound can be muted and the preview has an honest empty state', async ({ pa
   await startFilm(page)
   // The sample plays its own sung song; the score is one choice away.
   await expect.poll(async () => (await audioState(page))?.trackId, { timeout: 15_000 }).toBe('song')
+  // It is streamed, not downloaded whole first, and the song itself is moving.
+  expect((await audioState(page))!.songMode).toBe('stream')
+  const heard = (await audioState(page))!.songTime!
+  await expect.poll(async () => (await audioState(page))!.songTime!).toBeGreaterThan(heard + 0.5)
   await page.getByRole('button', { name: 'Look & music' }).click()
   await expect(page.getByRole('radio', { name: 'Zara’s song, sung AI sample' })).toBeChecked()
   await page.getByRole('radio', { name: 'Studio score' }).check()

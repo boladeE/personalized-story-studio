@@ -2,7 +2,8 @@ import { createFileRoute } from '@tanstack/react-router'
 import { allowLyrics, lyricsProvider, writeLyrics } from '../../server/lyrics'
 import { MusicError } from '../../server/music'
 import { json } from '../../server/store'
-import { parseSongDetails } from '../../story/vibes'
+import { isLyricTone, parseSongDetails } from '../../story/vibes'
+import type { LyricTone } from '../../story/vibes'
 
 /** Write the words of a song from the sender's details, before any music is made. */
 export const Route = createFileRoute('/api/lyrics')({
@@ -10,8 +11,11 @@ export const Route = createFileRoute('/api/lyrics')({
     handlers: {
       POST: async ({ request }) => {
         let details
+        let tone: LyricTone = 'smooth'
         try {
-          details = parseSongDetails(((await request.json()) as { details?: unknown }).details)
+          const body = (await request.json()) as { details?: unknown; tone?: unknown }
+          details = parseSongDetails(body.details)
+          if (isLyricTone(body.tone)) tone = body.tone
         } catch {
           details = null
         }
@@ -21,7 +25,7 @@ export const Route = createFileRoute('/api/lyrics')({
         const allowed = allowLyrics(client)
         if (!allowed.allowed) return json({ error: allowed.reason }, { status: 429 })
         try {
-          return json(await writeLyrics(details), { status: 201 })
+          return json(await writeLyrics(details, tone), { status: 201 })
         } catch (error) {
           if (error instanceof MusicError) return json({ error: error.message }, { status: error.status })
           throw error
