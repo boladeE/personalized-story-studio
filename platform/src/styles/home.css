@@ -1,8 +1,8 @@
 /* ==========================================================================
-   The home page: the sample film first, then what a film can be for, what
-   goes into one, the song, the steps and the questions. It stays in the dark
-   of the screening room; the lit things are the film, the tickets and the
-   sheet the song is written on.
+   The home page. Unlike the rest of the studio it is a bright page: the
+   brand's light canvas with full-width blocks of its own colours (wine,
+   candle, hibiscus), the way littlethingsdigital.com is built. The film and
+   its stills stay dark, so they read as screens on a lit wall.
    Loaded last, so it can restate the older home rules in app.css and room.css.
    ========================================================================== */
 
@@ -11,9 +11,78 @@
     scroll-behavior: smooth;
   }
 }
+/* The page behind the shell, for the moment it is pulled past its ends. */
+body:has(.home-shell) {
+  background: var(--mist);
+}
+body:has(.home-shell)::before {
+  display: none;
+}
 
 .home-shell {
   --gutter: clamp(16px, 4vw, 40px);
+  --title: var(--palm);
+  --body: var(--ink);
+  --quiet: var(--muted);
+  --rule: var(--line);
+  --link: var(--hibiscus-deep);
+  --focus: var(--hibiscus);
+  min-height: 100dvh;
+  background: var(--mist);
+  color: var(--ink);
+  overflow-x: clip;
+}
+.home-shell .wordmark {
+  color: var(--palm);
+}
+.home-shell .wordmark span {
+  color: var(--hibiscus);
+}
+.home-shell .button.ghost {
+  border-color: var(--palm);
+  color: var(--palm);
+}
+.home-shell .button.ghost:hover {
+  background: var(--palm);
+  border-color: var(--palm);
+  color: var(--chalk);
+}
+
+/* A full-width block of colour around a section that keeps the page's measure. */
+.band {
+  margin-top: clamp(64px, 9vw, 128px);
+  padding-block: clamp(56px, 8vw, 112px);
+  background: var(--band);
+  box-shadow: 0 0 0 100vmax var(--band);
+  clip-path: inset(0 -100vmax);
+}
+/* Two blocks in a row overlap by a pixel, so no sliver of the page shows between them. */
+.band + .band {
+  margin-top: -1px;
+}
+.band-wine {
+  --band: var(--wine);
+  --title: #fff4e6;
+  --body: rgba(255, 244, 230, 0.84);
+  --quiet: rgba(255, 244, 230, 0.7);
+  --rule: rgba(255, 244, 230, 0.2);
+  --focus: var(--candle);
+}
+.band-candle {
+  --band: var(--candle);
+  --title: #3a1220;
+  --body: #33241a;
+  --quiet: #4b3a22;
+  --rule: rgba(58, 18, 32, 0.25);
+  --focus: var(--wine);
+}
+.band-hibiscus {
+  --band: var(--hibiscus);
+  --title: #fff;
+  --body: #fff;
+  --quiet: rgba(255, 255, 255, 0.86);
+  --rule: rgba(255, 255, 255, 0.3);
+  --focus: #fff;
 }
 
 /* ---------- Header ---------- */
@@ -24,7 +93,8 @@
   z-index: 20;
   flex-wrap: nowrap;
   gap: clamp(12px, 2vw, 28px);
-  background: color-mix(in srgb, var(--room) 84%, transparent);
+  background: color-mix(in srgb, var(--mist) 88%, transparent);
+  border-bottom-color: var(--line);
   backdrop-filter: blur(12px);
 }
 .home-header .wordmark {
@@ -36,14 +106,14 @@
   margin-left: auto;
 }
 .home-nav a {
-  color: var(--on-room-soft);
+  color: var(--ink);
   font-size: 16px;
   font-weight: 550;
   text-decoration: none;
   white-space: nowrap;
 }
 .home-nav a:hover {
-  color: var(--on-room);
+  color: var(--hibiscus-deep);
   text-decoration: underline;
   text-underline-offset: 5px;
 }
@@ -56,6 +126,10 @@
   margin: 0 auto;
   padding: clamp(24px, 5vw, 56px) var(--gutter) 0;
 }
+.home-hero {
+  min-height: 0;
+  padding-block: clamp(8px, 3vw, 44px) 0;
+}
 .home-hero .studio-title {
   font-size: clamp(38px, 4.7vw, 70px);
   line-height: 0.96;
@@ -64,10 +138,24 @@
 .home-hero .lede {
   max-width: 30em;
 }
+.home-hero .screen {
+  box-shadow:
+    0 0 0 1px rgba(18, 58, 46, 0.2),
+    0 36px 80px rgba(18, 58, 46, 0.3),
+    0 0 0 10px var(--chalk),
+    0 0 0 11px var(--line);
+}
+.home-hero .screen-note {
+  margin-top: 22px;
+  color: var(--quiet);
+}
 
 .home-section {
   padding-top: clamp(64px, 9vw, 128px);
   scroll-margin-top: 40px;
+}
+.home-section.band {
+  padding-top: clamp(56px, 8vw, 112px);
 }
 .section-intro {
   margin-bottom: clamp(26px, 3.4vw, 44px);
@@ -75,7 +163,7 @@
 .section-intro h2,
 .home-close h2 {
   margin: 0;
-  color: var(--on-room);
+  color: var(--title);
   font-weight: 760;
   font-stretch: 78%;
   font-size: clamp(34px, 4.4vw, 60px);
@@ -87,7 +175,7 @@
   margin: 14px 0 0;
   max-width: 34em;
   text-wrap: pretty;
-  color: var(--on-room-soft);
+  color: var(--body);
   font-size: 19px;
 }
 .home-section > .fine {
@@ -106,7 +194,7 @@
 }
 .rack li {
   display: grid;
-  filter: drop-shadow(0 16px 22px rgba(0, 0, 0, 0.42));
+  filter: drop-shadow(0 14px 18px rgba(18, 58, 46, 0.22));
 }
 .stub {
   --notch: 9px;
@@ -121,7 +209,7 @@
   transform: translateY(-4px) rotate(-0.7deg);
 }
 .stub:focus-visible {
-  outline: 3px solid var(--candle);
+  outline: 3px solid var(--palm);
   outline-offset: 4px;
 }
 .stub-body,
@@ -164,7 +252,7 @@
 }
 .stub-admit {
   font: italic 500 17px / 1.2 var(--serif);
-  opacity: 0.9;
+  opacity: 0.92;
 }
 .stub-name {
   font-weight: 760;
@@ -177,27 +265,23 @@
   margin-top: 8px;
   font-size: 15.5px;
   line-height: 1.35;
-  opacity: 0.92;
+  opacity: 0.94;
 }
 .rack [data-stock='hibiscus'] .stub {
-  --stock: linear-gradient(135deg, #cf2f61, #a51c49 70%, #8f173f);
+  --stock: linear-gradient(135deg, #d43366, #b3214f 70%, #9c1d46);
   --perf: rgba(40, 6, 18, 0.55);
 }
-.rack [data-stock='chalk'] .stub {
-  --stock: linear-gradient(135deg, #fffdf8, #efe6d3);
-  --perf: rgba(20, 38, 31, 0.4);
-  color: var(--ink);
+.rack [data-stock='palm'] .stub {
+  --stock: linear-gradient(135deg, #1f5a46, #123a2e 75%);
+  --perf: rgba(255, 244, 230, 0.4);
 }
-.rack [data-stock='chalk'] .stub-admit {
-  color: var(--hibiscus-deep);
+.rack [data-stock='palm'] .stub-admit {
+  color: var(--candle);
   opacity: 1;
 }
-.rack [data-stock='chalk'] .stub-name {
-  color: var(--palm);
-}
 .rack [data-stock='candle'] .stub {
-  --stock: linear-gradient(135deg, #f7d590, #ecb955);
-  --perf: rgba(58, 20, 32, 0.45);
+  --stock: linear-gradient(135deg, #f8d993, #f0bd5c);
+  --perf: rgba(58, 18, 32, 0.45);
   color: #33121d;
 }
 
@@ -215,19 +299,19 @@
   border-radius: 4px;
   overflow: hidden;
   box-shadow:
-    0 0 0 1px var(--hairline),
-    0 18px 40px rgba(0, 0, 0, 0.45);
+    0 0 0 1px var(--rule),
+    0 18px 40px rgba(0, 0, 0, 0.4);
 }
 .contact-sheet li > h3 {
   margin: 14px 0 4px;
-  color: var(--on-room);
+  color: var(--title);
   font-size: 21px;
   font-stretch: 80%;
   font-weight: 720;
 }
 .contact-sheet li > p {
   margin: 0;
-  color: var(--on-room-soft);
+  color: var(--body);
   font-size: 15.5px;
   line-height: 1.45;
 }
@@ -249,27 +333,28 @@
   font-weight: 650;
 }
 .song-source figcaption {
-  color: var(--on-room-faint);
+  color: var(--quiet);
 }
 .song-source blockquote {
   margin: 0;
   padding-left: clamp(16px, 2vw, 26px);
-  border-left: 2px solid var(--blush);
+  border-left: 3px solid var(--hibiscus);
 }
 .song-source blockquote p {
   margin: 0;
-  color: var(--on-room-soft);
+  color: var(--body);
   font-size: clamp(19px, 1.7vw, 23px);
   line-height: 1.45;
 }
 .song-source blockquote p:first-child {
   margin-bottom: 8px;
-  color: var(--on-room);
+  color: var(--title);
   font: italic 500 clamp(28px, 3vw, 42px) / 1.1 var(--serif);
 }
 .song-result {
   rotate: 1deg;
   padding-bottom: 26px;
+  box-shadow: 0 26px 54px rgba(78, 26, 44, 0.3);
 }
 .song-result figcaption {
   color: var(--muted);
@@ -333,14 +418,20 @@
   background: var(--hibiscus);
 }
 
-/* ---------- How it works: four frames of film ---------- */
+/* ---------- How it works: four frames of film, a dark strip on the light page ---------- */
 
 .home-steps {
+  --room: var(--mist);
+  --room-2: var(--palm);
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.home-steps li,
+.home-steps li:nth-child(n) {
+  border-color: rgba(238, 240, 231, 0.2);
 }
 .home-steps h3 {
   margin: 0 0 6px;
-  color: var(--on-room);
+  color: var(--chalk);
   font-size: 25px;
   font-stretch: 80%;
 }
@@ -350,6 +441,7 @@
 }
 .home-steps p {
   max-width: 22em;
+  color: rgba(238, 240, 231, 0.84);
 }
 
 /* ---------- Questions ---------- */
@@ -364,10 +456,10 @@
   margin: 0;
 }
 .question-list {
-  border-top: 1px solid var(--hairline);
+  border-top: 1px solid var(--rule);
 }
 .question-list details {
-  border-bottom: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--rule);
 }
 .question-list summary {
   display: flex;
@@ -375,7 +467,7 @@
   align-items: center;
   gap: 18px;
   padding: 20px 2px;
-  color: var(--on-room);
+  color: var(--title);
   font-size: clamp(20px, 1.8vw, 24px);
   font-stretch: 84%;
   font-weight: 660;
@@ -392,53 +484,71 @@
   width: 14px;
   height: 14px;
   background:
-    linear-gradient(var(--blush), var(--blush)) center / 100% 2px no-repeat,
-    linear-gradient(var(--blush), var(--blush)) center / 2px 100% no-repeat;
+    linear-gradient(var(--hibiscus), var(--hibiscus)) center / 100% 2px no-repeat,
+    linear-gradient(var(--hibiscus), var(--hibiscus)) center / 2px 100% no-repeat;
   transition: transform 0.25s;
 }
 .question-list details[open] summary::after {
   transform: rotate(45deg);
 }
 .question-list summary:hover {
-  color: var(--blush);
+  color: var(--hibiscus-deep);
 }
 .question-list details p {
   margin: -4px 0 22px;
   max-width: 38em;
-  color: var(--on-room-soft);
+  color: var(--body);
   font-size: 18px;
 }
 
 /* ---------- Closing ---------- */
 
-.home-close {
-  margin-top: clamp(72px, 10vw, 140px);
-  padding: clamp(44px, 7vw, 96px) 0 clamp(56px, 8vw, 110px);
-  border-top: 1px solid var(--hairline);
-}
 .home-close h2 {
   font-size: clamp(40px, 6.6vw, 96px);
   line-height: 0.94;
   max-width: 11em;
   margin-bottom: clamp(24px, 3vw, 38px);
 }
+.home-shell .home-close .button.primary {
+  background: var(--chalk);
+  color: var(--hibiscus-deep);
+}
+.home-shell .home-close .button.primary:hover {
+  background: var(--candle);
+  color: #3a1220;
+}
+.home-shell .home-close .button.ghost {
+  border-color: #fff;
+  color: #fff;
+}
+.home-shell .home-close .button.ghost:hover {
+  background: #fff;
+  border-color: #fff;
+  color: var(--hibiscus-deep);
+}
 .home-footer {
+  background: var(--palm-deep);
+}
+.home-footer > div {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   gap: 8px 28px;
   flex-wrap: wrap;
-  width: min(calc(1320px - 2 * var(--gutter)), calc(100% - 2 * var(--gutter)));
+  max-width: 1320px;
   margin: 0 auto;
-  padding: 22px 0 34px;
-  border-top: 1px solid var(--hairline);
+  padding: 24px var(--gutter) 34px;
 }
-.home-footer .wordmark {
+.home-shell .home-footer .wordmark {
   font-size: 19px;
+  color: var(--chalk);
+}
+.home-shell .home-footer .wordmark span {
+  color: var(--blush);
 }
 .home-footer p {
   margin: 0;
-  color: var(--on-room-faint);
+  color: rgba(238, 240, 231, 0.74);
   font-size: 14px;
 }
 

@@ -1,6 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Ambient } from '../film/Ambient'
 import { Film, FILM_HUSH, FILM_SOUND } from '../film/Film'
 import { Still } from '../film/Still'
 import { previewFor } from '../film/previews'
@@ -94,8 +93,6 @@ function Home() {
       </header>
 
       <main className="home">
-        <Ambient colors={{ a: '#07140f', b: '#123a2e', c: '#6fae7c' }} density={0.7} />
-
         <section className="home-hero">
           <div>
             <h1 className="studio-title">The little things about someone you love, turned into a film.</h1>
@@ -131,7 +128,7 @@ function Home() {
           </div>
           <ul className="rack">
             {OCCASIONS.map((o, i) => (
-              <li key={o.id} data-stock={['hibiscus', 'chalk', 'candle'][(i + Math.floor(i / 3)) % 3]}>
+              <li key={o.id} data-stock={['hibiscus', 'palm', 'candle'][(i + Math.floor(i / 3)) % 3]}>
                 <Link to="/create" search={{ occasion: o.id }} className="stub">
                   <span className="stub-body">
                     <span className="stub-admit">Admit one</span>
@@ -147,7 +144,7 @@ function Home() {
           </ul>
         </section>
 
-        <section id="inside" className="home-section" aria-labelledby="inside-title">
+        <section id="inside" className="home-section band band-wine" aria-labelledby="inside-title">
           <div className="section-intro">
             <h2 id="inside-title">What goes into the film</h2>
             <p>Each scene is built from something you tell us. Skip one and the film simply leaves it out.</p>
@@ -166,7 +163,7 @@ function Home() {
           <p className="fine">Stills from the sample film.</p>
         </section>
 
-        <section id="song" className="home-section song-demo" aria-labelledby="song-title">
+        <section id="song" className="home-section band band-candle" aria-labelledby="song-title">
           <div className="section-intro">
             <h2 id="song-title">Then a song, written about them.</h2>
             <p>
@@ -236,7 +233,7 @@ function Home() {
           </div>
         </section>
 
-        <section className="home-close" aria-labelledby="close-title">
+        <section className="home-close band band-hibiscus" aria-labelledby="close-title">
           <h2 id="close-title">Someone you love has a day coming up.</h2>
           <div className="actions">
             <Link to="/create" className="button primary">
@@ -250,10 +247,12 @@ function Home() {
       </main>
 
       <footer className="home-footer">
-        <span className="wordmark">
-          little things <span>digital</span>
-        </span>
-        <p>{SAMPLE_NOTE}</p>
+        <div>
+          <span className="wordmark">
+            little things <span>digital</span>
+          </span>
+          <p>{SAMPLE_NOTE}</p>
+        </div>
       </footer>
     </div>
   )
