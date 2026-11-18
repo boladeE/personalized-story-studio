@@ -21,8 +21,10 @@ function Preview() {
   const [panelOpen, setPanelOpen] = useState(false)
   // The sample plays its own song unless the viewer switches to the score or makes another.
   const [sampleSong, setSampleSong] = useState(true)
+  // The sample opens in the lightest look; a visitor can try the other two from the panel.
+  const [sampleLook, setSampleLook] = useState<LookId>('paper')
   const useSample = sample === 1 || !canGenerate(intake)
-  const source = useSample ? SAMPLE_INTAKE : intake
+  const source = useMemo(() => (useSample ? { ...SAMPLE_INTAKE, look: sampleLook } : intake), [useSample, sampleLook, intake])
   const story = useMemo<Story | null>(() => {
     if (!canGenerate(source)) return null
     // The sample says its people are invented in its own end credits, not in the header.
@@ -93,8 +95,7 @@ function Preview() {
             sampleSong={useSample ? sampleSong : null}
             onSampleSong={setSampleSong}
             look={story.look}
-            canChangeLook={!useSample}
-            onLook={(look) => setIntake((c) => ({ ...c, look }))}
+            onLook={(look) => (useSample ? setSampleLook(look) : setIntake((c) => ({ ...c, look })))}
             onClose={() => setPanelOpen(false)}
           />
         )}
@@ -109,7 +110,6 @@ function AdjustPanel({
   sampleSong,
   onSampleSong,
   look,
-  canChangeLook,
   onLook,
   onClose,
 }: {
@@ -119,7 +119,6 @@ function AdjustPanel({
   sampleSong: boolean | null
   onSampleSong: (on: boolean) => void
   look: LookId
-  canChangeLook: boolean
   onLook: (look: LookId) => void
   onClose: () => void
 }) {
@@ -127,20 +126,18 @@ function AdjustPanel({
   const recipient = intake.recipient.trim()
   return (
     <section id="adjust-panel" className="adjust-panel" aria-label="Look & music">
-      {canChangeLook && (
-        <fieldset className="adjust-group">
-          <legend>Look</legend>
-          <div className="adjust-options">
-            {LOOKS.map((l) => (
-              <label key={l.id} className="look-option" data-look={l.id}>
-                <input type="radio" name="preview-look" checked={look === l.id} onChange={() => onLook(l.id)} />
-                <span className="swatch" aria-hidden="true" />
-                {l.name}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-      )}
+      <fieldset className="adjust-group">
+        <legend>Look</legend>
+        <div className="adjust-options">
+          {LOOKS.map((l) => (
+            <label key={l.id} className="look-option" data-look={l.id}>
+              <input type="radio" name="preview-look" checked={look === l.id} onChange={() => onLook(l.id)} />
+              <span className="swatch" aria-hidden="true" />
+              {l.name}
+            </label>
+          ))}
+        </div>
+      </fieldset>
       <fieldset className="adjust-group">
         <legend>Soundtrack</legend>
         <div className="adjust-options">

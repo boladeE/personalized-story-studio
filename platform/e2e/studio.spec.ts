@@ -136,6 +136,9 @@ test('sound can be muted and the preview has an honest empty state', async ({ pa
   await page.getByRole('link', { name: 'Play the sample' }).click()
   // The header carries only the controls: no scene count and no notice crowding it.
   await expect(page.locator('.studio-header')).not.toContainText(/scenes|Fictional|AI/)
+  // The sample opens in the light look, under a light header.
+  await expect(page.locator('.film')).toHaveAttribute('data-look', 'paper')
+  expect(await page.locator('.studio-header').evaluate((el) => getComputedStyle(el).backgroundColor)).toBe('rgb(238, 240, 231)')
   await startFilm(page)
   // The sample plays its own sung song; the score is one choice away.
   await expect.poll(async () => (await audioState(page))?.trackId, { timeout: 15_000 }).toBe('song')
@@ -146,6 +149,10 @@ test('sound can be muted and the preview has an honest empty state', async ({ pa
   await page.getByRole('button', { name: 'Look & music' }).click()
   await expect(page.getByRole('radio', { name: 'Zara’s song', exact: true })).toBeChecked()
   await page.getByRole('radio', { name: 'Studio score' }).check()
+  // A visitor can try the other looks on the sample too.
+  await page.getByRole('radio', { name: 'Garden' }).check()
+  await expect(page.locator('.film')).toHaveAttribute('data-look', 'garden')
+  await page.getByRole('radio', { name: 'Paper' }).check()
   await page.getByRole('button', { name: 'Done' }).click()
   await startFilm(page)
   await expect.poll(async () => (await audioState(page))?.trackId).not.toBe('song')

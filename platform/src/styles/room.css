@@ -247,9 +247,31 @@ select {
 }
 /* ---------- Preview ---------- */
 
+/* The header is a light bar above the film, like the home page around its screen. */
 .preview-shell .studio-header {
-  background: #050304;
-  border-bottom-color: rgba(246, 233, 216, 0.1);
+  background: var(--mist);
+  border-bottom-color: var(--line);
+}
+.preview-shell .studio-header .wordmark {
+  color: var(--palm);
+}
+.preview-shell .studio-header .wordmark span {
+  color: var(--hibiscus);
+}
+.preview-shell .studio-header .studio-tag {
+  color: var(--muted);
+  border-color: var(--line);
+}
+.preview-shell .studio-header .button.ghost {
+  border-color: var(--palm);
+  color: var(--palm);
+}
+.preview-shell .studio-header .button.ghost:hover {
+  background: var(--palm);
+  color: var(--chalk);
+}
+.preview-shell .studio-header :focus-visible {
+  outline-color: var(--hibiscus);
 }
 .adjust-panel {
   animation: panel-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
