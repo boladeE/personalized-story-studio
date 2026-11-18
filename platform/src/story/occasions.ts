@@ -49,8 +49,6 @@ export interface OccasionDef {
   song: {
     /** "a {adjective} song", "a {adjective} gift". */
     adjective: string
-    /** How the music model is told what it is singing. */
-    music: string
     /** The greeting the song may say once or twice; null when there is no occasion to name. */
     greeting: string | null
     /** Finishes "Write the lyrics of a short song …". */
@@ -85,7 +83,8 @@ const SEAL: Omit<Ending, 'fallback'> = {
 }
 
 const lastWords = (singer: string, who: string) => `The last thing ${singer} wants ${who} to hear`
-const FAMILY_VERDICTS = ['Flags noted. Wouldn’t change a thing.', 'Still my favourite person.', 'Would ignore them all again.']
+/** How the red flags scene signs off when the film isn't for a partner. */
+export const FAMILY_VERDICTS = ['Flags noted. Wouldn’t change a thing.', 'Still my favourite person.', 'Would ignore them all again.']
 
 const DEFS: OccasionDef[] = [
   {
@@ -99,7 +98,6 @@ const DEFS: OccasionDef[] = [
     share: 'I made you something for your birthday.',
     song: {
       adjective: 'birthday',
-      music: 'A birthday song',
       greeting: 'happy birthday',
       purpose: (_singer, who) => `for ${who}'s birthday`,
       wish: () => 'The birthday wish',
@@ -116,7 +114,6 @@ const DEFS: OccasionDef[] = [
     share: 'I made you something for our anniversary.',
     song: {
       adjective: 'anniversary',
-      music: 'An anniversary love song',
       greeting: 'happy anniversary',
       purpose: (singer, who) => `for ${singer} and ${who}'s anniversary`,
       wish: lastWords,
@@ -133,7 +130,6 @@ const DEFS: OccasionDef[] = [
     share: 'I made you something for Valentine’s Day.',
     song: {
       adjective: "Valentine's Day",
-      music: "A Valentine's Day love song",
       greeting: "happy Valentine's Day",
       purpose: (_singer, who) => `for ${who}, for Valentine's Day`,
       wish: lastWords,
@@ -150,7 +146,6 @@ const DEFS: OccasionDef[] = [
     share: 'I made you something, just because.',
     song: {
       adjective: 'just-because',
-      music: 'A warm, affectionate song',
       greeting: null,
       purpose: (singer, who) => `for ${who}, for no occasion except that ${singer} wanted to`,
       wish: lastWords,
@@ -168,7 +163,6 @@ const DEFS: OccasionDef[] = [
     share: 'I made you something for Mother’s Day.',
     song: {
       adjective: "Mother's Day",
-      music: "A Mother's Day song",
       greeting: "happy Mother's Day",
       purpose: (_singer, who) => `for ${who}, for Mother's Day`,
       wish: lastWords,
@@ -186,7 +180,6 @@ const DEFS: OccasionDef[] = [
     share: 'I made you something for Father’s Day.',
     song: {
       adjective: "Father's Day",
-      music: "A Father's Day song",
       greeting: "happy Father's Day",
       purpose: (_singer, who) => `for ${who}, for Father's Day`,
       wish: lastWords,
@@ -202,14 +195,13 @@ const DEFS: OccasionDef[] = [
     verdicts: FAMILY_VERDICTS,
     reasons: {
       question: (them) => (them ? `What are you thanking ${them} for?` : 'What are you thanking them for?'),
-      hint: 'Shown one at a time. Three or more. The small, specific things count most.',
+      hint: 'Shown one at a time. Two or more. The small, specific things count most.',
       titles: ['What I’m thanking you for.', 'In no particular order.', 'Just a few of them.'],
     },
     ending: { ...SEAL, fallback: 'Thank you, {r}. Love, {s}.' },
     share: 'I made you something to say thank you.',
     song: {
       adjective: 'thank-you',
-      music: 'A heartfelt thank-you song',
       greeting: 'thank you',
       purpose: (_singer, who) => `to thank ${who}`,
       wish: lastWords,
@@ -225,14 +217,13 @@ const DEFS: OccasionDef[] = [
     verdicts: FAMILY_VERDICTS,
     reasons: {
       question: (them) => (them ? `What makes you proud of ${them}?` : 'What makes you proud of them?'),
-      hint: 'Shown one at a time. Three or more. What you watched them do counts more than the result.',
+      hint: 'Shown one at a time. Two or more. What you watched them do counts more than the result.',
       titles: ['Why I’m proud of you.', 'In no particular order.', 'Just a few reasons.'],
     },
     ending: { ...SEAL, fallback: 'Congratulations, {r}. Love, {s}.' },
     share: 'I made you something to say congratulations.',
     song: {
       adjective: 'congratulations',
-      music: 'A proud, celebratory song',
       greeting: 'congratulations',
       purpose: (_singer, who) => `to congratulate ${who}`,
       wish: lastWords,
@@ -247,14 +238,13 @@ const DEFS: OccasionDef[] = [
     star: 'The one I miss',
     reasons: {
       question: (them) => (them ? `What do you miss about ${them}?` : 'What do you miss about them?'),
-      hint: 'Shown one at a time. Three or more. The everyday things are the ones that land.',
+      hint: 'Shown one at a time. Two or more. The everyday things are the ones that land.',
       titles: ['What I miss.', 'In no particular order.', 'Just a few things.'],
     },
     ending: { ...SEAL, fallback: 'I miss you, {r}. Love, {s}.' },
     share: 'I made you something because I miss you.',
     song: {
       adjective: 'missing-you',
-      music: 'A tender song about missing someone',
       greeting: 'I miss you',
       purpose: (_singer, who) => `for ${who}, who is far away and missed`,
       wish: lastWords,

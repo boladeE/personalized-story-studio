@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { lyricsPrompt, songPrompt, sungPrompt, vibeById } from '../story/vibes'
-import type { SongDetails } from '../story/vibes'
+import type { SongDetails, Voice } from '../story/vibes'
 import type { Occasion } from '../story/types'
 import { sniffAudio, songsDir } from './store'
 
@@ -77,13 +77,13 @@ export interface SongWords {
  * With `details` the song is sung about the recipient; without, it is an
  * instrumental, scored for `occasion`. With `words` the model sings those lyrics instead of writing its own.
  */
-export async function generateSong(vibeId: string, details: SongDetails | null = null, words: SongWords | null = null, occasion: Occasion = 'birthday'): Promise<SongFile> {
+export async function generateSong(vibeId: string, details: SongDetails | null = null, words: SongWords | null = null, occasion: Occasion = 'birthday', voice: Voice = 'surprise'): Promise<SongFile> {
   const vibe = vibeById(vibeId)
   if (!vibe) throw new MusicError('Unknown style', 400)
   const provider = musicProvider()
   if (provider === 'off') throw new MusicError('Songs aren’t switched on for this studio yet.', 503)
 
-  const prompt = details ? (words ? lyricsPrompt(vibe, details, words.lyrics) : sungPrompt(vibe, details)) : songPrompt(vibe, occasion)
+  const prompt = details ? (words ? lyricsPrompt(vibe, details, words.lyrics, voice) : sungPrompt(vibe, details)) : songPrompt(vibe, occasion)
   let bytes: Uint8Array
   let lyrics = ''
   if (provider === 'demo') bytes = demoSong(vibe.id)

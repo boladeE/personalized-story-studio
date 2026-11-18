@@ -234,8 +234,9 @@ describe('AI music', () => {
     const details = vibes.songDetails(SAMPLE_INTAKE)!
     const words = '[Verse]\nYou steal the duvet, ask why I’m cold\n\n[Chorus]\nHappy birthday, Zara'
     const prompt = vibes.lyricsPrompt(vibes.vibeById('highlife')!, details, words)
-    expect(prompt).toContain('word for word')
-    expect(prompt).toContain('highlife')
+    expect(prompt).toContain('exactly as written')
+    expect(prompt).toContain('Do not add, drop or change any words')
+    expect(prompt).toMatch(/^Highlife song\. 112 BPM\.\nInstruments: /)
     expect(prompt.endsWith(`Lyrics:\n${words}`)).toBe(true)
     expect(prompt).not.toContain('eleven-minute')
   })

@@ -1,4 +1,4 @@
-import { isOccasion } from './types'
+import { isOccasion, isRelationship } from './types'
 import type { Intake, LookId } from './types'
 
 /**
@@ -84,6 +84,7 @@ export function parseIntake(raw: unknown): { ok: true; intake: Intake } | { ok: 
 
     const intake: Intake = {
       occasion: r.occasion,
+      ...(isRelationship(r.relationship) ? { relationship: r.relationship } : {}),
       sender: text(r.sender, LIMITS.name, 'Your name'),
       recipient: text(r.recipient, LIMITS.name, 'Their name'),
       photos,

@@ -4,6 +4,7 @@ import type { DragEvent, KeyboardEvent, ReactNode, TextareaHTMLAttributes } from
 import { flushSync } from 'react-dom'
 import { StudioHeader } from '../components/StudioHeader'
 import { useDraft } from '../components/draft'
+import { releasePhotos, usePhotos } from '../components/photos'
 import { Still } from '../film/Still'
 import { previewFor, previewLook } from '../film/previews'
 import type { StepFocus, StepId } from '../film/previews'
@@ -44,8 +45,6 @@ export const Route = createFileRoute('/create')({
   head: () => ({ meta: [{ title: 'Start a film - Little Things Digital' }] }),
   component: Create,
 })
-
-const MAX_PHOTO_BYTES = 15 * 1024 * 1024
 
 const NUDGES = {
   memories: [
@@ -89,7 +88,6 @@ function Create() {
     void navigate({ to: '/create', search: stepParam ? { step: stepParam } : {}, replace: true })
   }, [asked])
 
-  const [photoError, setPhotoError] = useState('')
   const [dragging, setDragging] = useState(false)
   const [focus, setFocus] = useState<StepFocus>({ memory: 0, habit: 0, reason: 0 })
   const fileInput = useRef<HTMLInputElement>(null)
@@ -132,35 +130,7 @@ function Create() {
 
   /* ---------- photos ---------- */
 
-  const releasePhotos = (photos: Intake['photos']) => photos.forEach((p) => p.src.startsWith('blob:') && URL.revokeObjectURL(p.src))
-
-  const addPhotos = (files: File[]) => {
-    const room = LIMITS.photos - intake.photos.length
-    const images = files.filter((f) => f.type.startsWith('image/') && f.size <= MAX_PHOTO_BYTES)
-    const skipped = files.length - images.length
-    const accepted = images.slice(0, Math.max(0, room))
-    const problems = [
-      skipped && `${skipped} file${skipped === 1 ? ' was' : 's were'} skipped (images up to 15 MB only).`,
-      images.length > accepted.length && `Only ${LIMITS.photos} photos fit in one story.`,
-    ].filter(Boolean)
-    setPhotoError(problems.join(' '))
-    if (!accepted.length) return
-    setIntake((c) => ({
-      ...c,
-      photos: [...c.photos, ...accepted.map((file) => ({ id: `p-${crypto.randomUUID()}`, src: URL.createObjectURL(file), caption: '' }))],
-    }))
-  }
-
-  const removePhoto = (id: string) => {
-    setIntake((c) => {
-      releasePhotos(c.photos.filter((p) => p.id === id))
-      return {
-        ...c,
-        photos: c.photos.filter((p) => p.id !== id),
-        memories: c.memories.map((m) => (m.photoId === id ? { ...m, photoId: '' } : m)),
-      }
-    })
-  }
+  const { add: addPhotos, remove: removePhoto, error: photoError, setError: setPhotoError } = usePhotos()
 
   const onDrop = (event: DragEvent) => {
     event.preventDefault()
@@ -296,7 +266,7 @@ function Create() {
     },
     memories: {
       question: `Which moments with ${name} do you keep going back to?`,
-      hint: 'Two or more. Give each one a short title, then tell it the way you’d tell a friend.',
+      hint: 'One is enough; more is better. Give each a short title, then tell it the way you’d tell a friend.',
       body: memory && (
         <>
           <div className="tabs" role="group" aria-label="Memories">
@@ -376,7 +346,7 @@ function Create() {
     },
     habits: {
       question: them ? `What does ${them} do that deserves a red flag?` : 'What do they do that deserves a red flag?',
-      hint: 'Their funniest habits, presented as very serious red flags. Three or more.',
+      hint: 'Their funniest habits, presented as very serious red flags. Two or more.',
       body: (
         <>
           <ListEditor
@@ -393,7 +363,7 @@ function Create() {
     },
     reasons: {
       question: occasion.reasons?.question(them) ?? (them ? `Why ${them}?` : 'Why them?'),
-      hint: occasion.reasons?.hint ?? 'The reasons you love them, shown one at a time. Three or more. Small and specific beats big and general.',
+      hint: occasion.reasons?.hint ?? 'The reasons you love them, shown one at a time. Two or more. Small and specific beats big and general.',
       body: (
         <>
           <ListEditor

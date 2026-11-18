@@ -1,34 +1,76 @@
 import { occasionOf } from './occasions'
-import { isOccasion } from './types'
-import type { Intake, Occasion } from './types'
+import { isRomantic, relationshipOf } from './relationships'
+import { isOccasion, isRelationship } from './types'
+import type { Intake, Occasion, Relationship } from './types'
 
-/** Song styles a sender can ask for. */
+/**
+ * Song styles a sender can ask for. `prompt` describes an instrumental. A
+ * sung song is asked for as a recipe (`genre`, `tempo`, `instruments`,
+ * `mood`), in the form Google's Lyria guidance recommends: genre first, then
+ * tempo, instruments, mood and the vocalist. The Afrobeats recipe is the one
+ * behind the sample's song, which is why it leads and is the default.
+ */
 export const VIBES = [
+  {
+    id: 'afrobeats',
+    name: 'Afrobeats',
+    feel: 'Easy groove, plucked guitar, warm bass',
+    prompt: 'relaxed Afrobeats with a syncopated drum groove, shakers and rim clicks, warm rounded bass, bright plucked guitar riffs and soft synth pads, around 100 BPM',
+    genre: 'Afrobeats, Afropop',
+    tempo: '100 BPM, in A major',
+    instruments: 'syncopated Afrobeats drum groove with shakers and rim clicks, warm rounded bass, bright plucked guitar riffs, soft synth pads',
+    mood: 'relaxed, groovy, warm',
+  },
   {
     id: 'afro-soul',
     name: 'Warm Afro-soul',
     feel: 'Soft keys and talking drum, unhurried',
     prompt: 'warm Afro-soul with soft Rhodes keys, gentle talking drum and shakers, mid-tempo around 96 BPM',
+    genre: 'Afro-soul, warm soul ballad',
+    tempo: '96 BPM',
+    instruments: 'soft Rhodes keys, gentle talking drum and shakers, warm bass, light guitar licks',
+    mood: 'tender, soulful, unhurried',
   },
   {
     id: 'highlife',
     name: 'Highlife guitar',
     feel: 'Bright guitars, light horns, an easy sway',
     prompt: 'bright Nigerian highlife with interlocking clean guitars, light horns and an easy groove around 112 BPM',
+    genre: 'Highlife',
+    tempo: '112 BPM',
+    instruments: 'interlocking clean guitars, light horns, bright hand percussion, an easy walking bass',
+    mood: 'joyful, bright, easy',
   },
   {
     id: 'piano',
     name: 'Soft piano',
     feel: 'Piano and strings, slow and tender',
     prompt: 'tender solo piano with a light string pad, slow and warm, around 72 BPM',
+    genre: 'Piano ballad',
+    tempo: '72 BPM',
+    instruments: 'solo piano with a light string pad',
+    mood: 'tender, slow, intimate',
   },
   {
     id: 'lofi-rnb',
     name: 'Lo-fi R&B',
     feel: 'Dusty drums and warm bass, late-night mood',
     prompt: 'mellow lo-fi R&B with dusty drums, warm bass and soft electric piano, around 84 BPM',
+    genre: 'Lo-fi R&B',
+    tempo: '84 BPM',
+    instruments: 'dusty laid-back drums, warm bass, soft electric piano',
+    mood: 'mellow, late-night, intimate',
   },
 ] as const
+
+/** Who sings. `surprise` leaves it to the music model. */
+export const VOICES = [
+  { id: 'surprise', name: 'Surprise me' },
+  { id: 'woman', name: 'A woman’s voice' },
+  { id: 'man', name: 'A man’s voice' },
+] as const
+export type Voice = (typeof VOICES)[number]['id']
+export const isVoice = (value: unknown): value is Voice => VOICES.some((v) => v.id === value)
 
 export type Vibe = (typeof VIBES)[number]
 export type VibeId = Vibe['id']
@@ -58,6 +100,8 @@ export function songPrompt(vibe: Vibe, occasion: Occasion = 'birthday') {
 export interface SongDetails {
   /** What the song is for. Older requests carry none and are birthdays. */
   occasion: Occasion
+  /** Who the recipient is to the sender, when the sender said. */
+  relationship?: Relationship
   recipient: string
   sender: string
   reasons: string[]
@@ -95,6 +139,7 @@ export function parseSongDetails(raw: unknown): SongDetails | null {
   if (!recipient) return null
   return {
     occasion: isOccasion(r.occasion) ? r.occasion : 'birthday',
+    ...(isRelationship(r.relationship) ? { relationship: r.relationship } : {}),
     recipient,
     sender: tidy(r.sender, SONG_LIMITS.name),
     reasons: lines(r.reasons, SONG_LIMITS.reasons, SONG_LIMITS.line),
@@ -108,9 +153,11 @@ export function parseSongDetails(raw: unknown): SongDetails | null {
 export function songDetails(intake: Intake): SongDetails | null {
   return parseSongDetails({
     occasion: intake.occasion,
+    relationship: intake.relationship,
     recipient: intake.recipient,
     sender: intake.sender,
-    reasons: intake.reasons,
+    // What the sender loves about how they are is a reason too; it only fits when there is room.
+    reasons: [...intake.reasons.filter((r) => r.trim()), intake.spotlight],
     habits: intake.habits,
     moments: intake.memories.map((m) => [m.title.trim(), m.story.trim()].filter(Boolean).join(' ')),
     wish: intake.wish,
@@ -344,7 +391,9 @@ export function lyricsBrief(d: SongDetails, tone: LyricTone = 'smooth') {
   if (d.moments.length) facts.push(`Moments they shared:\n${bullets(d.moments)}`)
   if (d.wish) facts.push(`${wish(singer, who)}: ${d.wish}`)
   if (!facts.length) facts.push('No other details were given.')
-  const truth = `Everything true you have to work with is below, in ${singer}'s own words. Do not add places, events, people, nicknames or facts. The details also show what kind of love this is (partner, parent, child, sibling, friend): write for that, and never make it romantic unless the details are. Write in the same kind of English ${singer} uses.`
+  const noun = relationshipOf(d.relationship)?.noun
+  const kin = noun ? ` ${who} is ${singer}'s ${noun}.` : ''
+  const truth = `Everything true you have to work with is below, in ${singer}'s own words.${kin} Do not add places, events, people, nicknames or facts. The details also show what kind of love this is (partner, parent, child, sibling, friend): write for that, and never make it romantic unless the details are. Write in the same kind of English ${singer} uses.`
   const banned = '- No greeting-card words: blessings, journey, treasure, special, shine, celebrate, amazing, wonderful, forever, dreams.'
   const contractions = "- Use contractions the way people speak: you're, I'm, don't, it's."
   const check = 'Before you answer, say every line aloud in your head. Rewrite any line that nobody would say, that exists only to rhyme, or that states something not in the details'
@@ -445,12 +494,29 @@ export function lyricsBrief(d: SongDetails, tone: LyricTone = 'smooth') {
   ].join('\n\n')
 }
 
-/** Ask the music model to sing words that are already written. */
-export function lyricsPrompt(vibe: Vibe, d: SongDetails, lyrics: string) {
+const SINGERS: Record<Voice, string> = {
+  man: 'Male tenor, smooth and warm, with a relaxed melodic delivery.',
+  woman: 'Female alto, smooth and warm, with a relaxed melodic delivery.',
+  surprise: 'A smooth, warm lead vocal with a relaxed melodic delivery.',
+}
+
+/**
+ * Ask the music model to sing words that are already written. The shape is
+ * the one that produced the sample's song: genre, tempo, instruments, mood,
+ * vocalist, production, structure, then the lyrics.
+ */
+export function lyricsPrompt(vibe: Vibe, d: SongDetails, lyrics: string, voice: Voice = 'surprise') {
+  // Only a song known to be for a partner is asked for as a love song.
+  const romantic = isRomantic(d.relationship) === true
   return [
-    `${occasionOf(d.occasion).song.music} with a sung lead vocal: ${vibe.prompt}.`,
-    `Sing exactly the lyrics below, word for word and in this order. Do not add, drop or change any words. Words in parentheses are backing vocals. Pronounce the name "${d.recipient}" clearly.`,
-    'Keep the vocal clear and in front so every word is easy to hear. Short instrumental intro and a clean ending. Do not imitate any existing song or artist.',
+    `${vibe.genre}${romantic ? ' love song' : ' song'}. ${vibe.tempo}.`,
+    `Instruments: ${vibe.instruments}.`,
+    `Mood: ${romantic ? 'Romantic, ' : 'Affectionate, '}${vibe.mood}.`,
+    `Vocals: ${SINGERS[voice]} Stacked harmonies answering the hook in the chorus.`,
+    'Production: clean, modern, radio-ready mix. Lead vocal front and centre, every word clear.',
+    'Structure: follow the section tags in the lyrics. Short instrumental intro, about two minutes in total, clean ending.',
+    `Sing the lyrics below exactly as written, in this order. Do not add, drop or change any words. Words in parentheses are backing vocals. Pronounce the name "${d.recipient}" clearly. Do not imitate any existing song or artist.`,
+    '',
     `Lyrics:\n${lyrics}`,
-  ].join('\n\n')
+  ].join('\n')
 }

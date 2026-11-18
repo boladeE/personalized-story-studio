@@ -34,7 +34,7 @@ describe('generateStory', () => {
   })
 
   it('only includes scenes whose needs are met', () => {
-    const intake = { ...minimal(), habits: ['one', 'two', ''], reasons: ['a', 'b', 'c'] }
+    const intake = { ...minimal(), habits: ['one', '', ''], reasons: ['a', 'b', ''] }
     const story = generateStory(intake, 11)
     expect(types(story)).toContain('reasons')
     expect(types(story)).not.toContain('redFlags')

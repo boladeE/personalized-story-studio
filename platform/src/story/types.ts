@@ -11,6 +11,11 @@ export const OCCASION_IDS = ['birthday', 'anniversary', 'valentine', 'just-becau
 export type Occasion = (typeof OCCASION_IDS)[number]
 export const isOccasion = (value: unknown): value is Occasion => (OCCASION_IDS as readonly unknown[]).includes(value)
 
+/** Who the film is for, to the person making it. Optional: gifts made before this was asked carry none. */
+export const RELATIONSHIP_IDS = ['wife', 'husband', 'girlfriend', 'boyfriend', 'partner', 'mother', 'father', 'daughter', 'son', 'sibling', 'grandparent', 'friend', 'other'] as const
+export type Relationship = (typeof RELATIONSHIP_IDS)[number]
+export const isRelationship = (value: unknown): value is Relationship => (RELATIONSHIP_IDS as readonly unknown[]).includes(value)
+
 export type LookId = 'screening' | 'garden' | 'paper'
 
 export interface Photo {
@@ -29,6 +34,7 @@ export interface Memory {
 /** Everything the sender tells us. All strings come from the sender. */
 export interface Intake {
   occasion: Occasion
+  relationship?: Relationship
   sender: string
   recipient: string
   photos: Photo[]

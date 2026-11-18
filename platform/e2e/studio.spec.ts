@@ -8,8 +8,8 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
 test('the sample becomes a film that plays by itself, with sound, to the wish and the credits', async ({ page }) => {
   test.setTimeout(90_000)
   const errors = trackErrors(page)
-  await open(page, '/')
-  await page.getByRole('link', { name: 'Start a film' }).first().click()
+  // The detailed form, where every scene is written by hand.
+  await open(page, '/create')
   await expect(page.getByRole('radio', { name: 'Birthday' })).toBeChecked()
   await expect(page.locator('.reel-count')).toHaveText('0 of 9 scenes ready')
   await expect(page.getByRole('button', { name: 'Build the story' })).toBeDisabled()
@@ -85,7 +85,7 @@ test('the sender’s own words and uploaded photo appear, and nothing is sent wh
 
   // The strip of frames jumps anywhere; Enter moves down a list.
   await page.getByRole('navigation', { name: 'Steps' }).getByRole('button', { name: 'Red flags' }).click()
-  await expect(page.locator('.scene-line')).toHaveText('Not in the film yet: Red flags. Add 3 more habits.')
+  await expect(page.locator('.scene-line')).toHaveText('Not in the film yet: Red flags. Add 2 more habits.')
   await page.getByLabel('Habit 1', { exact: true }).fill('Leaves one sip in every cup')
   await page.keyboard.press('Enter')
   await page.keyboard.type('Says five minutes, means forty')
@@ -126,7 +126,8 @@ test('shuffle rebuilds from the ticket with the same content, and edit keeps the
     expect((await order()).split('|').sort()).toHaveLength(8)
   }
   expect(versions.size).toBeGreaterThan(1)
-  await page.getByRole('link', { name: /^Edit/ }).click()
+  await page.getByRole('button', { name: /^Add/ }).click()
+  await page.getByRole('link', { name: 'edit every detail' }).click()
   await expect(page.getByLabel('Their name')).toHaveValue('Zara')
 })
 
@@ -180,6 +181,12 @@ for (const [width, height] of [[360, 740], [768, 900], [1360, 800]]) {
   test(`nothing spills off screen at ${width}px`, async ({ page }) => {
     test.setTimeout(90_000)
     await page.setViewportSize({ width, height })
+    // Every screen of the short flow.
+    for (const step of ['who', 'names', 'occasion', 'photos', 'about', 'song']) {
+      await open(page, `/start?step=${step}`)
+      await expect(page.locator('.start-page h1')).toBeVisible()
+      expect(await page.evaluate(() => document.documentElement.scrollWidth), `the ${step} screen of the short flow is wider than the screen`).toBeLessThanOrEqual(width)
+    }
     // The home page, top to bottom.
     await open(page, '/')
     await expect(page.locator('.contact-sheet .still-box[data-fit]')).toHaveCount(8)
@@ -239,44 +246,130 @@ for (const [width, height] of [[360, 740], [768, 900], [1360, 800]]) {
   })
 }
 
-test('the home page offers every occasion, and a ticket starts a film written for it', async ({ page }) => {
+const NOTE =
+  'Moving day. The lift broke, and you carried the sofa up five floors arguing about the angle. You always steal the duvet, then ask why I am cold. You never finish your tea. I love you because you remember the small things I mention once.'
+
+test('the home page offers every occasion, and a ticket starts a short flow that makes a film for it', async ({ page }) => {
   test.setTimeout(90_000)
   const errors = trackErrors(page)
   await open(page, '/')
   await expect(page.getByRole('heading', { level: 1 })).toContainText('turned into a film')
   const tickets = page.locator('.rack a')
   await expect(tickets).toHaveCount(OCCASIONS.length)
-  for (const occasion of OCCASIONS) await expect(tickets.filter({ hasText: occasion.name })).toHaveAttribute('href', `/create?occasion=${occasion.id}`)
+  for (const occasion of OCCASIONS) await expect(tickets.filter({ hasText: occasion.name })).toHaveAttribute('href', `/start?occasion=${occasion.id}`)
 
-  // The occasion is written into the draft and leaves the address, so it can be changed in the form.
+  // The occasion is written into the draft and leaves the address; the flow doesn't ask for it again.
   await tickets.filter({ hasText: 'Thank you' }).click()
-  await expect(page).toHaveURL(/\/create$/)
-  await expect(page.getByRole('radio', { name: 'Thank you' })).toBeChecked()
+  await expect(page).toHaveURL(/\/start$/)
+  await expect(page.locator('.start-step')).toHaveText('Step 1 of 5')
+  await page.getByRole('button', { name: 'Friend', exact: true }).click()
   await page.getByLabel('Their name').fill('Kemi')
   await page.getByLabel('Your name').fill('Ada')
+  await page.getByRole('button', { name: 'Next' }).click()
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Add a few photos of Kemi.')
+  await page.getByRole('button', { name: 'Skip photos' }).click()
+  await page.getByLabel('About Kemi').fill(NOTE)
+  await page.getByRole('button', { name: 'Next' }).click()
+  await page.getByRole('button', { name: 'Skip the song and use the studio’s own music' }).click()
+
+  // The film says what it is for on the ticket, tells the sender's own words, and ends on a sealed note, not a candle.
+  await expect(page).toHaveURL(/\/preview$/)
+  await expect(page.locator('.film .ticket-foot')).toContainText('A thank-you')
+  await expect(page.locator('.song-status')).toHaveCount(0)
+  await startFilm(page)
+  const shots = await walk(page, (shot) => shot.kind === 'wish')
+  const said = shots.map((s) => s.text).join(' ')
+  expect(said).not.toMatch(/birthday/i)
+  expect(said).toContain('you carried the sofa up five floors')
+  expect(said).toContain('You always steal the duvet, then ask why I am cold.')
+  // A friend's red flags don't end on "Staying anyway".
+  expect(said).not.toContain('Staying anyway')
+  await expect(page.locator('.shot.is-current .note')).toBeVisible()
+  await expect(page.locator('.shot.is-current .candle')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Open the note' }).click()
+  await expect(page.locator('.film').getByRole('status')).toContainText('Thank you, Kemi. Love, Ada.')
+
+  // The detailed form is one step away, with the same draft, and asks its questions for the occasion.
+  await page.getByRole('button', { name: /^Add/ }).click()
+  await page.getByRole('link', { name: 'edit every detail' }).click()
+  await expect(page.getByRole('radio', { name: 'Thank you' })).toBeChecked()
   await expect(page.locator('.projection .ticket-foot')).toContainText('A thank-you')
   await page.getByRole('button', { name: 'Reasons' }).click()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('What are you thanking Kemi for?')
   await page.getByRole('button', { name: 'Last line' }).click()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('What should Kemi read when the note opens?')
   await expect(page.locator('.question-hint')).toContainText('Thank you, Kemi. Love, Ada.')
-
-  // The film says what it is for on the ticket, and ends on a sealed note, not a candle.
-  await page.getByRole('button', { name: 'Build the story' }).first().click()
-  await expect(page.locator('.film .ticket-foot')).toContainText('A thank-you')
-  await startFilm(page)
-  const shots = await walk(page, (shot) => shot.kind === 'wish')
-  expect(shots.map((s) => s.text).join(' ')).not.toMatch(/birthday/i)
-  await expect(page.locator('.shot.is-current .note')).toBeVisible()
-  await expect(page.locator('.shot.is-current .candle')).toHaveCount(0)
-  await page.getByRole('button', { name: 'Open the note' }).click()
-  await expect(page.getByRole('status')).toContainText('Thank you, Kemi. Love, Ada.')
-
-  // Switching the occasion in the form changes the film.
-  await page.getByRole('link', { name: 'Edit details' }).click()
+  await page.getByRole('button', { name: 'Names' }).click()
   await page.getByRole('radio', { name: 'Birthday' }).check()
   await expect(page.locator('.projection .ticket-foot')).toContainText('Your birthday')
   await expect(page.getByRole('button', { name: 'The wish' })).toBeVisible()
+  expect(errors).toEqual([])
+})
+
+test('the short flow sorts the sender’s words, plays the film at once and brings the song in behind it', async ({ page }) => {
+  test.setTimeout(90_000)
+  const errors = trackErrors(page)
+  await open(page, '/')
+  await page.getByRole('link', { name: 'Start a film' }).first().click()
+  await expect(page.locator('.start-step')).toHaveText('Step 1 of 6')
+  await expect(page.getByRole('button', { name: 'Next' })).toBeDisabled()
+
+  // Three of the six steps are answered by a tap that moves straight on.
+  await page.getByRole('button', { name: 'Girlfriend' }).click()
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('What do you call each other?')
+  await page.getByLabel('Their name').fill('Zara')
+  await expect(page.getByRole('button', { name: 'Next' })).toBeDisabled()
+  await page.getByLabel('Your name').fill('Tobi')
+  await page.getByLabel('Your name').press('Enter')
+  await page.getByRole('button', { name: 'Anniversary' }).click()
+  await expect(page.locator('.start-step')).toHaveText('Step 4 of 6')
+  await page.locator('input[type=file]').setInputFiles(['one', 'two', 'three'].map((name) => ({ name: `${name}.png`, mimeType: 'image/png', buffer: PNG })))
+  await expect(page.locator('.start-photos img')).toHaveCount(3)
+  await page.getByRole('button', { name: 'Remove photo 3' }).click()
+  await expect(page.locator('.start-photos img')).toHaveCount(2)
+  await page.getByRole('button', { name: 'Next' }).click()
+
+  // One box. Too little can't go on; a few sentences can.
+  await page.getByLabel('About Zara').fill('She is great.')
+  await expect(page.getByRole('button', { name: 'Next' })).toBeDisabled()
+  await page.getByLabel('About Zara').fill(NOTE)
+  await page.getByRole('button', { name: 'Next' }).click()
+  await expect(page.getByRole('button', { name: 'Surprise me' })).toHaveCount(2)
+  await page.getByRole('button', { name: 'A woman’s voice' }).click()
+
+  // Making the film sends the words to be sorted (and nothing else), then the song is asked for behind it.
+  const sortRequest = page.waitForRequest((r) => r.url().endsWith('/api/sort'))
+  const lyricsRequest = page.waitForRequest((r) => r.url().endsWith('/api/lyrics'))
+  const songRequest = page.waitForRequest((r) => r.url().endsWith('/api/music') && r.method() === 'POST')
+  await page.getByRole('button', { name: 'Make the film' }).click()
+  expect((await sortRequest).postDataJSON()).toEqual({ text: NOTE, sender: 'Tobi', recipient: 'Zara' })
+  await expect(page).toHaveURL(/\/preview$/)
+  const brief = (await lyricsRequest).postDataJSON() as { details: Record<string, unknown> }
+  expect(brief.details).toMatchObject({ occasion: 'anniversary', relationship: 'girlfriend', recipient: 'Zara', sender: 'Tobi' })
+  expect(brief.details.habits).toEqual(['You always steal the duvet, then ask why I am cold.', 'You never finish your tea.'])
+  const asked = (await songRequest).postDataJSON() as Record<string, unknown>
+  expect(asked).toMatchObject({ vibe: 'afrobeats', voice: 'woman' })
+  expect(String(asked.lyrics)).toContain('Zara')
+
+  // The song lands on the film by itself while the ticket is still up.
+  await expect(page.locator('.film .ticket-foot')).toContainText('Our anniversary')
+  await expect(page.locator('.song-status')).toHaveCount(0, { timeout: 15_000 })
+  await startFilm(page)
+  await expect.poll(async () => (await audioState(page))?.trackId, { timeout: 15_000 }).toBe('song')
+  const said = (await walk(page, (shot) => shot.kind === 'wish')).map((s) => s.text).join(' ')
+  expect(said).toContain('you carried the sofa up five floors')
+  expect(said).toContain('You never finish your tea.')
+  await expect(page.getByRole('button', { name: 'Open the note' })).toBeVisible()
+
+  // What else could go in is listed beside the film, each a step of the detailed form.
+  await page.getByRole('button', { name: /^Add/ }).click()
+  const more = page.locator('.more-list li')
+  await expect(more.filter({ hasText: 'Memory lane' })).toContainText('In the film.')
+  await expect(more.filter({ hasText: 'Reasons' })).toContainText('Add 2 more reasons.')
+  await expect(more.filter({ hasText: 'The main character' })).toContainText('In the film.')
+  await more.filter({ hasText: 'A letter' }).getByRole('link', { name: 'Add' }).click()
+  await expect(page).toHaveURL(/\/create\?step=letter$/)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Is there something you want to tell Zara properly?')
   expect(errors).toEqual([])
 })
 

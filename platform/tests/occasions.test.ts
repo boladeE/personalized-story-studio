@@ -110,7 +110,6 @@ describe('songs for an occasion', () => {
 
   it('tells the music model what it is singing or scoring', () => {
     const d = songDetails(sampleFor('anniversary'))!
-    expect(lyricsPrompt(VIBES[0], d, 'la la')).toMatch(/^An anniversary love song with a sung lead vocal/)
     expect(sungPrompt(VIBES[0], d)).toContain('It is an anniversary gift from Tobi to Zara.')
     expect(sungPrompt(VIBES[0], d)).toContain('say "happy anniversary"')
     expect(sungPrompt(VIBES[0], songDetails(sampleFor('just-because'))!)).not.toMatch(/birthday|, and say/)

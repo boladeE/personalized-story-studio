@@ -104,12 +104,14 @@ body::before {
   color: var(--room);
 }
 .page .button.ghost,
+.adjust-panel .button.ghost,
 .studio-page.send .button.ghost,
 .studio-page.manage .button.ghost {
   border-color: var(--palm);
   color: var(--palm);
 }
 .page .button.ghost:hover,
+.adjust-panel .button.ghost:hover,
 .studio-page.send .button.ghost:hover,
 .studio-page.manage .button.ghost:hover {
   background: var(--palm);

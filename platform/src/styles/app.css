@@ -546,3 +546,77 @@ select:focus-visible {
     display: none;
   }
 }
+
+/* ---------- Preview: the song arriving, and what else could go in ---------- */
+
+.song-status {
+  margin: 0;
+  padding: 9px clamp(16px, 4vw, 40px);
+  background: var(--candle);
+  color: #33121d;
+  font-size: 15.5px;
+  font-weight: 600;
+}
+.song-status.is-writing::before,
+.song-status.is-singing::before {
+  content: '';
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 9px;
+  border-radius: 50%;
+  background: var(--hibiscus);
+  animation: song-pulse 1.2s ease-in-out infinite alternate;
+}
+@keyframes song-pulse {
+  to {
+    opacity: 0.25;
+  }
+}
+.song-status.is-failed {
+  background: #f6d8de;
+}
+.song-status .text-button {
+  padding: 0;
+  color: var(--hibiscus-deep);
+}
+.more-panel h2 {
+  margin: 0;
+  font-size: 22px;
+  font-stretch: 82%;
+  color: var(--palm);
+}
+.more-list {
+  list-style: none;
+  margin: 12px 0;
+  padding: 0;
+  display: grid;
+}
+.more-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+}
+.more-list span {
+  display: grid;
+  min-width: 0;
+}
+.more-list small {
+  font-size: 14px;
+  color: var(--muted);
+}
+.more-list .is-in small {
+  color: var(--palm);
+}
+.more-panel .fine a {
+  color: var(--hibiscus-deep);
+  font-weight: 650;
+}
+@media (prefers-reduced-motion: reduce) {
+  .song-status::before {
+    animation: none;
+  }
+}

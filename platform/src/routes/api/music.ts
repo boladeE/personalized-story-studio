@@ -3,8 +3,8 @@ import { lyricsProvider } from '../../server/lyrics'
 import { allowSong, generateSong, musicProvider, MusicError, REFUSED_WORDS } from '../../server/music'
 import type { SongWords } from '../../server/music'
 import { json } from '../../server/store'
-import { hasRefusedLine, parseSongDetails, tidyLyrics, tidyTitle, vibeById } from '../../story/vibes'
-import type { SongDetails } from '../../story/vibes'
+import { hasRefusedLine, isVoice, parseSongDetails, tidyLyrics, tidyTitle, vibeById } from '../../story/vibes'
+import type { SongDetails, Voice } from '../../story/vibes'
 import { isOccasion } from '../../story/types'
 import type { Occasion } from '../../story/types'
 
@@ -20,10 +20,12 @@ export const Route = createFileRoute('/api/music')({
         let words: SongWords | null = null
         // What an instrumental is scored for; a sung song carries its occasion in `details`.
         let occasion: Occasion = 'birthday'
+        let voice: Voice = 'surprise'
         try {
-          const body = (await request.json()) as { vibe?: unknown; details?: unknown; lyrics?: unknown; title?: unknown; occasion?: unknown }
+          const body = (await request.json()) as { vibe?: unknown; details?: unknown; lyrics?: unknown; title?: unknown; occasion?: unknown; voice?: unknown }
           vibe = String(body.vibe ?? '')
           if (isOccasion(body.occasion)) occasion = body.occasion
+          if (isVoice(body.voice)) voice = body.voice
           if (body.details !== undefined && body.details !== null) {
             details = parseSongDetails(body.details)
             if (!details) return json({ error: 'Add their name before making a song about them.' }, { status: 400 })
@@ -40,7 +42,7 @@ export const Route = createFileRoute('/api/music')({
         const allowed = allowSong(client)
         if (!allowed.allowed) return json({ error: allowed.reason }, { status: 429 })
         try {
-          const song = await generateSong(vibe, details, words, occasion)
+          const song = await generateSong(vibe, details, words, occasion, voice)
           return json(
             {
               id: song.id,

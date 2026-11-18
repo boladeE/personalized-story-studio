@@ -5,6 +5,7 @@ import filmCss from '../styles/film.css?url'
 import homeCss from '../styles/home.css?url'
 import roomCss from '../styles/room.css?url'
 import songCss from '../styles/song.css?url'
+import startCss from '../styles/start.css?url'
 import writerCss from '../styles/writer.css?url'
 import { DraftProvider } from '../components/draft'
 
@@ -23,6 +24,7 @@ export const Route = createRootRoute({
       { rel: 'stylesheet', href: writerCss },
       { rel: 'stylesheet', href: songCss },
       { rel: 'stylesheet', href: homeCss },
+      { rel: 'stylesheet', href: startCss },
       { rel: 'icon', href: 'data:,' },
     ],
   }),

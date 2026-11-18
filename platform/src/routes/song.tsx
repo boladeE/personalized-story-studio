@@ -66,7 +66,7 @@ function SongRoom() {
         <main className="studio-page narrow empty">
           <h1 className="studio-title">There’s no one to sing about yet.</h1>
           <p className="lede">Add both names and a few details first. The song is written from them.</p>
-          <Link to="/create" className="button primary">
+          <Link to="/start" className="button primary">
             Start a film
           </Link>
         </main>

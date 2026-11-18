@@ -1,7 +1,8 @@
 import { OCCASION_IDS } from './types'
 import type { Frame, Intake, Memory, Mood, Occasion, Photo, PhotoLayout } from './types'
 import type { Rng } from './rng'
-import { occasionOf } from './occasions'
+import { FAMILY_VERDICTS, occasionOf } from './occasions'
+import { isRomantic } from './relationships'
 
 /**
  * The scene library. Each scene type is a designed beat: it declares what it
@@ -106,9 +107,16 @@ const memoryLane: SceneDef = {
   name: 'Memory lane',
   mood: 'tender',
   description: 'Your memories, one at a time, each with its own photo.',
-  missing: (i) => countMissing(completeMemories(i).length, 2, 'memory', 'memories'),
+  missing: (i) => countMissing(completeMemories(i).length, 1, 'memory', 'memories'),
   build: (ctx) => {
     const memories = completeMemories(ctx.intake).slice(0, 5)
+    // One memory stands by itself, without a card announcing several.
+    if (memories.length === 1) {
+      const [memory] = memories
+      const photo = (memory.photoId && ctx.photoById(memory.photoId)) || ctx.takePhoto()
+      const words = { kicker: 'Remember when?', title: memory.title.trim(), body: memory.story.trim() }
+      return [photo ? { kind: 'photo', photo, layout: ctx.rng.pick<PhotoLayout>(['left', 'right']), ...words } : { kind: 'title', ...words }]
+    }
     const frames: Frame[] = [
       {
         kind: 'title',
@@ -137,7 +145,7 @@ const redFlags: SceneDef = {
   name: 'Red flags',
   mood: 'playful',
   description: 'Their funniest habits, presented as very serious red flags.',
-  missing: (i) => countMissing(clean(i.habits).length, 3, 'habit', 'habits'),
+  missing: (i) => countMissing(clean(i.habits).length, 2, 'habit', 'habits'),
   build: (ctx) => {
     const habits = clean(ctx.intake.habits).slice(0, 7)
     return [
@@ -151,7 +159,8 @@ const redFlags: SceneDef = {
       {
         kind: 'title',
         kicker: 'The verdict',
-        title: say(ctx, occasionOf(ctx.intake.occasion).verdicts ?? ['Flags noted. Staying anyway.', 'Still my favourite person.', 'Would ignore them all again.']),
+        // "Staying anyway" is for a partner; a film known to be for anyone else signs off without it.
+        title: say(ctx, occasionOf(ctx.intake.occasion).verdicts ?? (isRomantic(ctx.intake.relationship) === false ? FAMILY_VERDICTS : ['Flags noted. Staying anyway.', 'Still my favourite person.', 'Would ignore them all again.'])),
       },
     ]
   },
@@ -162,7 +171,7 @@ const reasons: SceneDef = {
   name: 'Reasons',
   mood: 'tender',
   description: 'The reasons you love them, revealed one by one.',
-  missing: (i) => countMissing(clean(i.reasons).length, 3, 'reason', 'reasons'),
+  missing: (i) => countMissing(clean(i.reasons).length, 2, 'reason', 'reasons'),
   build: (ctx) => {
     const list = clean(ctx.intake.reasons).slice(0, 10)
     return [

@@ -58,7 +58,7 @@ function Manage() {
               ? 'Its link no longer opens, and its photos and words are gone from the studio.'
               : 'The link may be incomplete, or the gift was deleted. Use the full link you saved when you sent it.'}
           </p>
-          <a className="button primary" href="/#occasions">
+          <a className="button primary" href="/start">
             Make a new film
           </a>
         </main>

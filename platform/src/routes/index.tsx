@@ -35,16 +35,16 @@ const SCENES: Array<{ step: StepId; name: string; gives: string; focus?: Partial
 ]
 
 const STEPS = [
-  { name: 'Tell', text: 'Answer a few questions about them and add your photos. Each scene takes shape beside you as you type.' },
-  { name: 'Watch', text: 'The studio cuts it into a film. Shuffle the order, the look and the wording until it feels right.' },
-  { name: 'Add their song', text: 'Read the words written about them, change any line, pick a tune and hear it sung.' },
+  { name: 'Tell', text: 'A few taps, a few photos and a few sentences about them, in your own words.' },
+  { name: 'Watch', text: 'The studio sorts your words into scenes and the film plays straight away. Shuffle it, or add a letter and more scenes.' },
+  { name: 'Hear their song', text: 'Pick a style and a voice. A song about them arrives in about a minute, and you can change any line.' },
   { name: 'Send', text: 'Lock it with a question only they can answer, then share one private link.' },
 ]
 
 const QUESTIONS: Array<{ q: string; a: string }> = [
   {
     q: 'What do I need to start?',
-    a: 'Two names. Everything else is optional: up to twelve photos, a few memories, their habits, your reasons, a letter and a last line. The film only includes the scenes you fill in, so you can start small and add to it.',
+    a: 'Two names, a few photos and a few sentences about them. That is enough for a film and a song. A letter, captions, more memories and a last line are all optional, and you can add them after you have watched it.',
   },
   {
     q: 'How do they receive it?',
@@ -87,7 +87,7 @@ function Home() {
           <a href="#how">How it works</a>
           <a href="#questions">Questions</a>
         </nav>
-        <Link to="/create" className="button small primary">
+        <Link to="/start" className="button small primary">
           Start a film
         </Link>
       </header>
@@ -101,14 +101,14 @@ function Home() {
               its own song, and you send it as one link.
             </p>
             <div className="actions">
-              <Link to="/create" className="button primary">
+              <Link to="/start" className="button primary">
                 Start a film
               </Link>
               <Link to="/preview" search={{ sample: 1 }} className="button ghost">
                 Watch the sample
               </Link>
             </div>
-            <p className="fine">Two names are enough to start. No account needed.</p>
+            <p className="fine">A few taps and a few sentences. No account needed.</p>
           </div>
           <div className="screen-wrap">
             <div className="screen">
@@ -129,7 +129,7 @@ function Home() {
           <ul className="rack">
             {OCCASIONS.map((o, i) => (
               <li key={o.id} data-stock={['hibiscus', 'palm', 'candle'][(i + Math.floor(i / 3)) % 3]}>
-                <Link to="/create" search={{ occasion: o.id }} className="stub">
+                <Link to="/start" search={{ occasion: o.id }} className="stub">
                   <span className="stub-body">
                     <span className="stub-admit">Admit one</span>
                     <span className="stub-name">{o.name}</span>
@@ -236,7 +236,7 @@ function Home() {
         <section className="home-close band band-hibiscus" aria-labelledby="close-title">
           <h2 id="close-title">Someone you love has a day coming up.</h2>
           <div className="actions">
-            <Link to="/create" className="button primary">
+            <Link to="/start" className="button primary">
               Start a film
             </Link>
             <a href="#occasions" className="button ghost">
