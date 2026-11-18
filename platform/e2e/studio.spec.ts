@@ -113,7 +113,6 @@ test('shuffle rebuilds from the ticket with the same content, and edit keeps the
   await open(page, '/create')
   await page.getByRole('button', { name: 'Fill with the sample' }).click()
   await page.getByRole('button', { name: 'Build the story' }).click()
-  const meta = page.locator('.preview-meta')
   const order = async () => page.locator('.film-controls .mark').evaluateAll((els) => els.map((e) => e.getAttribute('title')).join('|'))
   await startFilm(page)
   const versions = new Set<string>()
@@ -121,7 +120,7 @@ test('shuffle rebuilds from the ticket with the same content, and edit keeps the
     await page.getByRole('button', { name: 'Shuffle' }).click()
     await expect(page.locator('.film')).toHaveAttribute('data-phase', 'ticket')
     await startFilm(page)
-    versions.add(`${await meta.innerText()}#${await order()}`)
+    versions.add(await order())
     expect((await order()).split('|').sort()).toHaveLength(8)
   }
   expect(versions.size).toBeGreaterThan(1)
@@ -133,7 +132,8 @@ test('sound can be muted and the preview has an honest empty state', async ({ pa
   await open(page, '/preview')
   await expect(page.getByRole('heading', { name: 'There’s no story to preview yet.' })).toBeVisible()
   await page.getByRole('link', { name: 'Play the sample' }).click()
-  await expect(page.getByText('Fictional sample, AI-generated photos and song')).toBeVisible()
+  // The header carries only the controls: no scene count and no notice crowding it.
+  await expect(page.locator('.studio-header')).not.toContainText(/scenes|Fictional|AI/)
   await startFilm(page)
   // The sample plays its own sung song; the score is one choice away.
   await expect.poll(async () => (await audioState(page))?.trackId, { timeout: 15_000 }).toBe('song')
@@ -142,7 +142,7 @@ test('sound can be muted and the preview has an honest empty state', async ({ pa
   const heard = (await audioState(page))!.songTime!
   await expect.poll(async () => (await audioState(page))!.songTime!).toBeGreaterThan(heard + 0.5)
   await page.getByRole('button', { name: 'Look & music' }).click()
-  await expect(page.getByRole('radio', { name: 'Zara’s song, sung AI sample' })).toBeChecked()
+  await expect(page.getByRole('radio', { name: 'Zara’s song', exact: true })).toBeChecked()
   await page.getByRole('radio', { name: 'Studio score' }).check()
   await page.getByRole('button', { name: 'Done' }).click()
   await startFilm(page)

@@ -40,7 +40,7 @@ export type Shot = ShotBase &
     | { kind: 'letter'; greeting: string; paragraphs: string[]; signoff: string }
     | { kind: 'wish'; title: string; body: string }
     | { kind: 'reveal'; words: string }
-    | { kind: 'credits'; lines: Array<{ role: string; name: string }>; last: string }
+    | { kind: 'credits'; lines: Array<{ role: string; name: string }>; last: string; note?: string }
   )
 
 export interface FilmScene {
@@ -176,7 +176,7 @@ export function buildFilm(story: Story): Film {
         ...(hasPhotos ? [{ role: 'Photographs', name: `${story.sender}’s camera roll` }] : []),
         { role: 'Music', name: tracks },
       ]
-      drafts.push({ kind: 'credits', lines, last: `For ${story.recipient}, with love.`, seconds: 4 + lines.length * 1.7, hold: true, enter: 'type', exit: 'fade' })
+      drafts.push({ kind: 'credits', lines, last: `For ${story.recipient}, with love.`, note: story.note, seconds: 4 + lines.length * 1.7, hold: true, enter: 'type', exit: 'fade' })
     }
 
     if (!drafts.length) return
@@ -220,7 +220,7 @@ function spoken(shot: Record<string, unknown>): string {
     case 'reveal':
       return String(shot.words)
     case 'credits':
-      return [...(shot.lines as Array<{ role: string; name: string }>).map((l) => `${l.role}: ${l.name}`), String(shot.last)].join('. ')
+      return [...(shot.lines as Array<{ role: string; name: string }>).map((l) => `${l.role}: ${l.name}`), String(shot.last), ...(shot.note ? [String(shot.note)] : [])].join('. ')
     default:
       return pick('kicker', 'title', 'body').join('. ')
   }

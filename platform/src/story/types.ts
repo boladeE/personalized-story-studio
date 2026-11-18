@@ -69,6 +69,8 @@ export interface Soundtrack {
 
 export interface Story {
   soundtrack?: Soundtrack
+  /** A small line under the end credits, such as the sample's notice that its people are invented. */
+  note?: string
   occasion: Occasion
   seed: number
   look: LookId

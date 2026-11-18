@@ -239,6 +239,11 @@ function ShotBody({ shot, actions, leaving }: { shot: Shot; actions: ShotActions
           <p className="credits-last" aria-hidden="true" style={vars({ '--i': shot.lines.length })}>
             {shot.last}
           </p>
+          {shot.note && (
+            <p className="credits-note" style={vars({ '--i': shot.lines.length + 1 })}>
+              {shot.note}
+            </p>
+          )}
           {!leaving && (
             <button type="button" className="again" style={vars({ '--i': shot.lines.length + 1 })} onClick={actions.onReplay}>
               Watch it again

@@ -1,6 +1,9 @@
 import type { Intake, Soundtrack } from './types'
 
-/** Fictional sample intake (Zara and Tobi, AI-generated photos), reused from the v2 demo. */
+/** What the sample film says under its end credits, so nobody takes its people for real customers. */
+export const SAMPLE_NOTE = 'Zara and Tobi are fictional. Their photos and song were made for this sample.'
+
+/** Fictional sample intake (Zara and Tobi, generated photos), reused from the v2 demo. */
 export const SAMPLE_INTAKE: Intake = {
   occasion: 'birthday',
   sender: 'Tobi',

@@ -918,6 +918,17 @@
   animation: credit-in 1.4s both;
   animation-delay: calc(0.9s + var(--i) * 1.25s);
 }
+.credits-note {
+  margin: clamp(6px, 1.6cqh, 14px) auto 0;
+  max-width: 44em;
+  text-wrap: balance;
+  font-size: clamp(12px, min(1.3cqw, 2.4cqh), 15px);
+  line-height: 1.4;
+  color: var(--f-soft);
+  opacity: 0.8;
+  animation: credit-in 1s both;
+  animation-delay: calc(1.3s + var(--i) * 1.25s);
+}
 .again {
   animation: credit-in 1s both;
   animation-delay: calc(1.6s + var(--i) * 1.25s);

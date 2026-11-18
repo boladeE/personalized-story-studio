@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildFilm, shotAt } from '../src/film/timeline'
 import { generateStory } from '../src/story/generate'
 import { trackById } from '../src/story/music'
-import { emptyIntake, SAMPLE_INTAKE } from '../src/story/sample'
+import { emptyIntake, SAMPLE_INTAKE, SAMPLE_NOTE } from '../src/story/sample'
 
 const story = generateStory(SAMPLE_INTAKE, 7)
 const film = buildFilm(story)
@@ -60,6 +60,12 @@ describe('film timeline', () => {
     const credits = film.shots.at(-1)!
     expect(credits.text).toContain('Starring: Zara')
     expect(credits.text).toContain('Written by: Tobi')
+    // A sender's own film carries no notice; the sample says under its credits that its people are invented.
+    expect(credits.text).not.toContain('fictional')
+    const sample = buildFilm({ ...generateStory(SAMPLE_INTAKE, 7), note: SAMPLE_NOTE }).shots.at(-1)!
+    expect(sample.kind).toBe('credits')
+    expect(sample.text).toContain('Zara and Tobi are fictional')
+    expect(SAMPLE_NOTE).not.toMatch(/\bAI\b/)
   })
 
   it('gives every chapter a numbered card and a place on the scrubber', () => {

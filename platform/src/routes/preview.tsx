@@ -5,7 +5,7 @@ import { StudioHeader } from '../components/StudioHeader'
 import { useDraft } from '../components/draft'
 import { canGenerate, generateStory, LOOKS } from '../story/generate'
 import { newSeed } from '../story/rng'
-import { SAMPLE_INTAKE, SAMPLE_LYRICS, SAMPLE_SOUNDTRACK } from '../story/sample'
+import { SAMPLE_INTAKE, SAMPLE_LYRICS, SAMPLE_NOTE, SAMPLE_SOUNDTRACK } from '../story/sample'
 import type { Intake, LookId, Story } from '../story/types'
 
 export const Route = createFileRoute('/preview')({
@@ -25,7 +25,8 @@ function Preview() {
   const source = useSample ? SAMPLE_INTAKE : intake
   const story = useMemo<Story | null>(() => {
     if (!canGenerate(source)) return null
-    const built = generateStory(source, seed)
+    // The sample says its people are invented in its own end credits, not in the header.
+    const built: Story = useSample ? { ...generateStory(source, seed), note: SAMPLE_NOTE } : generateStory(source, seed)
     if (song) return { ...built, soundtrack: { kind: 'song', src: song.src, label: song.label } }
     return useSample && sampleSong ? { ...built, soundtrack: SAMPLE_SOUNDTRACK } : built
   }, [source, seed, song, useSample, sampleSong])
@@ -50,14 +51,9 @@ function Preview() {
     )
   }
 
-  const lookName = LOOKS.find((l) => l.id === story.look)?.name
   return (
     <div className="preview-shell">
       <StudioHeader>
-        <span className="preview-meta">
-          {story.recipient}’s birthday, {story.scenes.length} scenes, {lookName} look
-        </span>
-        {useSample && <span className="sample-note">Fictional sample, AI-generated photos and song</span>}
         {!useSample && (
           <Link to="/create" className="button small ghost">
             Edit<span className="wide-only">&nbsp;details</span>
@@ -171,7 +167,7 @@ function AdjustPanel({
                   onSampleSong(true)
                 }}
               />
-              {SAMPLE_SOUNDTRACK.label}, sung AI sample
+              {SAMPLE_SOUNDTRACK.label}
             </label>
           )}
           {takes.map((take, i) => (

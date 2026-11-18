@@ -4,7 +4,7 @@ import { StudioHeader } from '../components/StudioHeader'
 import { Ambient } from '../film/Ambient'
 import { Film } from '../film/Film'
 import { generateStory } from '../story/generate'
-import { SAMPLE_INTAKE, SAMPLE_SOUNDTRACK } from '../story/sample'
+import { SAMPLE_INTAKE, SAMPLE_NOTE, SAMPLE_SOUNDTRACK } from '../story/sample'
 
 export const Route = createFileRoute('/')({
   component: Home,
@@ -12,7 +12,7 @@ export const Route = createFileRoute('/')({
 
 function Home() {
   // The hero is the product itself: the fictional sample, ready to play.
-  const sample = useMemo(() => ({ ...generateStory({ ...SAMPLE_INTAKE, look: 'screening' }, 20261113), soundtrack: SAMPLE_SOUNDTRACK }), [])
+  const sample = useMemo(() => ({ ...generateStory({ ...SAMPLE_INTAKE, look: 'screening' }, 20261113), soundtrack: SAMPLE_SOUNDTRACK, note: SAMPLE_NOTE }), [])
   return (
     <>
       <StudioHeader />
@@ -41,7 +41,7 @@ function Home() {
             </div>
             <p className="screen-note">
               <span>Tap the ticket. Sound on.</span>
-              <span>Fictional sample, AI-generated photos and song</span>
+              <span>A fictional sample</span>
             </p>
           </div>
         </section>
