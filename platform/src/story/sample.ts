@@ -55,39 +55,48 @@ export const SAMPLE_INTAKE: Intake = {
 
 /**
  * The sample's song: a real song the studio made for the fictional Zara from
- * the details above (Lyria 3.5, highlife, sung). The lyrics are what the model
- * reported singing.
+ * the details above (Lyria 3.5, Afrobeats, sung). The lyrics are the words the
+ * studio's writer produced and the music model was given to sing. `v` changes
+ * when the file does, so returning visitors don't hear a cached older song.
  */
-export const SAMPLE_SOUNDTRACK: Soundtrack = { kind: 'song', src: '/sample/zara-song.mp3', label: 'Zara’s song' }
+export const SAMPLE_SOUNDTRACK: Soundtrack = { kind: 'song', src: '/sample/zara-song.mp3?v=2', label: 'Zara’s song' }
 
-export const SAMPLE_LYRICS = `Ordinary days get suspiciously good when you're around,
-You remember the small things I mention once, in passing.
-You know when I need advice, and when I just need you to listen.
-Like that rainy evening we were meant to stay for just one drink,
-But the rain can wait, and you moved your chair closer to me.
-You said nobody could be that lucky on a games night,
-Called me a cheat at Uno, made me shuffle again.
-Watched my hands very closely, shaking your head the whole time.
+export const SAMPLE_LYRICS = `Meant to stay for one
+Then the weather turned
+You moved your chair close
+Just to share the gist
 
-Happy birthday, Zara, you know you are my favourite person,
-Zara, my hand in yours on the way home, always.
-I just want more afternoons with you that run late,
-Zara, you make every simple moment feel like a party.
+Ordinary days get good
+When you're around
 
-You send an eleven-minute voice note, call it a 'quick gist',
-You take all the duvet for yourself, and then you ask me why I'm cold.
-You look at my plate, you say, 'no, I am really not that hungry',
-And then you reach right over and you eat all my chips.
-But listen to me, on this special day of yours, my love,
-You can have my chips, Zara, I will order more for us both.
+The rain can wait
+Let it fall outside
+The rain can wait
+I'm in no rush
 
-Happy birthday, Zara, you know you are my favourite person,
-Zara, my hand in yours on the way home, always.
-I just want more afternoons with you that run late,
-Zara, you make every simple moment feel like a party.
+You steal the duvet
+Ask why I'm cold
+You remember the small things
+I mention once
 
-Yes, I love you and I wish you the very best.
-Tobi to Zara, with all my heart. (happy birthday)`
+Ordinary days get good
+When you're around
+
+The rain can wait
+Let it fall outside
+The rain can wait
+I'm in no rush
+
+More afternoons running late
+More of your hand in mine
+Happy birthday, Zara
+
+The rain can wait
+Let it fall outside
+The rain can wait
+I'm in no rush
+
+The rain can wait (happy birthday, Zara)`
 
 export const emptyIntake = (): Intake => ({
   occasion: 'birthday',
