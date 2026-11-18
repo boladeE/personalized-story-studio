@@ -44,6 +44,11 @@ describe('sorting one box of words into scenes', () => {
     expect(kept.reasons).toEqual(['you remember the small things I mention once'])
     expect(kept.spotlight).toBe('')
     expect(kept.wish).toBe('')
+    // A title that is also the story's opening isn't said twice.
+    const lesson = 'The driving lesson: I stalled eleven times at the same junction and you just kept saying again.'
+    expect(keepTheirWords({ memories: [{ title: 'The driving lesson', story: lesson }] }, lesson).memories).toEqual([
+      { title: 'The driving lesson', story: 'I stalled eleven times at the same junction and you just kept saying again.' },
+    ])
     expect(keepTheirWords(null, NOTE)).toEqual(emptyNotes())
     expect(keepTheirWords({ habits: 'not a list', memories: [null, 7] }, NOTE)).toEqual(emptyNotes())
   })

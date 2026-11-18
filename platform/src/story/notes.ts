@@ -45,6 +45,11 @@ export function keepTheirWords(raw: unknown, source: string): SortedNotes {
       let title = oneLine(memory.title, LIMITS.memoryTitle)
       // A title the sender didn't write is replaced by the opening of their own story.
       if (!title || !isTheirWords(title, source)) title = story.split(/(?<=[.!?])\s/)[0].split(' ').slice(0, 7).join(' ')
+      // "The driving lesson" above "The driving lesson: I stalled…" says it twice; the story then starts after it.
+      const opener = title.replace(/[.!?:,]+$/, '')
+      const after = story.slice(opener.length)
+      const rest = after.replace(/^[\s.:,;!?–—-]+/, '')
+      if (opener && story.toLowerCase().startsWith(opener.toLowerCase()) && /^[.:,;!?–—-]/.test(after) && rest.length >= 20) return { title, story: rest.charAt(0).toUpperCase() + rest.slice(1) }
       return { title, story }
     })
     .filter((m) => m.story && m.title && isTheirWords(m.story, source))
