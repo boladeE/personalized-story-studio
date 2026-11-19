@@ -2,6 +2,7 @@ import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useDraft } from '../components/draft'
+import { Working } from '../components/Working'
 import { usePhotos } from '../components/photos'
 import { canGenerate } from '../story/generate'
 import { applyNotes, keepTheirWords, NOTES_LIMIT, sortLocally } from '../story/notes'
@@ -230,11 +231,7 @@ function Start() {
               </li>
             )}
           </ul>
-          {photos.reading > 0 && (
-            <p className="photo-reading" role="status">
-              Reading {photos.reading === 1 ? 'a photo' : `${photos.reading} photos`}…
-            </p>
-          )}
+          {photos.reading > 0 && <Working className="photo-reading">Reading {photos.reading === 1 ? 'a photo' : `${photos.reading} photos`}…</Working>}
           {photos.error && (
             <p className="field-error" role="alert">
               {photos.error}
@@ -389,11 +386,7 @@ function Start() {
               Skip the song and use the studio’s own music
             </button>
           )}
-          {busy && (
-            <p className="fine start-busy" role="status">
-              {busy}
-            </p>
-          )}
+          {busy && <Working className="start-busy">{busy}</Working>}
         </form>
         {stepId === 'who' && (
           <p className="start-other">

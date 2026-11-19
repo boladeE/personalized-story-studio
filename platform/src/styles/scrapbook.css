@@ -458,24 +458,33 @@
 
 /* A polaroid, taped at the top, with the caption written on it. */
 .sb-polaroid {
-  width: min(100%, calc(var(--pic) * var(--fit)));
+  /* The frame fits the photo: a tall photo makes a tall print, and nobody's face is cut off. */
+  --side: min(36cqw, calc(var(--pic) * var(--fit)));
+  width: fit-content;
+  max-width: 100%;
   padding: clamp(7px, 1.7cqh, 15px) clamp(7px, 1.7cqh, 15px) 0;
   background: #fffdf8;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
 }
-.sb-polaroid-img {
-  aspect-ratio: 1;
-  background: #d8d2c6;
+.sb-polaroid-img img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: var(--side);
+  max-height: var(--side);
+  margin: 0 auto;
 }
-.sb-polaroid-img img,
-.sb-contact img,
-.sb-pile img {
+/* A contact sheet's frames are all one shape, so a photo sits whole inside its frame. */
+.sb-contact img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: 50% 28%;
+  object-fit: contain;
 }
 .sb-polaroid figcaption {
+  /* As wide as the photo, however long the caption. */
+  width: 0;
+  min-width: 100%;
+  box-sizing: border-box;
   min-height: clamp(34px, 9.5cqh, 74px);
   display: grid;
   place-items: center;
@@ -1026,6 +1035,10 @@
   justify-self: start;
 }
 .sb-pile {
+  /* The most room a print's photo may take. Each print is then the shape of its own photo. */
+  --pw: clamp(100px, min(23cqw, 41cqh), 300px);
+  --ph: min(19cqw, 34cqh);
+  --pad: clamp(5px, 0.7cqw, 9px);
   position: relative;
   list-style: none;
   margin: 0;
@@ -1035,8 +1048,8 @@
   position: absolute;
   left: var(--x);
   top: var(--y);
-  width: clamp(100px, min(23cqw, 41cqh), 300px);
-  padding: clamp(5px, 0.7cqw, 9px) clamp(5px, 0.7cqw, 9px) 0;
+  width: fit-content;
+  padding: var(--pad) var(--pad) 0;
   background: #fffdf8;
   color: #2b2630;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
@@ -1045,20 +1058,29 @@
   animation: sb-slap 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
   animation-delay: calc(0.6s + var(--i) * 0.45s);
 }
-.sb-pile[data-count='4'] li {
-  width: clamp(90px, min(20cqw, 40cqh), 262px);
+.sb-pile[data-count='4'] {
+  --pw: clamp(90px, min(20cqw, 40cqh), 262px);
+  --ph: min(17cqw, 34cqh);
 }
-.sb-pile[data-count='5'] li,
-.sb-pile[data-count='6'] li {
-  width: clamp(90px, min(19cqw, 31cqh), 236px);
+.sb-pile[data-count='5'],
+.sb-pile[data-count='6'] {
+  --pw: clamp(90px, min(19cqw, 31cqh), 236px);
+  --ph: min(15cqw, 24cqh);
 }
 .sb-pile li.fit-1 span { font-size: clamp(12px, min(1.45cqw, 2.7cqh), 18px); }
 .sb-pile li.fit-2 span { font-size: clamp(11px, min(1.2cqw, 2.25cqh), 15px); }
 .sb-pile li img {
-  aspect-ratio: 5 / 4;
+  display: block;
+  width: auto;
   height: auto;
+  max-width: calc(var(--pw) - var(--pad) * 2);
+  max-height: var(--ph);
+  margin: 0 auto;
 }
 .sb-pile li span {
+  width: 0;
+  min-width: 100%;
+  box-sizing: border-box;
   display: grid;
   place-items: center;
   min-height: 2.2em;
@@ -1476,7 +1498,7 @@
     --title-long: clamp(21px, 6.2cqw, 34px);
   }
   .sb-polaroid {
-    max-width: 80%;
+    --side: min(72cqw, calc(var(--pic) * var(--fit)));
   }
   .sb-line .sb-head {
     font-size: calc(clamp(30px, 11cqw, 66px) * var(--fit));
@@ -1564,11 +1586,12 @@
   .sb-montage-head h2 {
     font-size: clamp(28px, 9.4cqw, 54px);
   }
-  .sb-pile li,
-  .sb-pile[data-count='4'] li,
-  .sb-pile[data-count='5'] li,
-  .sb-pile[data-count='6'] li {
-    width: min(38cqw, 21.5cqh);
+  .sb-pile,
+  .sb-pile[data-count='4'],
+  .sb-pile[data-count='5'],
+  .sb-pile[data-count='6'] {
+    --pw: min(38cqw, 21.5cqh);
+    --ph: 17cqh;
   }
   .sb-pile li:nth-child(1) { left: 27%; top: 17%; }
   .sb-pile li:nth-child(2) { left: 73%; top: 21%; }
@@ -1577,7 +1600,11 @@
   .sb-pile li:nth-child(5) { left: 28%; top: 82%; }
   .sb-pile li:nth-child(6) { left: 73%; top: 85%; }
   .sb-pile[data-count='3'] li:nth-child(3) { left: 50%; top: 56%; }
-  .sb-pile[data-count='1'] li:nth-child(1) { left: 50%; top: 45%; width: 66cqw; }
+  .sb-pile[data-count='1'] li:nth-child(1) { left: 50%; top: 45%; }
+  .sb-pile[data-count='1'] {
+    --pw: 66cqw;
+    --ph: 44cqh;
+  }
   .sb-contact {
     --cw: min(calc(100cqw / var(--cols-tall) - 6px), calc((100cqh / var(--rows-tall) - 3.9em) * 1.5));
     grid-template-columns: repeat(var(--cols-tall), var(--cw));

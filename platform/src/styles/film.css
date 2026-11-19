@@ -729,6 +729,10 @@
   font-size: clamp(28px, min(5.4cqw, 9.5cqh), 84px);
 }
 .deal {
+  /* The most room a print's photo may take. Each print is then the shape of its own photo, so none is cropped. */
+  --pw: clamp(104px, min(24cqw, 44cqh), 320px);
+  --ph: min(19cqw, 35cqh);
+  --pad: clamp(5px, 0.7cqw, 9px);
   position: relative;
   list-style: none;
   margin: 0;
@@ -739,8 +743,8 @@
   position: absolute;
   left: var(--x);
   top: var(--y);
-  width: clamp(104px, min(24cqw, 44cqh), 320px);
-  padding: clamp(5px, 0.7cqw, 9px) clamp(5px, 0.7cqw, 9px) 0;
+  width: fit-content;
+  padding: var(--pad) var(--pad) 0;
   background: #fffdf8;
   color: #2a1a1e;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.32);
@@ -748,16 +752,24 @@
   animation: deal 0.72s cubic-bezier(0.2, 0.9, 0.25, 1.05) both;
   animation-delay: calc(0.45s + var(--i) * 0.4s);
 }
-.deal[data-count='5'] li,
-.deal[data-count='6'] li {
-  width: clamp(92px, min(19cqw, 36cqh), 250px);
+.deal[data-count='5'],
+.deal[data-count='6'] {
+  --pw: clamp(92px, min(19cqw, 36cqh), 250px);
+  --ph: min(15cqw, 28cqh);
 }
 .deal li img {
-  width: 100%;
-  aspect-ratio: 5 / 4;
-  object-fit: cover;
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: calc(var(--pw) - var(--pad) * 2);
+  max-height: var(--ph);
+  margin: 0 auto;
 }
 .deal li span {
+  /* As wide as the photo, however long the caption. */
+  width: 0;
+  min-width: 100%;
+  box-sizing: border-box;
   display: block;
   padding: 6px 2px 8px;
   font: italic 400 clamp(11px, min(1.25cqw, 2.3cqh), 16px) / 1.25 var(--serif);
@@ -1553,10 +1565,11 @@
   .montage-head .slam {
     font-size: clamp(30px, 10cqw, 60px);
   }
-  .deal li,
-  .deal[data-count='5'] li,
-  .deal[data-count='6'] li {
-    width: min(42cqw, 26cqh);
+  .deal,
+  .deal[data-count='5'],
+  .deal[data-count='6'] {
+    --pw: min(42cqw, 26cqh);
+    --ph: 20cqh;
   }
   .deal li:nth-child(1) { left: 27%; top: 17%; }
   .deal li:nth-child(2) { left: 73%; top: 21%; }
@@ -1565,7 +1578,11 @@
   .deal li:nth-child(5) { left: 28%; top: 82%; }
   .deal li:nth-child(6) { left: 73%; top: 85%; }
   .deal[data-count='3'] li:nth-child(3) { left: 50%; top: 56%; }
-  .deal[data-count='1'] li:nth-child(1) { left: 50%; top: 45%; width: 70cqw; }
+  .deal[data-count='1'] li:nth-child(1) { left: 50%; top: 45%; }
+  .deal[data-count='1'] {
+    --pw: 70cqw;
+    --ph: 44cqh;
+  }
   .reveal {
     font-size: clamp(32px, 11cqw, 68px);
   }

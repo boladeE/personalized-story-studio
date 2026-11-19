@@ -4,6 +4,7 @@ import type { DragEvent, KeyboardEvent, ReactNode, TextareaHTMLAttributes } from
 import { flushSync } from 'react-dom'
 import { StudioHeader } from '../components/StudioHeader'
 import { useDraft } from '../components/draft'
+import { Working } from '../components/Working'
 import { releasePhotos, usePhotos } from '../components/photos'
 import { Still } from '../film/Still'
 import { previewFor, previewLook } from '../film/previews'
@@ -241,11 +242,7 @@ function Create() {
               </li>
             )}
           </ul>
-          {photosReading > 0 && (
-            <p className="photo-reading" role="status">
-              Reading {photosReading === 1 ? 'a photo' : `${photosReading} photos`}…
-            </p>
-          )}
+          {photosReading > 0 && <Working className="photo-reading">Reading {photosReading === 1 ? 'a photo' : `${photosReading} photos`}…</Working>}
           {photoError && (
             <p className="field-error" role="alert">
               {photoError}
@@ -299,7 +296,6 @@ function Create() {
               {(id) => (
                 <input
                   id={id}
-                  placeholder="The night you called me a cheat"
                   maxLength={LIMITS.memoryTitle}
                   value={memory.title}
                   onChange={(e) => updateMemory(memory.id, { title: e.target.value })}

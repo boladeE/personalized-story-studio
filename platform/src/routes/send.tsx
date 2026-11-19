@@ -1,5 +1,6 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
+import { Working } from '../components/Working'
 import { StudioHeader } from '../components/StudioHeader'
 import { useDraft } from '../components/draft'
 import { preparePhoto } from '../components/photo-upload'
@@ -117,7 +118,6 @@ function Send() {
                 id="lock-question"
                 value={question}
                 maxLength={LIMITS.question}
-                placeholder="What did we name the stray cat in Yaba?"
                 onChange={(e) => setQuestion(e.target.value)}
                 required
                 minLength={3}
@@ -140,14 +140,10 @@ function Send() {
           <p className="fine">
             Your photos and words are stored privately for this gift. Photos are resized and their location data removed before upload.
           </p>
-          <button type="submit" className="button primary" disabled={busy}>
+          <button type="submit" className={`button primary${busy ? ' is-busy' : ''}`} disabled={busy}>
             {busy ? 'Working on it…' : 'Create the private link'}
           </button>
-          {progress && (
-            <p className="fine" role="status">
-              {progress}
-            </p>
-          )}
+          {progress && <Working>{progress}</Working>}
           {error && (
             <p className="field-error" role="alert">
               {error}

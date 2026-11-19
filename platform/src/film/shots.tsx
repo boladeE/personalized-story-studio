@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import type { CSSProperties, ElementType, ReactNode } from 'react'
 import type { WorldId } from '../story/types'
 import { PageBody } from './scrapbook'
@@ -128,21 +128,7 @@ function ShotBody({ shot, actions, leaving }: { shot: Shot; actions: ShotActions
         </div>
       )
     case 'photo':
-      return (
-        <div className={`photo layout-${shot.layout}`} aria-hidden="true">
-          <figure className="plate">
-            <div className="plate-img">
-              <img src={shot.photo.src} alt="" draggable={false} />
-            </div>
-            {shot.photo.caption && <figcaption>{shot.photo.caption}</figcaption>}
-          </figure>
-          <div className="words">
-            <Type text={shot.kicker} className="kicker" by="word" delay={0.5} step={70} />
-            <Type as="h2" text={shot.title} className={`headline${shot.title.length > 30 ? ' is-long' : ''}`} delay={0.75} />
-            {shot.body && <Type text={shot.body} className="sub" by="word" delay={1.35 + seconds(shot.title, 0.1)} step={60} />}
-          </div>
-        </div>
-      )
+      return <Plate shot={shot} />
     case 'flag':
       if (shot.design === 'docket') return <Roll shot={shot} />
       return (
@@ -266,6 +252,39 @@ function ShotBody({ shot, actions, leaving }: { shot: Shot; actions: ShotActions
         </div>
       )
   }
+}
+
+/**
+ * A photo with its words. The "wide" layout fills the frame with the photo,
+ * which suits a landscape picture and would cut most of a tall one away, so a
+ * tall photo is shown whole beside its words instead.
+ */
+function Plate({ shot }: { shot: Extract<Shot, { kind: 'photo' }> }) {
+  const [tall, setTall] = useState(false)
+  const layout = shot.layout === 'wide' && tall ? 'left' : shot.layout
+  return (
+    <div className={`photo layout-${layout}`} aria-hidden="true">
+      <figure className="plate">
+        <div className="plate-img">
+          <img
+            src={shot.photo.src}
+            alt=""
+            draggable={false}
+            ref={(img) => {
+              if (img?.complete && img.naturalWidth) setTall(img.naturalHeight > img.naturalWidth * 1.05)
+            }}
+            onLoad={(e) => setTall(e.currentTarget.naturalHeight > e.currentTarget.naturalWidth * 1.05)}
+          />
+        </div>
+        {shot.photo.caption && <figcaption>{shot.photo.caption}</figcaption>}
+      </figure>
+      <div className="words">
+        <Type text={shot.kicker} className="kicker" by="word" delay={0.5} step={70} />
+        <Type as="h2" text={shot.title} className={`headline${shot.title.length > 30 ? ' is-long' : ''}`} delay={0.75} />
+        {shot.body && <Type text={shot.body} className="sub" by="word" delay={1.35 + seconds(shot.title, 0.1)} step={60} />}
+      </div>
+    </div>
+  )
 }
 
 /** Where each print lands (centre x %, centre y %, tilt), by how many there are. */

@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Working } from '../components/Working'
 import { StudioHeader } from '../components/StudioHeader'
 import { useDraft } from '../components/draft'
 import { canGenerate } from '../story/generate'
@@ -201,6 +202,11 @@ function SongRoom() {
                       {writing ? 'Writing…' : 'Write a different version'}
                     </button>
                   </div>
+                  {writing && (
+                    <Working seconds={24}>
+                      <b>Writing a new version.</b> About 20 seconds.
+                    </Working>
+                  )}
                   {tonePicker}
                 </>
               ) : (
@@ -210,9 +216,14 @@ function SongRoom() {
                     change every line before it’s sung.
                   </p>
                   {tonePicker}
-                  <button type="button" className="button primary" onClick={write} disabled={busy}>
+                  <button type="button" className={`button primary${writing ? ' is-busy' : ''}`} onClick={write} disabled={busy}>
                     {writing ? 'Writing the words…' : `Write ${details.recipient}’s song`}
                   </button>
+                  {writing && (
+                    <Working seconds={24}>
+                      <b>Writing {details.recipient}’s song.</b> About 20 seconds.
+                    </Working>
+                  )}
                 </div>
               )}
             </section>
@@ -242,18 +253,13 @@ function SongRoom() {
                 Music only, no singing
               </label>
 
-              <button type="button" className="button primary block" onClick={make} disabled={!canMake}>
+              <button type="button" className={`button primary block${making ? ' is-busy' : ''}`} onClick={make} disabled={!canMake}>
                 {making ? 'Making the song…' : takes.length ? 'Make another take' : 'Make the song'}
               </button>
-              {writing && (
-                <p className="fine" role="status">
-                  Writing the words takes about 20 seconds.
-                </p>
-              )}
               {making && (
-                <p className="fine" role="status">
-                  This takes about a minute. Keep this tab open.
-                </p>
+                <Working seconds={80}>
+                  <b>{details.recipient}’s song is being sung.</b> About a minute. Keep this tab open.
+                </Working>
               )}
               {!words && !wordless && <p className="fine">Write the words first, or tick “Music only”.</p>}
               {error && (
