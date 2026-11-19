@@ -23,6 +23,8 @@ export type Phase = 'ticket' | 'leader' | 'playing' | 'ended'
 export interface FilmHandle {
   /** Start the film at a scene (or carry on from it), skipping the opening. Call it from the tap that asked for it, so sound is allowed. */
   playFrom: (sceneType?: string) => void
+  /** Stop the film and its music and go back to the opening. */
+  rewind: () => void
 }
 
 /** The gift, as a film that plays by itself once the ticket is torn. */
@@ -168,7 +170,21 @@ export function Film({
     timers.current.push(window.setTimeout(run, ms))
   }
 
-  // A new story (Shuffle, a new look or song) goes back to the ticket.
+  /** Back to the opening, silent, as if the film had not been started. */
+  const toOpening = () => {
+    begun.current = false
+    clock.current = { t: 0, index: 0, wishDone: false, track: '' }
+    setPhase('ticket')
+    setIndex(0)
+    setLeaving(null)
+    setPaused(false)
+    setWaiting(false)
+    setCount(0)
+    setNowPlaying(null)
+    engine.current?.stop()
+  }
+
+  // A new story (another version, a new look or song) goes back to the ticket.
   useEffect(() => {
     clearTimers()
     particles.current?.clear()
@@ -188,16 +204,7 @@ export function Film({
       startMusic()
       return clearTimers
     }
-    begun.current = false
-    clock.current = { t: 0, index: 0, wishDone: false, track: '' }
-    setPhase('ticket')
-    setIndex(0)
-    setLeaving(null)
-    setPaused(false)
-    setWaiting(false)
-    setCount(0)
-    setNowPlaying(null)
-    engine.current?.stop()
+    toOpening()
     return clearTimers
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [film])
@@ -385,7 +392,15 @@ export function Film({
   )
   useEffect(() => {
     if (!handle) return
-    handle.current = { playFrom: (type) => void playFrom(type) }
+    handle.current = {
+      playFrom: (type) => void playFrom(type),
+      rewind: () => {
+        clearTimers()
+        particles.current?.clear()
+        void engine.current?.setPaused(false)
+        toOpening()
+      },
+    }
     return () => {
       handle.current = null
     }

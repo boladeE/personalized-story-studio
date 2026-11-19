@@ -1,12 +1,14 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { Film } from '../film/Film'
 import type { FilmHandle, Phase } from '../film/Film'
 import { StudioHeader } from '../components/StudioHeader'
 import { useDraft } from '../components/draft'
+import { hasWords, SCENE_FIELDS, sceneAsk, SceneWords } from '../components/SceneWords'
 import type { SongJob } from '../components/draft'
 import { Still } from '../film/Still'
 import { scenePosters } from '../film/previews'
+import { buildFilm } from '../film/timeline'
 import type { Shot } from '../film/timeline'
 import { canGenerate, generateStory, LOOKS, moveScene, nextDesign, sceneBoard, toggleScene } from '../story/generate'
 import type { BoardRow } from '../story/generate'
@@ -47,10 +49,16 @@ function Preview() {
     () => (useSample ? { ...SAMPLE_INTAKE, look: sampleLook, world: sampleWorld, cut: sampleCut } : intake),
     [useSample, sampleLook, sampleWorld, sampleCut, intake],
   )
-  /** The last change made in the scene editor, so one tap takes it back. */
+  /** The scene whose words are open for writing, what that part of the draft was before, and the line being written. */
+  const [writing, setWriting] = useState<{ type: string; before: unknown; at: number } | null>(null)
+  // While words are written the film is rebuilt a moment behind the typing, so the typing stays quick. Every other change shows at once.
+  const behind = useDeferredValue(source)
+  const built = writing ? behind : source
+  /** The last change made in the editor, so one tap takes it back. */
   const [lastChange, setLastChange] = useState<SceneChange | null>(null)
-  const setCut = (cut: Cut | undefined, cueType?: string, change?: Omit<SceneChange, 'before'>) => {
-    setLastChange(change ? { ...change, before: source.cut } : null)
+  const setCut = (cut: Cut | undefined, cueType?: string, change?: { label: string; cue?: string }) => {
+    const before = source.cut
+    setLastChange(change ? { label: change.label, undo: () => setCut(before, change.cue) } : null)
     if (useSample) setSampleCut(cut)
     else setIntake((c) => ({ ...c, cut }))
     if (cueType) setCue({ type: cueType, key: Date.now() })
@@ -58,13 +66,13 @@ function Preview() {
   /** The version before the last "Try another version", so it can be had back. */
   const [lastSeed, setLastSeed] = useState<number | null>(null)
   const story = useMemo<Story | null>(() => {
-    if (!canGenerate(source)) return null
+    if (!canGenerate(built)) return null
     // The sample says its people are invented in its own end credits, not in the header.
-    const built: Story = useSample ? { ...generateStory(source, seed), note: SAMPLE_NOTE } : generateStory(source, seed)
-    if (song) return { ...built, soundtrack: { kind: 'song', src: song.src, label: song.label } }
+    const made: Story = useSample ? { ...generateStory(built, seed), note: SAMPLE_NOTE } : generateStory(built, seed)
+    if (song) return { ...made, soundtrack: { kind: 'song', src: song.src, label: song.label } }
     // The sample plays the song that was made for it.
-    return useSample ? { ...built, soundtrack: SAMPLE_SOUNDTRACK } : built
-  }, [source, seed, song, useSample])
+    return useSample ? { ...made, soundtrack: SAMPLE_SOUNDTRACK } : made
+  }, [built, seed, song, useSample])
 
   // Every film has its own song and no other music. A film that reaches here without one (built from
   // the detailed form) has it made now.
@@ -83,12 +91,13 @@ function Preview() {
   const locked = making ? `It starts when ${intake.recipient.trim()}’s song is ready.` : undefined
 
   // The scene being edited. Opening the editor picks the scene on screen, or the first one that can be changed.
-  const rows = useMemo(() => (story ? sceneBoard(source, story) : []), [source, story])
+  const rows = useMemo(() => (story ? sceneBoard(built, story) : []), [built, story])
   const [picked, setPicked] = useState<string>()
   const [tab, setTab] = useState<DeskTab>('scenes')
   useEffect(() => {
     if (!editing) {
       setTab('scenes')
+      setWriting(null)
       return setPicked(undefined)
     }
     setLastChange(null)
@@ -96,7 +105,8 @@ function Preview() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editing])
   const selected = rows.find((r) => r.type === picked) ?? rows.find((r) => r.state === 'in' && !r.fixed) ?? rows[0]
-  const posters = useMemo(() => (story && editing ? scenePosters(story) : new Map<string, Shot>()), [story, editing])
+  const shots = useMemo(() => (story && editing ? buildFilm(story).shots : []), [story, editing])
+  const posters = useMemo(() => (story && editing ? scenePosters(story, shots) : new Map<string, Shot>()), [story, editing, shots])
 
   if (!story || (useSample && sample !== 1)) {
     return (
@@ -119,7 +129,25 @@ function Preview() {
   }
 
   const world = story.world ?? 'screening'
+  // The words of a scene, changed where the film is. The film stops while they are written.
+  const openWords = (type: string) => {
+    if (!hasWords(type)) return
+    film.current?.rewind()
+    setLastChange(null)
+    setWriting({ type, before: intake[SCENE_FIELDS[type]], at: 0 })
+  }
+  const closeWords = () => {
+    if (!writing || !hasWords(writing.type)) return setWriting(null)
+    const field = SCENE_FIELDS[writing.type]
+    const { before, type } = writing
+    setWriting(null)
+    // Photos have their own way back, offered as each one is removed.
+    if (field === 'photos' || JSON.stringify(intake[field]) === JSON.stringify(before)) return
+    const name = rows.find((r) => r.type === type)?.name ?? 'The scene'
+    setLastChange({ label: `${name} changed.`, undo: () => setIntake((c) => ({ ...c, [field]: before })) })
+  }
   const select = (type: string) => {
+    if (writing) closeWords()
     setPicked(type)
     setLastChange(null)
     // A film that is playing goes to the scene. One that isn't shows a still of it, and makes no sound until asked.
@@ -133,11 +161,17 @@ function Preview() {
   // While editing, the stage is the film only while it plays. Otherwise it is a still of the chosen scene.
   // On the other tabs it is always a scene that is in the film, so a change of look can be seen.
   const shown = tab === 'scenes' || selected?.state === 'in' ? selected : (rows.find((r) => r.state === 'in' && !r.fixed) ?? rows[0])
-  const still = editing && at.phase !== 'playing' && shown
+  const still = editing && (Boolean(writing) || at.phase !== 'playing') && shown
+  // While words are written, the still is the part of the scene they are in.
+  const stageShot = (() => {
+    if (!shown) return undefined
+    const needle = writing && writing.type === shown.type ? writingNow(built, writing.type, writing.at) : ''
+    return (needle.length > 2 ? shots.find((s) => s.sceneType === shown.type && s.kind !== 'card' && s.text.includes(needle)) : undefined) ?? posters.get(shown.type)
+  })()
   const status = !useSample && job.state !== 'idle'
 
   return (
-    <div className={`preview-shell${editing ? ' is-editing' : ''}`}>
+    <div className={`preview-shell${editing ? ' is-editing' : ''}${editing && writing ? ' is-writing' : ''}`}>
       <StudioHeader tag={editing ? 'Editing' : undefined}>
         {editing ? (
           <Link to="/preview" search={(was) => ({ ...was, edit: undefined })} replace className="button small primary">
@@ -191,16 +225,22 @@ function Preview() {
         />
         {still && (
           <div className="stage-still">
-            {shown.state === 'in' && posters.get(shown.type) ? (
+            {shown.state === 'in' && stageShot ? (
               <>
                 <div className="stage-still-frame">
-                  <Still look={story.look} world={world} content={{ kind: 'shot', shot: posters.get(shown.type)! }} />
+                  <Still look={story.look} world={world} content={{ kind: 'shot', shot: stageShot }} />
                 </div>
                 <p className="stage-still-foot">
-                  <button type="button" className="button small primary" disabled={Boolean(locked)} onClick={() => film.current?.playFrom(shown.type)}>
-                    Play from here
-                  </button>
-                  <span>{locked ?? `A still from ${shown.name}. The film adds the motion and the song.`}</span>
+                  {writing ? (
+                    <span>A still from {shown.name}. It changes as you write.</span>
+                  ) : (
+                    <>
+                      <button type="button" className="button small primary" disabled={Boolean(locked)} onClick={() => film.current?.playFrom(shown.type)}>
+                        Play from here
+                      </button>
+                      <span>{locked ?? `A still from ${shown.name}. The film adds the motion and the song.`}</span>
+                    </>
+                  )}
                 </p>
               </>
             ) : (
@@ -218,7 +258,15 @@ function Preview() {
           story={story}
           own={!useSample}
           tab={tab}
-          onTab={setTab}
+          onTab={(next) => {
+            if (next !== 'scenes') closeWords()
+            setTab(next)
+          }}
+          writing={writing?.type === selected.type}
+          onOpenWords={() => openWords(selected.type)}
+          onCloseWords={closeWords}
+          onWriting={(index) => setWriting((was) => (was ? { ...was, at: index } : was))}
+          setIntake={setIntake}
           rows={rows}
           posters={posters}
           selected={selected}
@@ -226,7 +274,11 @@ function Preview() {
           onSelect={select}
           onCut={setCut}
           lastChange={lastChange}
-          onUndo={() => lastChange && setCut(lastChange.before, lastChange.cue)}
+          onUndo={() => {
+            const change = lastChange
+            setLastChange(null)
+            change?.undo()
+          }}
           onLook={(look) => (useSample ? setSampleLook(look) : setIntake((c) => ({ ...c, look })))}
           onWorld={(next) => (useSample ? setSampleWorld(next) : setIntake((c) => ({ ...c, world: next })))}
           onShuffle={shuffle}
@@ -315,15 +367,21 @@ function SongStatus({ job, name, onPlay, onRetry }: { job: SongJob; name: string
   )
 }
 
-/** Each scene, and the step of the detailed form that feeds it. */
-const SCENE_STEPS: Record<string, string> = { spotlight: 'spotlight', memoryLane: 'memories', redFlags: 'habits', reasons: 'reasons', cameraRoll: 'photos', letter: 'letter', wish: 'wish' }
-
-/** What the sender just did to a scene: what to say about it, the cut before it, and where the film should carry on if it is undone. */
+/** What the sender just did to a scene: what to say about it, and how to take it back. */
 interface SceneChange {
   label: string
-  before: Cut | undefined
-  cue?: string
+  undo: () => void
 }
+
+/** The words on the line being written, to find the shot of the scene that shows them. */
+function writingNow(intake: Intake, type: string, at: number): string {
+  if (type === 'redFlags') return (intake.habits[at] ?? '').trim()
+  if (type === 'reasons') return (intake.reasons[at] ?? '').trim()
+  if (type === 'memoryLane') return (intake.memories[at]?.title ?? '').trim()
+  return ''
+}
+
+type CutChange = (cut: Cut | undefined, cue?: string, change?: { label: string; cue?: string }) => void
 
 type DeskTab = 'scenes' | 'look' | 'song'
 const DESK_TABS: Array<{ id: DeskTab; name: string }> = [
@@ -343,6 +401,11 @@ function EditDesk({
   own,
   tab,
   onTab: setTab,
+  writing,
+  onOpenWords,
+  onCloseWords,
+  onWriting,
+  setIntake,
   rows,
   posters,
   selected,
@@ -362,13 +425,20 @@ function EditDesk({
   own: boolean
   tab: DeskTab
   onTab: (tab: DeskTab) => void
+  /** The chosen scene's words are open for writing. */
+  writing: boolean
+  onOpenWords: () => void
+  onCloseWords: () => void
+  /** Which line of a list (or which memory) is being written. */
+  onWriting: (index: number) => void
+  setIntake: (update: (current: Intake) => Intake) => void
   rows: BoardRow[]
   posters: Map<string, Shot>
   selected: BoardRow
   /** The scene the film is on, while it plays. */
   playing?: string
   onSelect: (type: string) => void
-  onCut: (cut: Cut | undefined, cue?: string, change?: Omit<SceneChange, 'before'>) => void
+  onCut: CutChange
   lastChange: SceneChange | null
   onUndo: () => void
   onLook: (look: LookId) => void
@@ -383,7 +453,7 @@ function EditDesk({
     tabs.current?.querySelector<HTMLElement>(`#desk-tab-${next.id}`)?.focus()
   }
   return (
-    <section className="edit-desk" aria-label="Edit the film">
+    <section className={`edit-desk${writing ? ' is-writing' : ''}`} aria-label="Edit the film">
       <div
         ref={tabs}
         className="desk-tabs"
@@ -403,7 +473,26 @@ function EditDesk({
         ))}
       </div>
       <div id="desk-panel" className={`desk-panel is-${tab}`} role="tabpanel" aria-labelledby={`desk-tab-${tab}`}>
-        {tab === 'scenes' && <ScenesTab intake={intake} story={story} own={own} rows={rows} posters={posters} selected={selected} playing={playing} onSelect={onSelect} onCut={onCut} lastChange={lastChange} onUndo={onUndo} />}
+        {tab === 'scenes' && (
+          <ScenesTab
+            intake={intake}
+            story={story}
+            own={own}
+            rows={rows}
+            posters={posters}
+            selected={selected}
+            playing={playing}
+            onSelect={onSelect}
+            onCut={onCut}
+            lastChange={lastChange}
+            onUndo={onUndo}
+            writing={writing}
+            onOpenWords={onOpenWords}
+            onCloseWords={onCloseWords}
+            onWriting={onWriting}
+            setIntake={setIntake}
+          />
+        )}
         {tab === 'look' && <LookTab story={story} onLook={onLook} onWorld={onWorld} onShuffle={onShuffle} onUnshuffle={onUnshuffle} />}
         {tab === 'song' && <SongTab intake={intake} sample={!own} />}
       </div>
@@ -424,6 +513,11 @@ function ScenesTab({
   onCut,
   lastChange,
   onUndo,
+  writing,
+  onOpenWords,
+  onCloseWords,
+  onWriting,
+  setIntake,
 }: {
   intake: Intake
   story: Story
@@ -433,9 +527,14 @@ function ScenesTab({
   selected: BoardRow
   playing?: string
   onSelect: (type: string) => void
-  onCut: (cut: Cut | undefined, cue?: string, change?: Omit<SceneChange, 'before'>) => void
+  onCut: CutChange
   lastChange: SceneChange | null
   onUndo: () => void
+  writing: boolean
+  onOpenWords: () => void
+  onCloseWords: () => void
+  onWriting: (index: number) => void
+  setIntake: (update: (current: Intake) => Intake) => void
 }) {
   const world = story.world ?? 'screening'
   const cut = intake.cut
@@ -474,6 +573,20 @@ function ScenesTab({
           )
         })}
       </ol>
+      {writing && hasWords(row.type) ? (
+        <div className="scene-words">
+          <div className="scene-words-head">
+            <p className="scene-what">
+              <b>{row.name}</b>
+              <small>{sceneAsk(row.type, intake)}</small>
+            </p>
+            <button type="button" className="chip-button is-main" onClick={onCloseWords}>
+              Back to scenes
+            </button>
+          </div>
+          <SceneWords type={row.type} intake={intake} setIntake={setIntake} onWriting={onWriting} />
+        </div>
+      ) : (
       <div className="scene-card">
         {lastChange ? (
           <p className="scene-undo" role="status">
@@ -493,10 +606,10 @@ function ScenesTab({
           </p>
         )}
         <span className="scene-tools">
-          {own && SCENE_STEPS[row.type] && (
-            <Link to="/create" search={{ step: SCENE_STEPS[row.type] as never }} className="chip-button is-main" aria-label={`${row.state === 'missing' ? 'Add' : row.type === 'cameraRoll' ? 'Change the photos in' : 'Edit the words in'} ${row.name}`}>
+          {own && hasWords(row.type) && (
+            <button type="button" className="chip-button is-main" aria-label={`${row.state === 'missing' ? 'Add' : row.type === 'cameraRoll' ? 'Change the photos in' : 'Edit the words in'} ${row.name}`} onClick={onOpenWords}>
               {row.state === 'missing' ? 'Add it' : row.type === 'cameraRoll' ? 'Change photos' : 'Edit words'}
-            </Link>
+            </button>
           )}
           {row.state === 'in' && row.designs.length > 1 && (
             <button type="button" className="chip-button" aria-label={`Another design for ${row.name}`} onClick={() => onCut(nextDesign(story, cut, row.type), row.type, { label: `${row.name} has another design.`, cue: row.type })}>
@@ -537,6 +650,7 @@ function ScenesTab({
           </span>
         )}
       </div>
+      )}
     </>
   )
 }

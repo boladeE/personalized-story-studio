@@ -154,9 +154,8 @@ const POSTER_KINDS: Array<Shot['kind']> = ['flag', 'photo', 'montage', 'reason',
  * One frame for each scene of a finished story, by scene type: the shot that
  * shows the scene's design best. For a list that builds, that is the last item.
  */
-export function scenePosters(story: Story): Map<string, Shot> {
+export function scenePosters(story: Story, shots: Shot[] = buildFilm(story).shots): Map<string, Shot> {
   const posters = new Map<string, Shot>()
-  const shots = buildFilm(story).shots
   for (const scene of story.scenes) {
     const mine = shots.filter((s) => s.sceneType === scene.type)
     for (const kind of POSTER_KINDS) {

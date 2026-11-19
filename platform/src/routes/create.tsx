@@ -1,11 +1,11 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import type { DragEvent, KeyboardEvent, ReactNode, TextareaHTMLAttributes } from 'react'
-import { flushSync } from 'react-dom'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import type { DragEvent, ReactNode } from 'react'
 import { StudioHeader } from '../components/StudioHeader'
 import { useDraft } from '../components/draft'
 import { UndoToast } from '../components/UndoToast'
 import { Working } from '../components/Working'
+import { Cross, Field, GrowingText, ListEditor, oneLine } from '../components/fields'
 import { releasePhotos, usePhotos } from '../components/photos'
 import { Still } from '../film/Still'
 import { previewFor, previewLook } from '../film/previews'
@@ -605,38 +605,6 @@ function wordCount(text: string) {
   return n === 0 ? 'Nothing yet. Skip it and the film leaves the letter out.' : `${n} word${n === 1 ? '' : 's'}`
 }
 
-const oneLine = (text: string) => text.replace(/\s*\n\s*/g, ' ')
-
-/** A one-line field that grows instead of cutting long sentences off. */
-function GrowingText({ inputRef, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement> & { inputRef?: (el: HTMLTextAreaElement | null) => void }) {
-  const own = useRef<HTMLTextAreaElement | null>(null)
-  useLayoutEffect(() => {
-    const el = own.current
-    if (!el) return
-    el.style.height = 'auto'
-    el.style.height = `${el.scrollHeight + (el.offsetHeight - el.clientHeight)}px`
-  }, [props.value])
-  return (
-    <textarea
-      rows={1}
-      className="grow"
-      ref={(el) => {
-        own.current = el
-        inputRef?.(el)
-      }}
-      {...props}
-    />
-  )
-}
-
-function Cross() {
-  return (
-    <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-      <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  )
-}
-
 /** A name written into the sentence; it grows with what is typed. */
 function SentenceInput({ label, value, onChange, autoComplete }: { label: string; value: string; onChange: (value: string) => void; autoComplete?: string }) {
   return (
@@ -655,16 +623,6 @@ function SentenceInput({ label, value, onChange, autoComplete }: { label: string
   )
 }
 
-function Field({ label, children }: { label: string; children: (id: string) => ReactNode }) {
-  const id = useId()
-  return (
-    <div className="field">
-      <label htmlFor={id}>{label}</label>
-      {children(id)}
-    </div>
-  )
-}
-
 /** One question at a time to get the sender unstuck. It asks; it never writes for them. */
 function Nudge({ prompts }: { prompts: string[] }) {
   const [n, setN] = useState(0)
@@ -676,80 +634,5 @@ function Nudge({ prompts }: { prompts: string[] }) {
         Another question
       </button>
     </p>
-  )
-}
-
-function ListEditor({
-  label,
-  values,
-  max,
-  onChange,
-  onActive,
-}: {
-  label: string
-  values: string[]
-  max: number
-  onChange: (values: string[]) => void
-  onActive: (index: number) => void
-}) {
-  const rows = useRef<Array<HTMLTextAreaElement | null>>([])
-  // Focus moves in the same tick, so fast typing after Enter lands in the new row.
-  const focusRow = (i: number) => rows.current[i]?.focus()
-  const addRow = () => {
-    flushSync(() => onChange([...values, '']))
-    focusRow(values.length)
-  }
-  const canAdd = values.length < max
-
-  const onKey = (event: KeyboardEvent<HTMLTextAreaElement>, i: number) => {
-    if (event.key === 'Enter') {
-      // Enter moves down the list instead of leaving the step.
-      event.preventDefault()
-      if (i < values.length - 1) focusRow(i + 1)
-      else if (canAdd && values[i].trim()) addRow()
-    } else if (event.key === 'Backspace' && !values[i] && values.length > 1) {
-      event.preventDefault()
-      flushSync(() => onChange(values.filter((_, n) => n !== i)))
-      focusRow(Math.max(0, i - 1))
-    }
-  }
-
-  return (
-    <div className="list-editor">
-      <ol>
-        {values.map((value, i) => (
-          <li key={i} className="list-row">
-            <span className="row-n" aria-hidden="true">
-              {i + 1}
-            </span>
-            <GrowingText
-              inputRef={(el) => {
-                rows.current[i] = el
-              }}
-              aria-label={`${label} ${i + 1}`}
-              value={value}
-              maxLength={LIMITS.listItem}
-              enterKeyHint="next"
-              onFocus={() => onActive(i)}
-              onKeyDown={(e) => onKey(e, i)}
-              onChange={(e) => {
-                onActive(i)
-                onChange(values.map((v, n) => (n === i ? oneLine(e.target.value) : v)))
-              }}
-            />
-            {values.length > 1 && (
-              <button type="button" className="icon-remove" aria-label={`Remove ${label.toLowerCase()} ${i + 1}`} onClick={() => onChange(values.filter((_, n) => n !== i))}>
-                <Cross />
-              </button>
-            )}
-          </li>
-        ))}
-      </ol>
-      {canAdd && (
-        <button type="button" className="text-button" onClick={addRow}>
-          Add another
-        </button>
-      )}
-    </div>
   )
 }
