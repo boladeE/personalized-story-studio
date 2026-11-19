@@ -4,6 +4,7 @@ import type { DragEvent, KeyboardEvent, ReactNode, TextareaHTMLAttributes } from
 import { flushSync } from 'react-dom'
 import { StudioHeader } from '../components/StudioHeader'
 import { useDraft } from '../components/draft'
+import { UndoToast } from '../components/UndoToast'
 import { Working } from '../components/Working'
 import { releasePhotos, usePhotos } from '../components/photos'
 import { Still } from '../film/Still'
@@ -131,7 +132,9 @@ function Create() {
 
   /* ---------- photos ---------- */
 
-  const { add: addPhotos, remove: removePhoto, error: photoError, setError: setPhotoError, reading: photosReading } = usePhotos()
+  const { add: addPhotos, remove: removePhoto, removed: removedPhoto, restore: restorePhoto, forget: forgetPhoto, error: photoError, setError: setPhotoError, reading: photosReading } = usePhotos()
+  /** The draft as it was before Clear or Fill with the sample replaced it, kept until the undo offer runs out. */
+  const [replaced, setReplaced] = useState<{ intake: Intake; label: string } | null>(null)
 
   const onDrop = (event: DragEvent) => {
     event.preventDefault()
@@ -139,12 +142,26 @@ function Create() {
     addPhotos(Array.from(event.dataTransfer.files))
   }
 
-  const replaceDraft = (next: Intake) => {
-    releasePhotos(intake.photos)
+  // Replacing the whole draft happens at once and can be undone, so its photos are only let go when the offer runs out.
+  const replaceDraft = (next: Intake, label: string) => {
+    if (replaced) releasePhotos(replaced.intake.photos)
+    forgetPhoto()
+    setReplaced({ intake, label })
     setIntake(() => next)
     setPhotoError('')
     setFocus({ memory: 0, habit: 0, reason: 0 })
   }
+  const undoReplace = () => {
+    if (!replaced) return
+    releasePhotos(intake.photos)
+    setIntake(() => replaced.intake)
+    setReplaced(null)
+  }
+  const forgetReplaced = () =>
+    setReplaced((was) => {
+      if (was) releasePhotos(was.intake.photos)
+      return null
+    })
 
   /* ---------- memories ---------- */
 
@@ -241,6 +258,11 @@ function Create() {
               </li>
             )}
           </ul>
+          {removedPhoto && (
+            <UndoToast token={removedPhoto.photo.id} onUndo={restorePhoto} onDone={forgetPhoto}>
+              Photo removed.
+            </UndoToast>
+          )}
           {photosReading > 0 && <Working className="photo-reading">Reading {photosReading === 1 ? 'a photo' : `${photosReading} photos`}…</Working>}
           {photoError && (
             <p className="field-error" role="alert">
@@ -476,13 +498,18 @@ function Create() {
   return (
     <>
       <StudioHeader>
-        <button type="button" className="button small ghost" onClick={() => replaceDraft({ ...structuredClone(SAMPLE_INTAKE), occasion: intake.occasion })}>
+        <button type="button" className="button small ghost" onClick={() => replaceDraft({ ...structuredClone(SAMPLE_INTAKE), occasion: intake.occasion }, 'Filled with the sample.')}>
           Fill with the sample
         </button>
-        <button type="button" className="button small ghost" onClick={() => replaceDraft({ ...emptyIntake(), occasion: intake.occasion })}>
+        <button type="button" className="button small ghost" onClick={() => replaceDraft({ ...emptyIntake(), occasion: intake.occasion }, 'Draft cleared.')}>
           Clear
         </button>
       </StudioHeader>
+      {replaced ? (
+        <UndoToast floating token={replaced} onUndo={undoReplace} onDone={forgetReplaced} seconds={12}>
+          {replaced.label}
+        </UndoToast>
+      ) : null}
       <main className="writer">
         <nav className="reel" aria-label="Steps">
           <ol ref={reel}>

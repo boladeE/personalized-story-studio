@@ -43,7 +43,10 @@ function Preview() {
     () => (useSample ? { ...SAMPLE_INTAKE, look: sampleLook, world: sampleWorld, cut: sampleCut } : intake),
     [useSample, sampleLook, sampleWorld, sampleCut, intake],
   )
-  const setCut = (cut: Cut | undefined, cueType?: string) => {
+  /** The last change made in the scene editor, so one tap takes it back. */
+  const [lastChange, setLastChange] = useState<SceneChange | null>(null)
+  const setCut = (cut: Cut | undefined, cueType?: string, change?: Omit<SceneChange, 'before'>) => {
+    setLastChange(change ? { ...change, before: source.cut } : null)
     if (useSample) setSampleCut(cut)
     else setIntake((c) => ({ ...c, cut }))
     if (cueType) setCue({ type: cueType, key: Date.now() })
@@ -116,7 +119,7 @@ function Preview() {
       </StudioHeader>
       {!useSample && job.state !== 'idle' && <SongStatus job={job} name={story.recipient} onPlay={playJobSong} />}
       <div className="preview-body">
-        {panel === 'more' && <ScenesPanel intake={source} story={story} own={!useSample} onCut={setCut} onClose={() => setPanel('none')} />}
+        {panel === 'more' && <ScenesPanel intake={source} story={story} own={!useSample} onCut={setCut} lastChange={lastChange} onUndo={() => lastChange && setCut(lastChange.before, lastChange.cue)} onClose={() => setPanel('none')} />}
         {panelOpen && (
           <AdjustPanel
             intake={source}
@@ -214,7 +217,30 @@ const SCENE_STEPS: Record<string, string> = { spotlight: 'spotlight', memoryLane
  * and see what could still go in. This is the sender's own cut; anything they
  * don't touch stays the studio's choice.
  */
-function ScenesPanel({ intake, story, own, onCut, onClose }: { intake: Intake; story: Story; own: boolean; onCut: (cut: Cut | undefined, cue?: string) => void; onClose: () => void }) {
+/** What the sender just did to a scene: what to say about it, the cut before it, and where the film should carry on if it is undone. */
+interface SceneChange {
+  label: string
+  before: Cut | undefined
+  cue?: string
+}
+
+function ScenesPanel({
+  intake,
+  story,
+  own,
+  onCut,
+  lastChange,
+  onUndo,
+  onClose,
+}: {
+  intake: Intake
+  story: Story
+  own: boolean
+  onCut: (cut: Cut | undefined, cue?: string, change?: Omit<SceneChange, 'before'>) => void
+  lastChange: SceneChange | null
+  onUndo: () => void
+  onClose: () => void
+}) {
   const rows = sceneBoard(intake, story)
   const posters = useMemo(() => scenePosters(story), [story])
   const world = story.world ?? 'screening'
@@ -225,6 +251,14 @@ function ScenesPanel({ intake, story, own, onCut, onClose }: { intake: Intake; s
     <section id="scenes-panel" className="adjust-panel scenes-panel" aria-label="Scenes">
       <h2>Scenes</h2>
       <p className="fine">Give a scene another design, move it, or leave it out. Once the film is playing, it carries on from the scene you change.</p>
+      {lastChange && (
+        <p className="scene-undo" role="status">
+          <span>{lastChange.label}</span>
+          <button type="button" onClick={onUndo}>
+            Undo
+          </button>
+        </p>
+      )}
       <ol className="scene-list">
         {rows.map((row) => {
           const poster = posters.get(row.type)
@@ -248,25 +282,25 @@ function ScenesPanel({ intake, story, own, onCut, onClose }: { intake: Intake; s
                 </small>
                 <span className="scene-tools">
                   {row.state === 'in' && row.designs.length > 1 && (
-                    <button type="button" className="chip-button" aria-label={`Another design for ${row.name}`} onClick={() => onCut(nextDesign(story, cut, row.type), row.type)}>
+                    <button type="button" className="chip-button" aria-label={`Another design for ${row.name}`} onClick={() => onCut(nextDesign(story, cut, row.type), row.type, { label: `${row.name} has another design.`, cue: row.type })}>
                       Another design
                     </button>
                   )}
                   {row.state === 'in' && !row.fixed && (
                     <>
-                      <button type="button" className="chip-button is-icon" aria-label={`Move ${row.name} earlier`} disabled={at <= 0} onClick={() => onCut(moveScene(story, cut, row.type, -1), row.type)}>
+                      <button type="button" className="chip-button is-icon" aria-label={`Move ${row.name} earlier`} disabled={at <= 0} onClick={() => onCut(moveScene(story, cut, row.type, -1), row.type, { label: `${row.name} moved earlier.`, cue: row.type })}>
                         ↑
                       </button>
-                      <button type="button" className="chip-button is-icon" aria-label={`Move ${row.name} later`} disabled={at === movable.length - 1} onClick={() => onCut(moveScene(story, cut, row.type, 1), row.type)}>
+                      <button type="button" className="chip-button is-icon" aria-label={`Move ${row.name} later`} disabled={at === movable.length - 1} onClick={() => onCut(moveScene(story, cut, row.type, 1), row.type, { label: `${row.name} moved later.`, cue: row.type })}>
                         ↓
                       </button>
-                      <button type="button" className="chip-button" aria-label={`Leave out ${row.name}`} onClick={() => onCut(toggleScene(cut, row.type, false), after)}>
+                      <button type="button" className="chip-button" aria-label={`Leave out ${row.name}`} onClick={() => onCut(toggleScene(cut, row.type, false), after, { label: `${row.name} left out.`, cue: row.type })}>
                         Leave out
                       </button>
                     </>
                   )}
                   {row.state === 'off' && (
-                    <button type="button" className="chip-button" aria-label={`Put back ${row.name}`} onClick={() => onCut(toggleScene(cut, row.type, true), row.type)}>
+                    <button type="button" className="chip-button" aria-label={`Put back ${row.name}`} onClick={() => onCut(toggleScene(cut, row.type, true), row.type, { label: `${row.name} put back.`, cue: 'hello' })}>
                       Put back
                     </button>
                   )}
@@ -283,8 +317,8 @@ function ScenesPanel({ intake, story, own, onCut, onClose }: { intake: Intake; s
       </ol>
       {changed && (
         <p className="fine">
-          <button type="button" className="text-button" onClick={() => onCut(undefined, 'hello')}>
-            Undo my changes to the scenes
+          <button type="button" className="text-button" onClick={() => onCut(undefined, 'hello', { label: 'All scenes are back to the studio’s choices.', cue: 'hello' })}>
+            Reset all scenes
           </button>
         </p>
       )}

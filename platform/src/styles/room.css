@@ -110,13 +110,30 @@ body:has(.studio-page.manage)::before {
   color: var(--quiet);
 }
 
+/* Anything pressable answers the moment it is pressed, not when it is let go. */
+.button,
+.chip-button,
+.chip,
+.frame,
+.tune-play,
+.look-option,
+.world-option,
+.icon-remove {
+  transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.1s ease-out;
+}
 .button {
   flex: none;
   white-space: nowrap;
-  transition: background 0.2s, color 0.2s, transform 0.2s;
 }
-.button:active:not(:disabled) {
-  transform: translateY(1px);
+.button:active:not(:disabled),
+.chip-button:active:not(:disabled),
+.chip:active,
+.frame:active,
+.tune-play:active,
+.look-option:active,
+.world-option:active,
+.icon-remove:active {
+  transform: scale(0.97);
 }
 .button.ghost {
   border-color: var(--palm);

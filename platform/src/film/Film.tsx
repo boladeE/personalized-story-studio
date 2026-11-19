@@ -62,6 +62,8 @@ export function Film({ story, embedded = false, cue }: { story: Story; embedded?
   const idleTimer = useRef(0)
   const calm = useRef(false)
   const cueSeen = useRef(cue?.key)
+  /** While the opening plays (the ticket tearing, the countdown), this goes straight to the film. */
+  const skipOpening = useRef<(() => void) | null>(null)
   const begun = useRef(false)
 
   const shot = film.shots[Math.min(index, film.shots.length - 1)]
@@ -311,6 +313,8 @@ export function Film({ story, embedded = false, cue }: { story: Story; embedded?
     // Buffer during the countdown so the first shot doesn't open in silence.
     if (ok && songSrc) engine.current?.prepareSong(songSrc)
     const play = () => {
+      skipOpening.current = null
+      setCount(0)
       clock.current = { t: 0, index: 0, wishDone: false, track: '' }
       setLeaving(null)
       setIndex(0)
@@ -319,6 +323,14 @@ export function Film({ story, embedded = false, cue }: { story: Story; embedded?
     }
     if (calm.current) return play()
     setPhase('leader')
+    // The opening never holds the viewer: a tap or a key goes straight to the film. A short guard, so
+    // the second half of a double tap on the ticket doesn't skip what the first half started.
+    const from = performance.now()
+    skipOpening.current = () => {
+      if (performance.now() - from < 450) return
+      clearTimers()
+      play()
+    }
     // The album's cover opens onto its first page.
     if (album) return later(1500, play)
     // The ticket tears, then a film leader counts in.
@@ -418,7 +430,13 @@ export function Film({ story, embedded = false, cue }: { story: Story; embedded?
         }
         return
       }
-      if (live.current.phase === 'leader') return
+      if (live.current.phase === 'leader') {
+        if (event.code === 'Space' || event.key === 'ArrowRight' || event.key === 'Enter' || event.key === 'Escape') {
+          event.preventDefault()
+          skipOpening.current?.()
+        }
+        return
+      }
       if (event.code === 'Space') {
         event.preventDefault()
         togglePause()
@@ -491,7 +509,7 @@ export function Film({ story, embedded = false, cue }: { story: Story; embedded?
         </p>
       )}
 
-      {!started && <Opening recipient={story.recipient} occasion={ticketLabel(story)} torn={phase === 'leader'} count={count} onBegin={begin} album={album} />}
+      {!started && <Opening recipient={story.recipient} occasion={ticketLabel(story)} torn={phase === 'leader'} count={count} onBegin={begin} onSkip={() => skipOpening.current?.()} album={album} />}
 
       <p className="visually-hidden" role="status" aria-live="polite">
         {started ? shot.text : ''}
@@ -557,7 +575,7 @@ function ticketLabel(story: Story) {
   return 'Your birthday'
 }
 
-function Opening({ recipient, occasion, torn, count, onBegin, album }: { recipient: string; occasion: string; torn: boolean; count: number; onBegin: () => void; album: boolean }) {
+function Opening({ recipient, occasion, torn, count, onBegin, onSkip, album }: { recipient: string; occasion: string; torn: boolean; count: number; onBegin: () => void; onSkip: () => void; album: boolean }) {
   const tilt = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.pointerType !== 'mouse' || torn) return
     const box = event.currentTarget.getBoundingClientRect()
@@ -569,7 +587,7 @@ function Opening({ recipient, occasion, torn, count, onBegin, album }: { recipie
   if (album) {
     return (
       <div className={`opening sb-opening${torn ? ' is-torn' : ''}`}>
-        <button type="button" className="ticket-hit" onClick={onBegin} disabled={torn} aria-label={`A book made for ${recipient}. Tap to open`} />
+        <button type="button" className="ticket-hit" onClick={torn ? onSkip : onBegin} aria-label={torn ? 'Skip the opening' : `A book made for ${recipient}. Tap to open`} />
         <CoverArt recipient={recipient} occasion={occasion} />
         <p className="opening-hint">Sound on, if you can. It plays by itself.</p>
       </div>
@@ -587,9 +605,15 @@ function Opening({ recipient, occasion, torn, count, onBegin, album }: { recipie
           </b>
         )}
       </div>
-      <button type="button" className="ticket-hit" onClick={onBegin} disabled={torn} aria-label={`Admit one: ${recipient}. Tap to begin`} />
+      {/* Once torn, the same tap skips the countdown: the opening never holds the viewer. */}
+      <button type="button" className="ticket-hit" onClick={torn ? onSkip : onBegin} aria-label={torn ? 'Skip the opening' : `Admit one: ${recipient}. Tap to begin`} />
       <TicketArt recipient={recipient} occasion={occasion} />
       <p className="opening-hint">Sound on, if you can. It plays by itself.</p>
+      {torn && (
+        <p className="opening-skip" aria-hidden="true">
+          Tap to skip
+        </p>
+      )}
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import { mkdtempSync } from 'node:fs'
+import { lockProblems } from '../src/story/lock'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -70,6 +71,18 @@ describe('media responses', () => {
     expect(ask('bytes=0-5000').headers.get('content-range')).toBe('bytes 0-999/1000')
     expect(ask('bytes=2000-').status).toBe(416)
     expect(ask('bytes=abc').status).toBe(200)
+  })
+})
+
+describe('the lock on a gift', () => {
+  it('says what is wrong with each field, in the sender’s terms', () => {
+    expect(lockProblems('', '')).toEqual({ question: 'Add a question.', answer: 'Add the answer that opens it.' })
+    expect(lockProblems(' a ', 'x').question).toBe('Make the question a little longer.')
+    expect(lockProblems('What did you call me at games night?', 'A cheat')).toEqual({ question: '', answer: '' })
+    // A question that contains its own answer is no lock at all.
+    expect(lockProblems('Did you call me a cheat?', ' A Cheat ').answer).toBe('The question gives this answer away. Change one of them.')
+    // One letter is too little to judge by.
+    expect(lockProblems('Where did we meet?', 'e').answer).toBe('')
   })
 })
 

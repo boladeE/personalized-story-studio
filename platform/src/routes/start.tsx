@@ -2,6 +2,7 @@ import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useDraft } from '../components/draft'
+import { UndoToast } from '../components/UndoToast'
 import { Working } from '../components/Working'
 import { usePhotos } from '../components/photos'
 import { canGenerate } from '../story/generate'
@@ -232,6 +233,11 @@ function Start() {
             )}
           </ul>
           {photos.reading > 0 && <Working className="photo-reading">Reading {photos.reading === 1 ? 'a photo' : `${photos.reading} photos`}…</Working>}
+          {photos.removed && (
+            <UndoToast token={photos.removed.photo.id} onUndo={photos.restore} onDone={photos.forget}>
+              Photo removed.
+            </UndoToast>
+          )}
           {photos.error && (
             <p className="field-error" role="alert">
               {photos.error}

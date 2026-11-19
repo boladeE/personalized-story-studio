@@ -53,16 +53,41 @@ export function usePhotos() {
     }))
   }
 
+  /** The photo last removed, kept (with its place and the memories it belonged to) until the undo offer runs out. */
+  const [removed, setRemoved] = useState<{ photo: Photo; at: number; memories: string[] } | null>(null)
+
+  /** Let go of a removed photo for good. */
+  const forget = () =>
+    setRemoved((was) => {
+      if (was) releasePhotos([was.photo])
+      return null
+    })
+
   const remove = (id: string) => {
+    const at = intake.photos.findIndex((p) => p.id === id)
+    if (at < 0) return
+    // Only the latest removal can be undone; an earlier one is let go now.
+    if (removed) releasePhotos([removed.photo])
+    setRemoved({ photo: intake.photos[at], at, memories: intake.memories.filter((m) => m.photoId === id).map((m) => m.id) })
+    setIntake((c) => ({
+      ...c,
+      photos: c.photos.filter((p) => p.id !== id),
+      memories: c.memories.map((m) => (m.photoId === id ? { ...m, photoId: '' } : m)),
+    }))
+  }
+
+  /** Put the removed photo back where it was, with the memories it was chosen for. */
+  const restore = () => {
+    if (!removed) return
+    const { photo, at, memories } = removed
+    setRemoved(null)
     setIntake((c) => {
-      releasePhotos(c.photos.filter((p) => p.id === id))
-      return {
-        ...c,
-        photos: c.photos.filter((p) => p.id !== id),
-        memories: c.memories.map((m) => (m.photoId === id ? { ...m, photoId: '' } : m)),
-      }
+      if (c.photos.length >= LIMITS.photos || c.photos.some((p) => p.id === photo.id)) return c
+      const photos = [...c.photos]
+      photos.splice(Math.min(at, photos.length), 0, photo)
+      return { ...c, photos, memories: c.memories.map((m) => (memories.includes(m.id) && !m.photoId ? { ...m, photoId: photo.id } : m)) }
     })
   }
 
-  return { add, remove, error, setError, reading, room: LIMITS.photos - intake.photos.length }
+  return { add, remove, removed, restore, forget, error, setError, reading, room: LIMITS.photos - intake.photos.length }
 }

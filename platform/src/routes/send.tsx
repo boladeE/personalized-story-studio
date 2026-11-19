@@ -1,10 +1,11 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Working } from '../components/Working'
 import { StudioHeader } from '../components/StudioHeader'
 import { useDraft } from '../components/draft'
 import { preparePhoto } from '../components/photo-upload'
 import { canGenerate, generateStory } from '../story/generate'
+import { lockProblems } from '../story/lock'
 import { worldOf } from '../story/worlds'
 import { LIMITS } from '../story/validate'
 
@@ -20,6 +21,10 @@ function Send() {
   const [answer, setAnswer] = useState('')
   const [progress, setProgress] = useState('')
   const [error, setError] = useState('')
+  // A field is checked once the sender has been in it, and said beside it, not saved up for the button.
+  const [touched, setTouched] = useState({ question: false, answer: false })
+  const questionField = useRef<HTMLInputElement>(null)
+  const answerField = useRef<HTMLInputElement>(null)
   const ready = canGenerate(intake)
   const story = useMemo(() => (ready ? generateStory(intake, seed) : null), [ready, intake, seed])
 
@@ -38,8 +43,16 @@ function Send() {
     )
   }
 
+  const problems = lockProblems(question, answer)
+
   const submit = async () => {
     setError('')
+    // Anything still wrong is shown where it is, and the first of them is brought to hand.
+    if (problems.question || problems.answer) {
+      setTouched({ question: true, answer: true })
+      ;(problems.question ? questionField : answerField).current?.focus()
+      return
+    }
     try {
       const form = new FormData()
       for (const [i, photo] of intake.photos.entries()) {
@@ -101,6 +114,7 @@ function Send() {
         </dl>
 
         <form
+          noValidate
           className="send-form"
           onSubmit={(e) => {
             e.preventDefault()
@@ -116,17 +130,42 @@ function Send() {
               <label htmlFor="lock-question">A question only {story.recipient} can answer</label>
               <input
                 id="lock-question"
+                ref={questionField}
                 value={question}
                 maxLength={LIMITS.question}
                 onChange={(e) => setQuestion(e.target.value)}
+                onBlur={() => setTouched((t) => ({ ...t, question: true }))}
+                aria-invalid={touched.question && Boolean(problems.question)}
+                aria-describedby={touched.question && problems.question ? 'lock-question-error' : undefined}
                 required
                 minLength={3}
               />
+              {touched.question && problems.question && (
+                <p id="lock-question-error" className="field-error is-inline">
+                  {problems.question}
+                </p>
+              )}
             </div>
             <div className="field">
               <label htmlFor="lock-answer">The answer</label>
               <span className="hint">Capitals and spaces don’t matter. One or two words works best.</span>
-              <input id="lock-answer" value={answer} maxLength={LIMITS.answer} autoComplete="off" onChange={(e) => setAnswer(e.target.value)} required />
+              <input
+                id="lock-answer"
+                ref={answerField}
+                value={answer}
+                maxLength={LIMITS.answer}
+                autoComplete="off"
+                onChange={(e) => setAnswer(e.target.value)}
+                onBlur={() => setTouched((t) => ({ ...t, answer: true }))}
+                aria-invalid={touched.answer && Boolean(problems.answer)}
+                aria-describedby={touched.answer && problems.answer ? 'lock-answer-error' : undefined}
+                required
+              />
+              {touched.answer && problems.answer && (
+                <p id="lock-answer-error" className="field-error is-inline">
+                  {problems.answer}
+                </p>
+              )}
             </div>
           </section>
 

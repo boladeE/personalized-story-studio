@@ -1390,12 +1390,12 @@
   bottom: 7%;
   opacity: 0.9;
 }
-.ticket-hit:hover:not(:disabled) + .sb-book-float .sb-book-cover,
-.ticket-hit:focus-visible + .sb-book-float .sb-book-cover {
+.opening:not(.is-torn) .ticket-hit:hover + .sb-book-float .sb-book-cover,
+.opening:not(.is-torn) .ticket-hit:focus-visible + .sb-book-float .sb-book-cover {
   transform: rotateY(-9deg);
   transition: transform 0.35s ease-out;
 }
-.ticket-hit:focus-visible + .sb-book-float .sb-book {
+.opening:not(.is-torn) .ticket-hit:focus-visible + .sb-book-float .sb-book {
   outline: 3px solid var(--f-accent);
   outline-offset: 8px;
   border-radius: 12px;
