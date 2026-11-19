@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { audioState, chooseStyle, filmState, open, startFilm } from './helpers'
+import { audioState, chooseStyle, closeEditor, filmState, open, openEditor, pickScene, startFilm } from './helpers'
 
 test('end to end: build, write and make a song, lock, send, recipient unlocks and plays, sender deletes', async ({ page, browser, baseURL }) => {
   // Against a running server (E2E_BASE_URL) the song may be a real one, which takes about a minute to make.
@@ -20,19 +20,22 @@ test('end to end: build, write and make a song, lock, send, recipient unlocks an
 
   // Light edits: pick the kind of film, its colours and a scene's design. These travel with the gift.
   await chooseStyle(page, 'The Scrapbook')
-  await expect(page.locator('.film')).toHaveAttribute('data-world', 'scrapbook')
-  await page.getByRole('button', { name: 'Scenes' }).click()
-  const memory = page.locator('.scene-row').filter({ hasText: 'Memory lane' })
+  const film = page.locator('.preview-body > .film')
+  await expect(film).toHaveAttribute('data-world', 'scrapbook')
+  await openEditor(page)
+  await pickScene(page, 'Memory lane')
   await page.getByRole('button', { name: 'Another design for Memory lane' }).click()
-  const memoryDesign = (await memory.locator('small').textContent()) === 'Clipped cards' ? 'clipped' : 'taped'
+  await pickScene(page, 'Memory lane')
+  const memoryDesign = (await page.locator('.scene-card .scene-what small').textContent()) === 'Clipped cards' ? 'clipped' : 'taped'
+  await pickScene(page, 'The camera roll')
   await page.getByRole('button', { name: 'Leave out The camera roll' }).click()
-  await page.getByRole('button', { name: 'Done' }).click()
   await expect(page.locator('.song-status')).toHaveCount(0, { timeout: live ? 260_000 : 15_000 })
-  await page.getByRole('button', { name: /^Style/ }).click()
+  await page.getByRole('tab', { name: 'Look' }).click()
   await page.getByRole('radio', { name: 'White card' }).check()
-  await expect(page.locator('.film')).toHaveAttribute('data-look', 'paper')
+  await expect(film).toHaveAttribute('data-look', 'paper')
 
   // The song can be rewritten and sung again. Its words are the ones the studio wrote for the first take.
+  await page.getByRole('tab', { name: 'Song' }).click()
   await page.getByRole('link', { name: 'Change the song' }).click()
   await expect(page.getByRole('heading', { name: 'Zara’s song' })).toBeVisible()
   await expect(page.getByText(/studio score/i)).toHaveCount(0)
@@ -68,10 +71,9 @@ test('end to end: build, write and make a song, lock, send, recipient unlocks an
   await page.getByRole('link', { name: 'Play the film with this song' }).click()
   await startFilm(page)
   await expect.poll(async () => (await audioState(page))?.trackId).toBe('song')
-  await page.getByRole('button', { name: /^Style/ }).click()
-  await page.getByText('Read the lyrics').click()
+  await openEditor(page, 'Song')
   await expect(page.locator('.song-lyrics')).toContainText('And yes, you can have my chips')
-  await page.getByRole('button', { name: 'Done' }).click()
+  await closeEditor(page)
 
   // Lock and send.
   await page.getByRole('link', { name: 'Send this gift' }).click()

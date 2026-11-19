@@ -76,6 +76,8 @@ export interface ShotActions {
   onReplay: () => void
   waiting: boolean
   ended: boolean
+  /** What the page around the film offers once it has played through, beside "Watch it again". */
+  ending?: ReactNode
 }
 
 export function ShotView({ shot, state, loud, actions, world = 'screening' }: { shot: Shot; state: 'current' | 'leaving'; loud: { bg: string; ink: string; accent: string } | null; actions: ShotActions; world?: WorldId }) {
@@ -245,9 +247,12 @@ function ShotBody({ shot, actions, leaving }: { shot: Shot; actions: ShotActions
             </p>
           )}
           {!leaving && (
-            <button type="button" className="again" style={vars({ '--i': shot.lines.length + 1 })} onClick={actions.onReplay}>
-              Watch it again
-            </button>
+            <div className="credits-next" style={vars({ '--i': shot.lines.length + 1 })}>
+              {actions.ending}
+              <button type="button" className={`again${actions.ending ? ' is-quiet' : ''}`} onClick={actions.onReplay}>
+                Watch it again
+              </button>
+            </div>
           )}
         </div>
       )

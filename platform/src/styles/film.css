@@ -1104,9 +1104,29 @@
   animation: credit-in 1s both;
   animation-delay: calc(1.3s + var(--i) * 1.25s);
 }
-.again {
+/* What comes after the credits: "Watch it again", and whatever the page around the film offers. */
+.credits-next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   animation: credit-in 1s both;
   animation-delay: calc(1.6s + var(--i) * 1.25s);
+}
+.credits-next a.again {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+.again.is-quiet,
+.film.is-light .again.is-quiet {
+  background: none;
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--f-ink) 50%, transparent);
+  color: var(--f-ink);
+}
+.again.is-quiet:hover {
+  box-shadow: inset 0 0 0 1.5px var(--f-ink);
 }
 
 /* ---------- The opening: ticket, tear, countdown ---------- */

@@ -196,9 +196,12 @@ export function PageBody({ shot, actions, leaving }: { shot: Shot; actions: Shot
             </p>
           )}
           {!leaving && (
-            <button type="button" className="again" style={vars({ '--i': shot.lines.length + 1 })} onClick={actions.onReplay}>
-              Watch it again
-            </button>
+            <div className="credits-next" style={vars({ '--i': shot.lines.length + 1 })}>
+              {actions.ending}
+              <button type="button" className={`again${actions.ending ? ' is-quiet' : ''}`} onClick={actions.onReplay}>
+                Watch it again
+              </button>
+            </div>
           )}
         </div>
       )

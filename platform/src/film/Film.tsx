@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
+import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode, RefObject } from 'react'
 import { AudioEngine } from '../components/audio-engine'
 import type { Story } from '../story/types'
 import { Backdrop } from './backdrop'
@@ -17,7 +17,13 @@ declare global {
   }
 }
 
-type Phase = 'ticket' | 'leader' | 'playing' | 'ended'
+export type Phase = 'ticket' | 'leader' | 'playing' | 'ended'
+
+/** What a page around the film can ask of it. */
+export interface FilmHandle {
+  /** Start the film at a scene (or carry on from it), skipping the opening. Call it from the tap that asked for it, so sound is allowed. */
+  playFrom: (sceneType?: string) => void
+}
 
 /** The gift, as a film that plays by itself once the ticket is torn. */
 /** Sent when a film starts making sound, so other audio on the page can stop. */
@@ -34,7 +40,30 @@ export const FILM_HUSH = 'lt:film-hush'
  * `locked` holds the film at its opening and says why (its song is still being
  * made): the film is never started without the music that was made for it.
  */
-export function Film({ story, embedded = false, cue, locked }: { story: Story; embedded?: boolean; cue?: { type: string; key: number }; locked?: string }) {
+/**
+ * `handle` lets the page start the film at a scene; `onState` tells it where the film is;
+ * `ending` is what the page offers beside "Watch it again" once the film has played through;
+ * `covered` says the page has put something over the film, which then takes no keys and no focus.
+ */
+export function Film({
+  story,
+  embedded = false,
+  cue,
+  locked,
+  handle,
+  onState,
+  ending,
+  covered = false,
+}: {
+  story: Story
+  embedded?: boolean
+  cue?: { type: string; key: number }
+  locked?: string
+  handle?: RefObject<FilmHandle | null>
+  onState?: (state: { phase: Phase; scene: string }) => void
+  ending?: ReactNode
+  covered?: boolean
+}) {
   const film = useMemo(() => buildFilm(story), [story])
   const world = story.world ?? 'screening'
   const album = world === 'scrapbook'
@@ -70,6 +99,9 @@ export function Film({ story, embedded = false, cue, locked }: { story: Story; e
   const begun = useRef(false)
   const lockedNow = useRef(Boolean(locked))
   lockedNow.current = Boolean(locked)
+  const togglePauseRef = useRef<() => void>(() => {})
+  const coveredNow = useRef(covered)
+  coveredNow.current = covered
 
   const shot = film.shots[Math.min(index, film.shots.length - 1)]
   const wishIndex = useMemo(() => film.shots.findIndex((s) => s.kind === 'wish'), [film])
@@ -332,6 +364,33 @@ export function Film({ story, embedded = false, cue, locked }: { story: Story; e
     later(1250 + 3 * beat, play)
   }, [songSrc, album])
 
+  // Asked for by the page around the film: straight to a scene, with no opening.
+  const playFrom = useCallback(
+    async (sceneType?: string) => {
+      if (lockedNow.current) return
+      const target = (sceneType ? film.shots.find((s) => s.sceneType === sceneType) : undefined) ?? film.shots[0]
+      if (!begun.current) {
+        begun.current = true
+        window.dispatchEvent(new Event(FILM_SOUND))
+        const ok = (await engine.current?.start()) ?? false
+        setAudioBlocked(!ok)
+      }
+      clearTimers()
+      skipOpening.current = null
+      setCount(0)
+      if (live.current.paused) togglePauseRef.current()
+      jump(target.index)
+    },
+    [film, jump],
+  )
+  useEffect(() => {
+    if (!handle) return
+    handle.current = { playFrom: (type) => void playFrom(type) }
+    return () => {
+      handle.current = null
+    }
+  }, [handle, playFrom])
+
   const blow = useCallback(
     (flame: DOMRect | null) => {
       const c = clock.current
@@ -356,6 +415,8 @@ export function Film({ story, embedded = false, cue, locked }: { story: Story; e
       return !p
     })
   }, [])
+
+  togglePauseRef.current = togglePause
 
   // Something else on the page wants to be heard.
   useEffect(() => {
@@ -406,6 +467,7 @@ export function Film({ story, embedded = false, cue, locked }: { story: Story; e
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement
+      if (coveredNow.current) return
       // Inside another page, only take the keyboard while the film has focus.
       if (embedded && !root.current?.contains(target)) return
       if (target.closest('input:not([type="range"]), textarea, select, [contenteditable="true"]')) return
@@ -443,6 +505,12 @@ export function Film({ story, embedded = false, cue, locked }: { story: Story; e
     return () => window.removeEventListener('keydown', onKey)
   }, [begin, jump, togglePause, toggleMute, toggleFullscreen, wake, embedded])
 
+  const sceneNow = shot.sceneType
+  useEffect(() => {
+    onState?.({ phase, scene: sceneNow })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, sceneNow])
+
   const started = phase === 'playing' || phase === 'ended'
   const loud = loudOf(shot)
   const atEnd = index === film.shots.length - 1
@@ -454,7 +522,7 @@ export function Film({ story, embedded = false, cue, locked }: { story: Story; e
     '--f-soft': palette.soft,
     '--f-accent': palette.accent,
   } as CSSProperties
-  const actions = { onBlow: blow, onReplay: () => jump(0), waiting, ended: phase === 'ended' }
+  const actions = { onBlow: blow, onReplay: () => jump(0), waiting, ended: phase === 'ended', ending }
   const glow = started && shot.kind === 'photo' ? shot.photo.src : null
 
   return (
@@ -466,6 +534,7 @@ export function Film({ story, embedded = false, cue, locked }: { story: Story; e
       data-phase={phase}
       data-mood={shot.mood}
       data-kind={started ? shot.kind : 'ticket'}
+      inert={covered}
       style={style}
       onPointerMove={wake}
       onPointerDown={wake}

@@ -11,16 +11,34 @@ export const filmState = (page: Page) =>
     phase: window.__ltFilm?.phase(),
     shot: window.__ltFilm?.shot() ?? -1,
     time: window.__ltFilm?.time() ?? 0,
-    // The film itself, not the small stills of it in the scene editor.
+    // The film itself, not the stills of it in the editor.
     kind: document.querySelector<HTMLElement>('.film:not(.still) .shot.is-current')?.dataset.shotKind,
     text: document.querySelector<HTMLElement>('.film:not(.still) .shot.is-current')?.dataset.text ?? '',
   }))
 
-/** Pick the kind of film on the preview. A new film's kind is drawn from its seed, so tests that need one choose it. */
+/** The film is watched first. Its editor (scenes, look, song) opens under it from Edit. */
+export async function openEditor(page: Page, tab?: 'Scenes' | 'Look' | 'Song') {
+  await page.getByRole('link', { name: 'Edit', exact: true }).click()
+  if (tab) await page.getByRole('tab', { name: tab }).click()
+}
+
+export async function closeEditor(page: Page) {
+  await page.getByRole('link', { name: 'Done', exact: true }).click()
+}
+
+/** A scene in the editor's row, by name. */
+export const sceneTile = (page: Page, name: string) => page.locator('.scene-tile').filter({ has: page.getByRole('button', { name: new RegExp(`^${name}`) }) })
+
+/** Choose a scene in the editor, so its changes are offered. */
+export async function pickScene(page: Page, name: string) {
+  await sceneTile(page, name).locator('> button').click()
+}
+
+/** Pick the kind of film. A new film's kind is drawn from its seed, so tests that need one choose it. */
 export async function chooseStyle(page: Page, name: 'The Screening' | 'The Scrapbook') {
-  await page.getByRole('button', { name: /^Style/ }).click()
+  await openEditor(page, 'Look')
   await page.getByRole('radio', { name: new RegExp(`^${name}`) }).check()
-  await page.getByRole('button', { name: 'Done' }).click()
+  await closeEditor(page)
 }
 
 /** Tear the ticket (or open the album) and wait for the film to start. */

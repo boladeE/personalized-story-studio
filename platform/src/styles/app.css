@@ -457,20 +457,6 @@ select:focus-visible {
   display: grid;
   min-height: 0;
 }
-.adjust-panel {
-  position: absolute;
-  z-index: 10;
-  top: 12px;
-  right: clamp(12px, 3vw, 32px);
-  width: min(380px, calc(100% - 24px));
-  max-height: calc(100% - 24px);
-  overflow-y: auto;
-  padding: 18px 20px 12px;
-  border-radius: 14px;
-  background: var(--chalk);
-  color: var(--ink);
-  box-shadow: 0 18px 50px rgba(10, 20, 15, 0.35);
-}
 .adjust-group {
   border: 0;
   padding: 0;
@@ -514,21 +500,6 @@ select:focus-visible {
   /* One per row: "Sung, about <name>" needs the full width. */
   flex: 1 1 100%;
   padding: 7px 10px;
-}
-.song-lyrics {
-  margin-top: 10px;
-  font-size: 14px;
-}
-.song-lyrics summary {
-  cursor: pointer;
-  font-weight: 600;
-}
-.song-lyrics p {
-  margin: 8px 0 0;
-  max-height: 220px;
-  overflow-y: auto;
-  white-space: pre-line;
-  line-height: 1.5;
 }
 
 /* ---------- Send and manage ---------- */
@@ -603,11 +574,10 @@ select:focus-visible {
     flex-direction: column;
   }
   .preview-shell .studio-header {
-    row-gap: 8px;
+    flex-wrap: nowrap;
   }
   .preview-shell .studio-header-extra {
-    width: 100%;
-    margin-left: 0;
+    flex-wrap: nowrap;
     gap: 6px;
   }
   .preview-shell .studio-header-extra .button.small {
@@ -633,8 +603,9 @@ select:focus-visible {
 .preview-shell > .studio-header {
   grid-row: 1;
 }
-.preview-shell > .song-status {
+.preview-shell > .preview-notes {
   grid-row: 2;
+  display: grid;
 }
 .preview-shell > .preview-body {
   grid-row: 3;
@@ -870,57 +841,6 @@ select:focus-visible {
   background: radial-gradient(circle at 35% 35%, #c22a59 0 25%, #f7f3ea 26%);
 }
 
-.scenes-panel {
-  width: min(430px, calc(100% - 24px));
-}
-.scenes-panel h2 {
-  margin: 0;
-  font-size: 22px;
-  font-stretch: 82%;
-  color: var(--palm);
-}
-.scene-list {
-  list-style: none;
-  margin: 12px 0;
-  padding: 0;
-  display: grid;
-}
-.scene-row {
-  display: grid;
-  grid-template-columns: 112px minmax(0, 1fr);
-  gap: 12px;
-  align-items: start;
-  padding: 10px 0;
-  border-top: 1px solid var(--line);
-}
-.scene-thumb {
-  display: block;
-  border-radius: 5px;
-  overflow: hidden;
-  box-shadow: 0 0 0 1px rgba(20, 38, 31, 0.16);
-}
-.scene-thumb.is-empty {
-  aspect-ratio: 16 / 10;
-  background: repeating-linear-gradient(135deg, transparent 0 7px, rgba(20, 38, 31, 0.07) 7px 8px), #eef0e7;
-}
-.scene-what {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-.scene-what small {
-  font-size: 14px;
-  color: var(--muted);
-}
-.scene-row.is-in .scene-what small {
-  color: var(--palm);
-}
-.scene-tools {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 6px;
-}
 .chip-button {
   display: inline-flex;
   align-items: center;
@@ -947,10 +867,6 @@ select:focus-visible {
 .chip-button:disabled {
   opacity: 0.35;
   cursor: default;
-}
-.scenes-panel .fine a {
-  color: var(--hibiscus-deep);
-  font-weight: 650;
 }
 
 /* ---------- Undo: taking back what was just removed ---------- */
@@ -1008,15 +924,14 @@ select:focus-visible {
   outline-color: var(--candle);
 }
 .scene-undo {
-  /* Stays in view while the list of scenes scrolls under it. */
-  position: sticky;
-  top: -6px;
-  z-index: 2;
+  /* Takes the place of the scene's name in its card, so nothing moves when it appears. */
+  flex: 1 1 220px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin: 12px 0 0;
+  min-height: 50px;
+  margin: 0;
   padding: 7px 7px 7px 14px;
   border-radius: 12px;
   background: var(--palm-deep);
@@ -1051,4 +966,343 @@ select:focus-visible {
 .song-now {
   margin: 0 0 10px;
   font-weight: 600;
+}
+
+/* ---------- Preview: watching first, and the editor under the film ---------- */
+
+/* Header, the song's progress, the film, and (only while editing) the desk. */
+.preview-shell {
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+.preview-shell > .edit-desk {
+  grid-row: 4;
+}
+
+/* While editing, a film that isn't playing is shown as a still of the chosen scene. */
+.stage-still {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  container-type: size;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: clamp(12px, 2.4vw, 28px);
+  background: var(--mist);
+  color: var(--ink);
+}
+.stage-still-frame {
+  /* As large as the stage allows at the film's shape, leaving room for the line under it. */
+  width: min(100cqw, (100cqh - 96px) * 1.6);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(20, 38, 31, 0.12), 0 22px 50px rgba(20, 38, 31, 0.22);
+}
+.stage-still-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 14px;
+  margin: 0;
+  max-width: 100%;
+  font-size: 15px;
+  color: var(--muted);
+  text-align: center;
+  text-wrap: balance;
+}
+.stage-still-empty {
+  display: grid;
+  gap: 6px;
+  align-content: center;
+  justify-items: center;
+  width: min(100cqw, 100cqh * 1.6, 620px);
+  aspect-ratio: 16 / 10;
+  max-height: 100cqh;
+  margin: 0;
+  padding: 20px;
+  border: 2px dashed #b3bcb0;
+  border-radius: 10px;
+  text-align: center;
+  color: var(--muted);
+  text-wrap: balance;
+}
+.stage-still-empty b {
+  font-size: 22px;
+  font-stretch: 82%;
+  color: var(--palm);
+}
+
+/* The desk. */
+.edit-desk {
+  display: grid;
+  gap: 10px;
+  max-height: 54dvh;
+  overflow-y: auto;
+  padding: 10px clamp(12px, 3vw, 32px) max(12px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--chalk);
+  color: var(--ink);
+  animation: desk-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes desk-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+.desk-tabs {
+  display: flex;
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--mist);
+}
+.desk-tabs [role='tab'] {
+  min-height: 36px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--palm);
+  font-size: 15px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, transform 0.1s ease-out;
+}
+.desk-tabs [role='tab']:hover {
+  background: rgba(18, 58, 46, 0.1);
+}
+.desk-tabs [role='tab'][aria-selected='true'] {
+  background: var(--palm);
+  color: var(--chalk);
+}
+.desk-tabs [role='tab']:active {
+  transform: scale(0.97);
+}
+.desk-panel {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.desk-panel.is-look,
+.desk-panel.is-song {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  align-items: start;
+  gap: 14px 32px;
+  padding: 4px 2px 6px;
+}
+.desk-panel .adjust-group {
+  margin: 0;
+}
+.adjust-legend {
+  margin: 0 0 8px;
+  font-weight: 700;
+  color: var(--palm);
+}
+.adjust-group > .fine {
+  margin: 0 0 10px;
+  font-size: 14.5px;
+}
+.adjust-options {
+  align-items: center;
+}
+.song-lyrics {
+  margin: 0;
+  max-height: 150px;
+  overflow-y: auto;
+  white-space: pre-line;
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+
+/* The film's scenes, left to right in the order they play. */
+.scene-strip {
+  list-style: none;
+  display: flex;
+  gap: 10px;
+  margin: 0;
+  /* Room for the ring around the chosen one. */
+  padding: 4px 4px 6px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scroll-padding: 0 4px;
+  scrollbar-width: thin;
+}
+.scene-tile {
+  position: relative;
+  flex: none;
+  display: grid;
+  gap: 5px;
+  width: clamp(98px, 10.5vw, 136px);
+  scroll-snap-align: start;
+}
+.scene-tile button {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  text-align: left;
+  cursor: pointer;
+}
+/* The button's name is under the picture; all of the tile is its target. */
+.scene-tile button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+.scene-thumb {
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(20, 38, 31, 0.16);
+  transition: box-shadow 0.15s, transform 0.1s ease-out;
+}
+.scene-thumb.is-empty {
+  aspect-ratio: 16 / 10;
+  background: repeating-linear-gradient(135deg, transparent 0 7px, rgba(20, 38, 31, 0.07) 7px 8px), #eef0e7;
+  font-size: 26px;
+  font-weight: 500;
+  color: var(--palm);
+}
+.scene-tile:active .scene-thumb {
+  transform: scale(0.97);
+}
+.scene-tile:has(button[aria-pressed='true']) .scene-thumb {
+  box-shadow: 0 0 0 3px var(--hibiscus);
+}
+.scene-tile button:focus-visible {
+  outline: 0;
+}
+.scene-tile:has(button:focus-visible) .scene-thumb {
+  outline: 3px solid var(--hibiscus);
+  outline-offset: 3px;
+}
+.scene-tile-name {
+  display: block;
+  overflow: hidden;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.scene-tile button[aria-pressed='true'] .scene-tile-name {
+  color: var(--ink);
+  font-weight: 700;
+}
+/* The scene the film is on. */
+.scene-tile.is-playing .scene-tile-name::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: var(--hibiscus);
+  vertical-align: 1px;
+}
+
+/* The chosen scene, and everything that can be done to it. */
+.scene-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 8px 14px;
+  border-radius: 14px;
+  background: var(--mist);
+}
+.scene-what {
+  flex: 1 1 220px;
+  display: grid;
+  align-content: center;
+  gap: 1px;
+  min-width: 0;
+  min-height: 50px;
+  margin: 0;
+}
+.scene-what b {
+  font-size: 17px;
+  color: var(--palm);
+}
+.scene-what small {
+  font-size: 14px;
+  color: var(--muted);
+}
+.scene-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.scene-more {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: 14.5px;
+}
+.scene-more .text-button {
+  font-size: inherit;
+}
+.chip-button.is-main {
+  background: var(--palm);
+  color: var(--chalk);
+}
+.chip-button.is-main:hover:not(:disabled) {
+  background: var(--palm-deep);
+  border-color: var(--palm-deep);
+}
+
+@media (max-width: 720px) {
+  .edit-desk {
+    gap: 8px;
+    padding-top: 8px;
+  }
+  .scene-card {
+    padding: 8px 10px 10px;
+  }
+  .scene-what,
+  .scene-undo {
+    flex-basis: 100%;
+    min-height: 0;
+  }
+  .scene-what {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 8px;
+  }
+  /* While editing on a phone the song's progress is one line, so the scene being edited keeps its room. */
+  .preview-shell.is-editing .song-status:not(.is-failed) {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  .preview-shell.is-editing .song-status:not(.is-failed) .song-steps,
+  .preview-shell.is-editing .song-status:not(.is-failed) .song-status-words span {
+    display: none;
+  }
+  /* Two kinds of film side by side, by name: choosing one shows what it is. */
+  .desk-panel .world-options {
+    grid-template-columns: 1fr 1fr;
+  }
+  .desk-panel .world-option {
+    align-items: center;
+    padding: 8px 10px;
+  }
+  .desk-panel .world-option input {
+    margin: 0;
+  }
+  .desk-panel .world-option small {
+    display: none;
+  }
+  .desk-panel.is-look,
+  .desk-panel.is-song {
+    gap: 12px;
+  }
 }
