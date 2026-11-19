@@ -1,5 +1,5 @@
-import { isOccasion, isRelationship } from './types'
-import type { Intake, LookId } from './types'
+import { isOccasion, isRelationship, isWorld } from './types'
+import type { Cut, Intake, LookId } from './types'
 
 /**
  * Server-side check of a sender's intake. Everything arrives from the browser,
@@ -25,6 +25,8 @@ export const LIMITS = {
 
 const LOOK_IDS: Array<LookId | 'surprise'> = ['screening', 'garden', 'paper', 'surprise']
 const ID_RE = /^[a-z0-9-]{1,64}$/i
+const NAME_RE = /^[a-z][a-z0-9-]{0,31}$/i
+const MAX_CUT = 24
 
 class IntakeError extends Error {}
 
@@ -44,6 +46,28 @@ function list(value: unknown, field: string): unknown[] {
 function id(value: unknown, field: string): string {
   if (typeof value !== 'string' || !ID_RE.test(value)) throw new IntakeError(`${field} has an invalid id`)
   return value
+}
+
+/** The sender's cut: short lists of scene and design names. Unknown names are harmless; the engine ignores them. */
+function parseCut(raw: unknown): Cut | undefined {
+  if (raw === undefined || raw === null) return undefined
+  if (typeof raw !== 'object' || Array.isArray(raw)) throw new IntakeError('The scene choices are not valid')
+  const r = raw as Record<string, unknown>
+  const names = (value: unknown) => {
+    const items = list(value, 'Scene choices')
+    if (items.length > MAX_CUT || !items.every((v) => typeof v === 'string' && NAME_RE.test(v))) throw new IntakeError('The scene choices are not valid')
+    return items as string[]
+  }
+  const cut: Cut = {}
+  if (r.order !== undefined) cut.order = names(r.order)
+  if (r.off !== undefined) cut.off = names(r.off)
+  if (r.designs !== undefined) {
+    if (!r.designs || typeof r.designs !== 'object' || Array.isArray(r.designs)) throw new IntakeError('The scene choices are not valid')
+    const entries = Object.entries(r.designs as Record<string, unknown>)
+    if (entries.length > MAX_CUT || !entries.every(([k, v]) => NAME_RE.test(k) && typeof v === 'string' && NAME_RE.test(v))) throw new IntakeError('The scene choices are not valid')
+    cut.designs = Object.fromEntries(entries) as Record<string, string>
+  }
+  return cut
 }
 
 export function parseIntake(raw: unknown): { ok: true; intake: Intake } | { ok: false; error: string } {
@@ -81,6 +105,8 @@ export function parseIntake(raw: unknown): { ok: true; intake: Intake } | { ok: 
 
     const look = r.look as LookId | 'surprise'
     if (!LOOK_IDS.includes(look)) throw new IntakeError('Unknown look')
+    if (r.world !== undefined && r.world !== 'surprise' && !isWorld(r.world)) throw new IntakeError('Unknown kind of film')
+    const cut = parseCut(r.cut)
 
     const intake: Intake = {
       occasion: r.occasion,
@@ -95,6 +121,8 @@ export function parseIntake(raw: unknown): { ok: true; intake: Intake } | { ok: 
       letter: text(r.letter, LIMITS.letter, 'Letter'),
       wish: text(r.wish, LIMITS.wish, 'Wish'),
       look,
+      ...(r.world !== undefined ? { world: r.world as Intake['world'] } : {}),
+      ...(cut ? { cut } : {}),
     }
     if (!intake.sender.trim() || !intake.recipient.trim()) throw new IntakeError('Both names are needed')
     return { ok: true, intake }

@@ -6,6 +6,7 @@ import type { Story } from '../story/types'
 import { Backdrop } from './backdrop'
 import { isLight, loudFor, paletteFor, tableFor } from './looks'
 import { Particles } from './particles'
+import { CoverArt } from './scrapbook'
 import { Icon, ShotView } from './shots'
 import { buildFilm, formatTime, shotAt } from './timeline'
 import type { Shot } from './timeline'
@@ -25,8 +26,15 @@ export const FILM_SOUND = 'lt:film-sound'
 /** Send this to pause any film that is playing, before other audio on the page starts. */
 export const FILM_HUSH = 'lt:film-hush'
 
-export function Film({ story, embedded = false }: { story: Story; embedded?: boolean }) {
+/**
+ * `cue` names a scene to play from when the story changes: after the sender
+ * edits a scene they see that scene, not the opening again. It only applies
+ * once the film has been started, since sound needs their tap.
+ */
+export function Film({ story, embedded = false, cue }: { story: Story; embedded?: boolean; cue?: { type: string; key: number } }) {
   const film = useMemo(() => buildFilm(story), [story])
+  const world = story.world ?? 'screening'
+  const album = world === 'scrapbook'
   const [phase, setPhase] = useState<Phase>('ticket')
   const [count, setCount] = useState(0)
   const [index, setIndex] = useState(0)
@@ -53,21 +61,25 @@ export function Film({ story, embedded = false }: { story: Story; embedded?: boo
   const timers = useRef<number[]>([])
   const idleTimer = useRef(0)
   const calm = useRef(false)
+  const cueSeen = useRef(cue?.key)
+  const begun = useRef(false)
 
   const shot = film.shots[Math.min(index, film.shots.length - 1)]
   const wishIndex = useMemo(() => film.shots.findIndex((s) => s.kind === 'wish'), [film])
-  const light = isLight(story.look)
-  const palette = paletteFor(story.look, shot.mood)
+  const light = isLight(story.look, world)
+  const palette = paletteFor(story.look, shot.mood, world)
   const loudOf = useCallback(
     (s: Shot) => {
-      if (s.mood !== 'playful') return null
-      if (s.kind === 'flag') return loudFor(story.look, s.n - 1)
+      // Loud colour cards are the Screening's; an album stays on its page.
+      if (album || s.mood !== 'playful') return null
+      // A list that builds keeps one colour under it.
+      if (s.kind === 'flag') return loudFor(story.look, s.design === 'docket' ? 0 : s.n - 1)
       // Prints need a dark table under them.
       if (s.kind === 'montage') return tableFor(story.look)
       if (s.kind === 'card' || s.kind === 'line') return loudFor(story.look, s.index)
       return null
     },
-    [story.look],
+    [story.look, album],
   )
 
   /* ---------- engines ---------- */
@@ -91,7 +103,7 @@ export function Film({ story, embedded = false }: { story: Story; embedded?: boo
       dust.start()
       dust.dust()
     }
-    const onResize = () => dust?.dust()
+    const onResize = () => dust?.dust(dustDensity.current)
     window.addEventListener('resize', onResize)
     return () => {
       window.removeEventListener('resize', onResize)
@@ -101,6 +113,13 @@ export function Film({ story, embedded = false }: { story: Story; embedded?: boo
       if (window.__ltAudio === audio) delete window.__ltAudio
     }
   }, [])
+
+  // An album has no dust in the air.
+  const dustDensity = useRef(1)
+  useEffect(() => {
+    dustDensity.current = album ? 0 : 1
+    particles.current?.dust(dustDensity.current)
+  }, [album])
 
   const clearTimers = () => {
     timers.current.forEach((id) => window.clearTimeout(id))
@@ -113,6 +132,24 @@ export function Film({ story, embedded = false }: { story: Story; embedded?: boo
   // A new story (Shuffle, a new look or song) goes back to the ticket.
   useEffect(() => {
     clearTimers()
+    particles.current?.clear()
+    setLeaving(null)
+    setPaused(false)
+    setWaiting(false)
+    void engine.current?.setPaused(false)
+    // An edit to one scene: carry on from that scene.
+    const cued = cue && cue.key !== cueSeen.current ? film.shots.find((s) => s.sceneType === cue.type) : undefined
+    cueSeen.current = cue?.key
+    if (cued && begun.current) {
+      // The music carries on underneath: a song keeps playing, and the score only changes if the scene's track does.
+      clock.current = { t: cued.start, index: cued.index, wishDone: wishIndex >= 0 && cued.index > wishIndex, track: clock.current.track }
+      setIndex(cued.index)
+      setPhase('playing')
+      setCount(0)
+      startMusic(cued, false)
+      return clearTimers
+    }
+    begun.current = false
     clock.current = { t: 0, index: 0, wishDone: false, track: '' }
     setPhase('ticket')
     setIndex(0)
@@ -122,9 +159,8 @@ export function Film({ story, embedded = false }: { story: Story; embedded?: boo
     setCount(0)
     setNowPlaying(null)
     engine.current?.stop()
-    void engine.current?.setPaused(false)
-    particles.current?.clear()
     return clearTimers
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [film])
 
   // A finished song is a few megabytes. It is streamed, and starts buffering while the ticket is on screen.
@@ -147,12 +183,12 @@ export function Film({ story, embedded = false }: { story: Story; embedded?: boo
     const haze = backdrop.current
     const dust = particles.current
     const before = phase === 'ticket' || phase === 'leader'
-    haze?.set(before ? paletteFor(story.look, 'warm') : palette, { cut: before })
+    haze?.set(before ? paletteFor(story.look, 'warm', world) : palette, { cut: before })
     if (dust) {
       dust.light = light
       dust.ink = palette.ink
     }
-  }, [palette, phase, story.look, light])
+  }, [palette, phase, story.look, light, world])
 
   /* ---------- music ---------- */
 
@@ -185,7 +221,8 @@ export function Film({ story, embedded = false }: { story: Story; embedded?: boo
     let last = performance.now()
     const tick = (now: number) => {
       frame = requestAnimationFrame(tick)
-      const dt = Math.min(0.1, (now - last) / 1000)
+      // A frame's timestamp can be earlier than the moment this clock was started; time never runs backwards.
+      const dt = Math.max(0, Math.min(0.1, (now - last) / 1000))
       last = now
       const beat = engine.current?.beat()
       const pulse = beat && !calm.current ? (1 - beat.phase) ** 3 : 0
@@ -267,6 +304,7 @@ export function Film({ story, embedded = false }: { story: Story; embedded?: boo
 
   const begin = useCallback(async () => {
     if (live.current.phase !== 'ticket') return
+    begun.current = true
     window.dispatchEvent(new Event(FILM_SOUND))
     const ok = (await engine.current?.start()) ?? false
     setAudioBlocked(!ok)
@@ -281,6 +319,8 @@ export function Film({ story, embedded = false }: { story: Story; embedded?: boo
     }
     if (calm.current) return play()
     setPhase('leader')
+    // The album's cover opens onto its first page.
+    if (album) return later(1500, play)
     // The ticket tears, then a film leader counts in.
     const beat = 780
     ;[3, 2, 1].forEach((n, i) =>
@@ -290,7 +330,7 @@ export function Film({ story, embedded = false }: { story: Story; embedded?: boo
       }),
     )
     later(1250 + 3 * beat, play)
-  }, [songSrc])
+  }, [songSrc, album])
 
   const blow = useCallback(
     (flame: DOMRect | null) => {
@@ -414,8 +454,9 @@ export function Film({ story, embedded = false }: { story: Story; embedded?: boo
   return (
     <div
       ref={root}
-      className={`film${paused ? ' is-paused' : ''}${idle && phase === 'playing' && !paused && !waiting ? ' is-idle' : ''}${light ? ' is-light' : ''}`}
+      className={`film${album ? ' sb' : ''}${paused ? ' is-paused' : ''}${idle && phase === 'playing' && !paused && !waiting ? ' is-idle' : ''}${light ? ' is-light' : ''}`}
       data-look={story.look}
+      data-world={world}
       data-phase={phase}
       data-mood={shot.mood}
       data-kind={started ? shot.kind : 'ticket'}
@@ -429,8 +470,8 @@ export function Film({ story, embedded = false }: { story: Story; embedded?: boo
       </div>
 
       <div className="film-frame">
-        {started && leaving && leaving.index !== shot.index && <ShotView key={leaving.id} shot={leaving} state="leaving" loud={loudOf(leaving)} actions={actions} />}
-        {started && <ShotView key={shot.id} shot={shot} state="current" loud={loud} actions={actions} />}
+        {started && leaving && leaving.index !== shot.index && <ShotView key={leaving.id} shot={leaving} state="leaving" loud={loudOf(leaving)} actions={actions} world={world} />}
+        {started && <ShotView key={shot.id} shot={shot} state="current" loud={loud} actions={actions} world={world} />}
       </div>
 
       <canvas ref={dustCanvas} className="film-dust" aria-hidden="true" />
@@ -442,7 +483,7 @@ export function Film({ story, embedded = false }: { story: Story; embedded?: boo
 
       {nowPlaying && started && (
         <p key={nowPlaying.key} className="film-now" aria-hidden="true">
-          <span className="note">♪</span>
+          <span className="now-glyph">♪</span>
           <span>
             <b>{nowPlaying.title}</b>
             <i>{nowPlaying.by}</i>
@@ -450,7 +491,7 @@ export function Film({ story, embedded = false }: { story: Story; embedded?: boo
         </p>
       )}
 
-      {!started && <Opening recipient={story.recipient} occasion={ticketLabel(story)} torn={phase === 'leader'} count={count} onBegin={begin} />}
+      {!started && <Opening recipient={story.recipient} occasion={ticketLabel(story)} torn={phase === 'leader'} count={count} onBegin={begin} album={album} />}
 
       <p className="visually-hidden" role="status" aria-live="polite">
         {started ? shot.text : ''}
@@ -516,7 +557,7 @@ function ticketLabel(story: Story) {
   return 'Your birthday'
 }
 
-function Opening({ recipient, occasion, torn, count, onBegin }: { recipient: string; occasion: string; torn: boolean; count: number; onBegin: () => void }) {
+function Opening({ recipient, occasion, torn, count, onBegin, album }: { recipient: string; occasion: string; torn: boolean; count: number; onBegin: () => void; album: boolean }) {
   const tilt = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.pointerType !== 'mouse' || torn) return
     const box = event.currentTarget.getBoundingClientRect()
@@ -524,6 +565,15 @@ function Opening({ recipient, occasion, torn, count, onBegin }: { recipient: str
     const y = (event.clientY - box.top) / box.height - 0.5
     event.currentTarget.style.setProperty('--ry', `${(x * 14).toFixed(2)}deg`)
     event.currentTarget.style.setProperty('--rx', `${(-y * 10).toFixed(2)}deg`)
+  }
+  if (album) {
+    return (
+      <div className={`opening sb-opening${torn ? ' is-torn' : ''}`}>
+        <button type="button" className="ticket-hit" onClick={onBegin} disabled={torn} aria-label={`A book made for ${recipient}. Tap to open`} />
+        <CoverArt recipient={recipient} occasion={occasion} />
+        <p className="opening-hint">Sound on, if you can. It plays by itself.</p>
+      </div>
+    )
   }
   return (
     <div className={`opening${torn ? ' is-torn' : ''}`} onPointerMove={tilt}>

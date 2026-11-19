@@ -1,8 +1,9 @@
 import { useLayoutEffect, useRef } from 'react'
 import type { CSSProperties } from 'react'
-import type { LookId } from '../story/types'
+import type { LookId, WorldId } from '../story/types'
 import { TicketArt } from './Film'
 import { isLight, loudFor, paletteFor, tableFor } from './looks'
+import { CoverArt } from './scrapbook'
 import { ShotView } from './shots'
 import type { Shot } from './timeline'
 
@@ -18,7 +19,7 @@ const noop = { onBlow: () => {}, onReplay: () => {}, waiting: false, ended: fals
 
 export type StillContent = { kind: 'ticket'; recipient: string; occasion?: string } | { kind: 'shot'; shot: Shot }
 
-export function Still({ look, content, ghost = false }: { look: LookId; content: StillContent; ghost?: boolean }) {
+export function Still({ look, content, ghost = false, world = 'screening' }: { look: LookId; content: StillContent; ghost?: boolean; world?: WorldId }) {
   const box = useRef<HTMLDivElement>(null)
   useLayoutEffect(() => {
     const el = box.current
@@ -36,8 +37,9 @@ export function Still({ look, content, ghost = false }: { look: LookId; content:
 
   const shot = content.kind === 'shot' ? content.shot : null
   const mood = shot?.mood ?? 'warm'
-  const palette = paletteFor(look, mood)
-  const loud = !shot || shot.mood !== 'playful' ? null : shot.kind === 'flag' ? loudFor(look, shot.n - 1) : shot.kind === 'montage' ? tableFor(look) : null
+  const album = world === 'scrapbook'
+  const palette = paletteFor(look, mood, world)
+  const loud = album || !shot || shot.mood !== 'playful' ? null : shot.kind === 'flag' ? loudFor(look, shot.design === 'docket' ? 0 : shot.n - 1) : shot.kind === 'montage' ? tableFor(look) : null
   const style = {
     '--f-a': palette.a,
     '--f-b': palette.b,
@@ -53,22 +55,23 @@ export function Still({ look, content, ghost = false }: { look: LookId; content:
   return (
     <div ref={box} className="still-box" aria-hidden="true" inert>
       <div
-        className={`film still${isLight(look) ? ' is-light' : ''}${ghost ? ' is-ghost' : ''}`}
+        className={`film still${album ? ' sb' : ''}${isLight(look, world) ? ' is-light' : ''}${ghost ? ' is-ghost' : ''}`}
         data-look={look}
+        data-world={world}
         data-phase={shot ? 'playing' : 'ticket'}
         data-mood={mood}
         data-kind={shot ? shot.kind : 'ticket'}
         style={style}
       >
         <div className="film-glow">{glow && <img key={glow} src={glow} alt="" />}</div>
-        <div className="film-frame">{shot && <ShotView key={shot.id} shot={shot} state="current" loud={loud} actions={noop} />}</div>
+        <div className="film-frame">{shot && <ShotView key={shot.id} shot={shot} state="current" loud={loud} actions={noop} world={world} />}</div>
         <div className="film-vignette" />
         <div className="film-grain" />
         <div className="film-bar top" />
         <div className="film-bar bottom" />
         {content.kind === 'ticket' && (
-          <div className="opening">
-            <TicketArt recipient={content.recipient} occasion={content.occasion} />
+          <div className={`opening${album ? ' sb-opening' : ''}`}>
+            {album ? <CoverArt recipient={content.recipient} occasion={content.occasion} /> : <TicketArt recipient={content.recipient} occasion={content.occasion} />}
           </div>
         )}
       </div>

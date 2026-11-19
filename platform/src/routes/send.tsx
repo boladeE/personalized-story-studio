@@ -3,7 +3,8 @@ import { useMemo, useState } from 'react'
 import { StudioHeader } from '../components/StudioHeader'
 import { useDraft } from '../components/draft'
 import { preparePhoto } from '../components/photo-upload'
-import { canGenerate, generateStory, LOOKS } from '../story/generate'
+import { canGenerate, generateStory } from '../story/generate'
+import { worldOf } from '../story/worlds'
 import { LIMITS } from '../story/validate'
 
 export const Route = createFileRoute('/send')({
@@ -61,7 +62,8 @@ function Send() {
     }
   }
 
-  const lookName = LOOKS.find((l) => l.id === story.look)?.name
+  const world = worldOf(story.world)
+  const lookName = world.looks[story.look]
   const busy = Boolean(progress)
   return (
     <>
@@ -88,7 +90,7 @@ function Send() {
           <div>
             <dt>Story</dt>
             <dd>
-              {story.scenes.length} scenes, {lookName} look
+              {story.scenes.length} scenes, {world.name}, {lookName} look
             </dd>
           </div>
           <div>

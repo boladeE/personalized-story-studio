@@ -1,4 +1,4 @@
-import type { LookId, Mood } from '../story/types'
+import type { LookId, Mood, WorldId } from '../story/types'
 
 /**
  * Colour for the film. Each look has a smoky palette per mood (the backdrop
@@ -68,11 +68,25 @@ const LOOKS: Record<LookId, { moods: Moods; loud: Loud[]; light: boolean }> = {
   },
 }
 
-export const paletteFor = (look: LookId, mood: Mood): Palette => LOOKS[look].moods[mood === 'playful' ? 'warm' : mood]
+/**
+ * The album's colourways. Its pages are card, not smoke, so one palette serves
+ * every mood: the page stock, the pen and the tape. The stylesheet holds the rest.
+ */
+const ALBUM: Record<LookId, { palette: Palette; light: boolean }> = {
+  // Black pages, white and gold pen.
+  screening: { light: false, palette: { a: '#7d1638', b: '#9c1d46', c: '#f2c26b', ink: '#f5efe4', soft: 'rgba(245,239,228,.8)', accent: '#f2c26b' } },
+  // Kraft pages, espresso ink.
+  garden: { light: true, palette: { a: '#3b1422', b: '#4e1a2c', c: '#f2c26b', ink: '#2a1c12', soft: 'rgba(42,28,18,.8)', accent: '#8f173f' } },
+  // White card, blue-black pen.
+  paper: { light: true, palette: { a: '#174a3b', b: '#1f5a48', c: '#f2c26b', ink: '#1f2a44', soft: 'rgba(31,42,68,.78)', accent: '#c22a59' } },
+}
+
+export const paletteFor = (look: LookId, mood: Mood, world: WorldId = 'screening'): Palette =>
+  world === 'scrapbook' ? ALBUM[look].palette : LOOKS[look].moods[mood === 'playful' ? 'warm' : mood]
 export const loudFor = (look: LookId, n: number): Loud => LOOKS[look].loud[((n % 4) + 4) % 4]
 /** The dark loud colour of a look: the table the camera-roll prints are dealt onto. */
 export const tableFor = (look: LookId): Loud => LOOKS[look].loud[look === 'screening' ? 2 : 1]
-export const isLight = (look: LookId) => LOOKS[look].light
+export const isLight = (look: LookId, world: WorldId = 'screening') => (world === 'scrapbook' ? ALBUM[look].light : LOOKS[look].light)
 
 export function hexToRgb(hex: string): [number, number, number] {
   const n = parseInt(hex.slice(1), 16)

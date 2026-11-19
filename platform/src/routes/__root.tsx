@@ -4,6 +4,7 @@ import appCss from '../styles/app.css?url'
 import filmCss from '../styles/film.css?url'
 import homeCss from '../styles/home.css?url'
 import roomCss from '../styles/room.css?url'
+import scrapbookCss from '../styles/scrapbook.css?url'
 import songCss from '../styles/song.css?url'
 import startCss from '../styles/start.css?url'
 import writerCss from '../styles/writer.css?url'
@@ -21,6 +22,7 @@ export const Route = createRootRoute({
       { rel: 'stylesheet', href: appCss },
       { rel: 'stylesheet', href: roomCss },
       { rel: 'stylesheet', href: filmCss },
+      { rel: 'stylesheet', href: scrapbookCss },
       { rel: 'stylesheet', href: writerCss },
       { rel: 'stylesheet', href: songCss },
       { rel: 'stylesheet', href: homeCss },

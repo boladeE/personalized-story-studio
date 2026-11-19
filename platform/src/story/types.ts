@@ -18,6 +18,24 @@ export const isRelationship = (value: unknown): value is Relationship => (RELATI
 
 export type LookId = 'screening' | 'garden' | 'paper'
 
+/** The kind of film: a design family with its own opening, pages and scene designs. See worlds.ts. */
+export const WORLD_IDS = ['screening', 'scrapbook'] as const
+export type WorldId = (typeof WORLD_IDS)[number]
+export const isWorld = (value: unknown): value is WorldId => (WORLD_IDS as readonly unknown[]).includes(value)
+
+/**
+ * The sender's own cut of the film: which scenes are left out, the order of the
+ * rest, and the design picked for a scene. Anything not set here is the studio's choice.
+ */
+export interface Cut {
+  /** Scene types in the sender's order. */
+  order?: string[]
+  /** Scene types left out of the film. */
+  off?: string[]
+  /** The design chosen for a scene type. */
+  designs?: Record<string, string>
+}
+
 export interface Photo {
   id: string
   src: string
@@ -45,6 +63,9 @@ export interface Intake {
   letter: string
   wish: string
   look: LookId | 'surprise'
+  /** Unset or `surprise` lets the seed choose. */
+  world?: WorldId | 'surprise'
+  cut?: Cut
 }
 
 export type EndingProp = 'candle' | 'seal'
@@ -69,6 +90,8 @@ export interface Scene {
   name: string
   mood: Mood
   trackId: string
+  /** Which of the world's designs this scene is drawn in. Gifts stored before designs existed carry none. */
+  design?: string
   frames: Frame[]
 }
 
@@ -86,6 +109,8 @@ export interface Story {
   occasion: Occasion
   seed: number
   look: LookId
+  /** Gifts stored before worlds existed are Screenings. */
+  world?: WorldId
   sender: string
   recipient: string
   scenes: Scene[]

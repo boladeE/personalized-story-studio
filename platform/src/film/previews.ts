@@ -1,6 +1,7 @@
 import { occasionOf } from '../story/occasions'
-import type { Intake, LookId, Mood, Photo } from '../story/types'
+import type { Intake, LookId, Mood, Photo, Story } from '../story/types'
 import type { StillContent } from './Still'
+import { buildFilm } from './timeline'
 import type { Shot } from './timeline'
 
 /**
@@ -25,10 +26,10 @@ export interface StepPreview {
   ghost: boolean
 }
 
-type Body<K extends Shot['kind']> = Omit<Extract<Shot, { kind: K }>, 'id' | 'index' | 'scene' | 'sceneName' | 'mood' | 'trackId' | 'start' | 'duration' | 'enter' | 'exit' | 'text' | 'hold'> & { text?: string }
+type Body<K extends Shot['kind']> = Omit<Extract<Shot, { kind: K }>, 'id' | 'index' | 'scene' | 'sceneName' | 'sceneType' | 'design' | 'mood' | 'trackId' | 'start' | 'duration' | 'enter' | 'exit' | 'text' | 'hold'> & { text?: string }
 
 function shot<K extends Shot['kind']>(id: string, mood: Mood, body: Body<K>, enter: Shot['enter'] = 'type'): StillContent {
-  const made = { text: '', ...body, id, index: 0, scene: 0, sceneName: '', mood, trackId: '', start: 0, duration: 8, enter, exit: 'fade' } as unknown as Shot
+  const made = { text: '', ...body, id, index: 0, scene: 0, sceneName: '', sceneType: '', mood, trackId: '', start: 0, duration: 8, enter, exit: 'fade' } as unknown as Shot
   return { kind: 'shot', shot: made }
 }
 
@@ -99,21 +100,25 @@ export function previewFor(step: StepId, intake: Intake, focus: StepFocus, look:
 
     case 'habits': {
       const { text, index } = pick(intake.habits, focus.habit)
-      const total = Math.max(intake.habits.filter((h) => h.trim()).length, 3)
+      const filled = intake.habits.map((h) => h.trim()).filter(Boolean)
+      const total = Math.max(filled.length, 3)
+      const all = filled.length ? filled : ['Their funniest habit goes here']
+      const n = Math.max(1, filled.indexOf(text) + 1)
       return {
         look,
         ghost: !text,
-        content: shot<'flag'>(`flag-${index}`, 'playful', { kind: 'flag', label: 'Red flag', text: text || 'Their funniest habit goes here', n: index + 1, total }, 'cut'),
+        content: shot<'flag'>(`flag-${index}`, 'playful', { kind: 'flag', label: 'Red flag', text: text || 'Their funniest habit goes here', n: text ? n : index + 1, total, all }, 'cut'),
       }
     }
 
     case 'reasons': {
       const { text, index } = pick(intake.reasons, focus.reason)
       const total = Math.max(intake.reasons.filter((v) => v.trim()).length, 3)
+      const all = intake.reasons.map((v) => v.trim()).filter(Boolean)
       return {
         look,
         ghost: !text,
-        content: shot<'reason'>(`reason-${index}`, 'tender', { kind: 'reason', text: text || 'One reason goes here.', n: Math.min(index + 1, total), total }),
+        content: shot<'reason'>(`reason-${index}`, 'tender', { kind: 'reason', text: text || 'One reason goes here.', n: Math.min(index + 1, total), total, all: all.length ? all : ['One reason goes here.'] }),
       }
     }
 
@@ -140,4 +145,27 @@ export function previewFor(step: StepId, intake: Intake, focus: StepFocus, look:
     case 'look':
       return { look, ghost: !r, content: shot<'name'>(`name-${look}`, 'warm', { kind: 'name', name: r || 'Their name', sub: fillNames(occasion.opening[0], r || 'you', s) }) }
   }
+}
+
+/** Which kind of shot stands for a scene in a small picture of it, best first. */
+const POSTER_KINDS: Array<Shot['kind']> = ['flag', 'photo', 'montage', 'reason', 'letter', 'name', 'wish', 'line']
+
+/**
+ * One frame for each scene of a finished story, by scene type: the shot that
+ * shows the scene's design best. For a list that builds, that is the last item.
+ */
+export function scenePosters(story: Story): Map<string, Shot> {
+  const posters = new Map<string, Shot>()
+  const shots = buildFilm(story).shots
+  for (const scene of story.scenes) {
+    const mine = shots.filter((s) => s.sceneType === scene.type)
+    for (const kind of POSTER_KINDS) {
+      const found = kind === 'flag' ? [...mine].reverse().find((s) => s.kind === kind) : mine.find((s) => s.kind === kind)
+      if (found) {
+        posters.set(scene.type, found)
+        break
+      }
+    }
+  }
+  return posters
 }

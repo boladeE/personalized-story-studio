@@ -620,3 +620,132 @@ select:focus-visible {
     animation: none;
   }
 }
+
+/* ---------- Preview: the kind of film, and the scene editor ---------- */
+
+.world-options {
+  display: grid;
+  gap: 8px;
+}
+.world-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px 10px 12px;
+  border: 1.5px solid #b3bcb0;
+  border-radius: 12px;
+  background: var(--chalk);
+  cursor: pointer;
+}
+.world-option input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 3px 0 0;
+  accent-color: var(--hibiscus);
+}
+.world-option span {
+  display: grid;
+  gap: 1px;
+}
+.world-option small {
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--muted);
+}
+.world-option:has(input:checked) {
+  border-color: var(--palm);
+  box-shadow: inset 0 0 0 1.5px var(--palm);
+}
+.look-option[data-world='scrapbook'][data-look='screening'] .swatch {
+  background: radial-gradient(circle at 35% 35%, #f2c26b 0 25%, #1c191d 26%);
+}
+.look-option[data-world='scrapbook'][data-look='garden'] .swatch {
+  background: radial-gradient(circle at 35% 35%, #8f173f 0 25%, #c8a679 26%);
+}
+.look-option[data-world='scrapbook'][data-look='paper'] .swatch {
+  background: radial-gradient(circle at 35% 35%, #c22a59 0 25%, #f7f3ea 26%);
+}
+
+.scenes-panel {
+  width: min(430px, calc(100% - 24px));
+}
+.scenes-panel h2 {
+  margin: 0;
+  font-size: 22px;
+  font-stretch: 82%;
+  color: var(--palm);
+}
+.scene-list {
+  list-style: none;
+  margin: 12px 0;
+  padding: 0;
+  display: grid;
+}
+.scene-row {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.scene-thumb {
+  display: block;
+  border-radius: 5px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(20, 38, 31, 0.16);
+}
+.scene-thumb.is-empty {
+  aspect-ratio: 16 / 10;
+  background: repeating-linear-gradient(135deg, transparent 0 7px, rgba(20, 38, 31, 0.07) 7px 8px), #eef0e7;
+}
+.scene-what {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.scene-what small {
+  font-size: 14px;
+  color: var(--muted);
+}
+.scene-row.is-in .scene-what small {
+  color: var(--palm);
+}
+.scene-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.chip-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1.5px solid var(--palm);
+  border-radius: 999px;
+  background: none;
+  color: var(--palm);
+  font-size: 14px;
+  font-weight: 650;
+  text-decoration: none;
+  cursor: pointer;
+}
+.chip-button.is-icon {
+  min-width: 32px;
+  padding: 0;
+}
+.chip-button:hover:not(:disabled) {
+  background: var(--palm);
+  color: var(--chalk);
+}
+.chip-button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.scenes-panel .fine a {
+  color: var(--hibiscus-deep);
+  font-weight: 650;
+}

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { audioState, filmState, open, startFilm, trackErrors, walk } from './helpers'
+import { audioState, chooseStyle, filmState, open, startFilm, trackErrors, walk } from './helpers'
 import { OCCASIONS } from '../src/story/occasions'
 
 // Tiny valid PNG (1x1) for upload tests.
@@ -17,6 +17,7 @@ test('the sample becomes a film that plays by itself, with sound, to the wish an
   await expect(page.locator('.reel-count')).toHaveText('9 of 9 scenes ready')
   await page.getByRole('button', { name: 'Build the story' }).click()
   await expect(page).toHaveURL(/\/preview$/)
+  await chooseStyle(page, 'The Screening')
 
   // The ticket tears, a leader counts in, then the film runs on its own clock.
   await page.getByRole('button', { name: 'Admit one: Zara. Tap to begin' }).click()
@@ -97,6 +98,7 @@ test('the sender’s own words and uploaded photo appear, and nothing is sent wh
   await expect(page.locator('.scene-line')).toHaveText('In the film: Red flags.')
   await expect(page.locator('.reel-count')).toHaveText('5 of 9 scenes ready')
   await page.getByRole('button', { name: 'Build the story' }).click()
+  await chooseStyle(page, 'The Screening')
 
   await page.getByRole('button', { name: 'Admit one: Kemi. Tap to begin' }).click()
   await page.waitForFunction(() => window.__ltFilm?.phase() === 'playing', undefined, { timeout: 15_000 })
@@ -126,7 +128,7 @@ test('shuffle rebuilds from the ticket with the same content, and edit keeps the
     expect((await order()).split('|').sort()).toHaveLength(8)
   }
   expect(versions.size).toBeGreaterThan(1)
-  await page.getByRole('button', { name: /^Add/ }).click()
+  await page.getByRole('button', { name: 'Scenes' }).click()
   await page.getByRole('link', { name: 'edit every detail' }).click()
   await expect(page.getByLabel('Their name')).toHaveValue('Zara')
 })
@@ -147,7 +149,8 @@ test('sound can be muted and the preview has an honest empty state', async ({ pa
   expect((await audioState(page))!.songMode).toBe('stream')
   const heard = (await audioState(page))!.songTime!
   await expect.poll(async () => (await audioState(page))!.songTime!).toBeGreaterThan(heard + 0.5)
-  await page.getByRole('button', { name: 'Look & music' }).click()
+  await page.getByRole('button', { name: /^Style/ }).click()
+  await expect(page.getByRole('radio', { name: /^The Screening/ })).toBeChecked()
   await expect(page.getByRole('radio', { name: 'Zara’s song', exact: true })).toBeChecked()
   await page.getByRole('radio', { name: 'Studio score' }).check()
   // A visitor can try the other looks on the sample too.
@@ -179,7 +182,7 @@ test('with reduced motion the film skips the countdown and still plays', async (
 
 for (const [width, height] of [[360, 740], [768, 900], [1360, 800]]) {
   test(`nothing spills off screen at ${width}px`, async ({ page }) => {
-    test.setTimeout(90_000)
+    test.setTimeout(180_000)
     await page.setViewportSize({ width, height })
     // Every screen of the short flow.
     for (const step of ['who', 'names', 'occasion', 'photos', 'about', 'song']) {
@@ -208,12 +211,27 @@ for (const [width, height] of [[360, 740], [768, 900], [1360, 800]]) {
       expect(await page.evaluate(() => document.documentElement.scrollWidth), `the ${step} step is wider than the screen`).toBeLessThanOrEqual(width)
     }
     await page.getByRole('button', { name: 'Build the story' }).click()
-    await startFilm(page)
+    // Every shot of both kinds of film, in both designs of each scene.
+    for (const pass of ['The Screening', 'The Scrapbook', 'The Scrapbook again'] as const) {
+    if (pass === 'The Scrapbook again') {
+      await page.getByRole('button', { name: 'Scenes' }).click()
+      const others = page.getByRole('button', { name: /^Another design/ })
+      for (let i = 0; i < (await others.count()); i++) await others.nth(i).click()
+      await page.getByRole('button', { name: 'Done' }).click()
+      // The film is already running and carries on from the last scene changed, so wind it back to the start.
+      await page.getByRole('slider', { name: 'Film position' }).fill('0')
+      await expect.poll(async () => (await filmState(page)).shot).toBe(0)
+    } else {
+      await chooseStyle(page, pass)
+      await startFilm(page)
+    }
     for (let i = 0; i < 60; i++) {
       await page.waitForTimeout(350)
       const fit = await page.evaluate(() => {
         const frame = document.querySelector('.film-frame')!.getBoundingClientRect()
-        const spill = Array.from(document.querySelectorAll<HTMLElement>('.shot.is-current .type, .shot.is-current .blow, .shot.is-current .again'))
+        const spill = Array.from(document.querySelectorAll<HTMLElement>('.shot.is-current .type, .shot.is-current .sb-hand, .shot.is-current .sb-typed, .shot.is-current .blow, .shot.is-current .again'))
+          // Something still waiting to arrive is not on screen yet.
+          .filter((el) => el.checkVisibility({ checkOpacity: true }))
           .map((el) => el.getBoundingClientRect())
           .filter((r) => r.width > 0 && (r.left < frame.left - 1 || r.right > frame.right + 1))
         // A photo that has collapsed to a sliver, or a caption squeezed to one word a line, is as broken as text off screen.
@@ -229,11 +247,12 @@ for (const [width, height] of [[360, 740], [768, 900], [1360, 800]]) {
         }
       })
       expect(fit.page).toBeLessThanOrEqual(width)
-      expect(fit.spill, `text off screen in a ${fit.kind} shot`).toBe(0)
+      expect(fit.spill, `text off screen in a ${fit.kind} shot (${pass}): ${fit.text}`).toBe(0)
       expect(fit.crushed, `a photo or caption has collapsed in a ${fit.kind} shot: ${fit.text}`).toBe(0)
       const next = page.getByRole('button', { name: 'Next' })
       if (await next.isDisabled()) break
       await next.click()
+    }
     }
     // The song page: the written sheet, the tunes and a take all fit, and no sung line is hidden.
     await page.getByRole('link', { name: 'Add a song' }).click()
@@ -274,6 +293,7 @@ test('the home page offers every occasion, and a ticket starts a short flow that
 
   // The film says what it is for on the ticket, tells the sender's own words, and ends on a sealed note, not a candle.
   await expect(page).toHaveURL(/\/preview$/)
+  await chooseStyle(page, 'The Screening')
   await expect(page.locator('.film .ticket-foot')).toContainText('A thank-you')
   await expect(page.locator('.song-status')).toHaveCount(0)
   await startFilm(page)
@@ -290,7 +310,7 @@ test('the home page offers every occasion, and a ticket starts a short flow that
   await expect(page.locator('.film').getByRole('status')).toContainText('Thank you, Kemi. Love, Ada.')
 
   // The detailed form is one step away, with the same draft, and asks its questions for the occasion.
-  await page.getByRole('button', { name: /^Add/ }).click()
+  await page.getByRole('button', { name: 'Scenes' }).click()
   await page.getByRole('link', { name: 'edit every detail' }).click()
   await expect(page.getByRole('radio', { name: 'Thank you' })).toBeChecked()
   await expect(page.locator('.projection .ticket-foot')).toContainText('A thank-you')
@@ -351,8 +371,8 @@ test('the short flow sorts the sender’s words, plays the film at once and brin
   expect(asked).toMatchObject({ vibe: 'afrobeats', voice: 'woman' })
   expect(String(asked.lyrics)).toContain('Zara')
 
-  // The song lands on the film by itself while the ticket is still up.
-  await expect(page.locator('.film .ticket-foot')).toContainText('Our anniversary')
+  // The song lands on the film by itself while the opening is still up, whichever kind of film was drawn.
+  await expect(page.locator('.film .opening')).toContainText('Our anniversary')
   await expect(page.locator('.song-status')).toHaveCount(0, { timeout: 15_000 })
   await startFilm(page)
   await expect.poll(async () => (await audioState(page))?.trackId, { timeout: 15_000 }).toBe('song')
@@ -361,12 +381,13 @@ test('the short flow sorts the sender’s words, plays the film at once and brin
   expect(said).toContain('You never finish your tea.')
   await expect(page.getByRole('button', { name: 'Open the note' })).toBeVisible()
 
-  // What else could go in is listed beside the film, each a step of the detailed form.
-  await page.getByRole('button', { name: /^Add/ }).click()
-  const more = page.locator('.more-list li')
-  await expect(more.filter({ hasText: 'Memory lane' })).toContainText('In the film.')
+  // What is in the film and what else could go in is listed beside it, each a step of the detailed form.
+  await page.getByRole('button', { name: 'Scenes' }).click()
+  const more = page.locator('.scene-row')
+  await expect(more.filter({ hasText: 'Memory lane' })).toHaveClass(/is-in/)
   await expect(more.filter({ hasText: 'Reasons' })).toContainText('Add 2 more reasons.')
-  await expect(more.filter({ hasText: 'The main character' })).toContainText('In the film.')
+  await expect(more.filter({ hasText: 'The main character' })).toHaveClass(/is-in/)
+  await expect(more.filter({ hasText: 'Memory lane' }).getByRole('link', { name: 'Edit words' })).toHaveAttribute('href', '/create?step=memories')
   await more.filter({ hasText: 'A letter' }).getByRole('link', { name: 'Add' }).click()
   await expect(page).toHaveURL(/\/create\?step=letter$/)
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Is there something you want to tell Zara properly?')
@@ -397,5 +418,84 @@ test('on the home page the sample’s song and the film take turns', async ({ pa
   await expect(page.locator('.screen .film')).toHaveClass(/is-paused/)
   await expect.poll(async () => (await audioState(page))?.suspended).toBe(true)
   await expect.poll(async () => (await song()).paused).toBe(false)
+  expect(errors).toEqual([])
+})
+
+test('the sample plays as a scrapbook, and its scenes can be redesigned, moved, left out and put back', async ({ page }) => {
+  test.setTimeout(120_000)
+  const errors = trackErrors(page)
+  await open(page, '/')
+  // The home page shows both kinds of film and links to the sample in each.
+  const kinds = page.locator('#kinds .kind')
+  await expect(kinds).toHaveCount(2)
+  await kinds.filter({ hasText: 'The Scrapbook' }).click()
+  await expect(page).toHaveURL(/\/preview\?sample=1&style=scrapbook$/)
+  const film = page.locator('.preview-body > .film')
+  await expect(film).toHaveAttribute('data-world', 'scrapbook')
+
+  // It opens as a closed album with their name on it, not a ticket.
+  await expect(page.locator('.film .ticket')).toHaveCount(0)
+  await expect(page.locator('.film .sb-plate')).toContainText('Zara')
+  await page.getByRole('button', { name: 'A book made for Zara. Tap to open' }).click()
+  await expect(film).toHaveAttribute('data-phase', 'playing', { timeout: 10_000 })
+  await expect.poll(async () => (await audioState(page))?.trackId, { timeout: 15_000 }).toBe('song')
+  // One title page carries the dedication, the name and the opening line.
+  const first = await filmState(page)
+  expect(first.kind).toBe('name')
+  expect(first.text).toContain('For Zara. From Tobi. Zara.')
+  const marks = () => page.locator('.film-controls .mark').evaluateAll((els) => els.map((e) => e.getAttribute('title')))
+  const before = await marks()
+  expect(before).toHaveLength(8)
+
+  // Another design for a scene: the film carries on from that scene, with the song still playing.
+  await page.getByRole('button', { name: 'Scenes' }).click()
+  const row = (name: string) => page.locator('.scene-row').filter({ has: page.getByText(name, { exact: true }) })
+  await expect(page.locator('.scene-row.is-in')).toHaveCount(8)
+  await expect(page.locator('.scene-row .still-box')).toHaveCount(8)
+  const flags = row('Red flags')
+  const was = (await flags.locator('small').textContent())!
+  expect(['Sticky notes', 'Checklist']).toContain(was)
+  const songTime = (await audioState(page))!.songTime!
+  await page.getByRole('button', { name: 'Another design for Red flags' }).click()
+  await expect(flags.locator('small')).toHaveText(was === 'Checklist' ? 'Sticky notes' : 'Checklist')
+  await expect(film).toHaveAttribute('data-phase', 'playing')
+  await expect(film.locator('.shot.is-current')).toHaveAttribute('data-text', /Red flags/)
+  expect((await filmState(page)).kind).toBe('card')
+  await expect.poll(async () => (await audioState(page))!.songTime!).toBeGreaterThan(songTime)
+  // Step on to a flag: it is drawn in the design just chosen.
+  for (let i = 0; i < 4 && (await filmState(page)).kind !== 'flag'; i++) await page.keyboard.press('ArrowRight')
+  await expect(film.locator('.shot.is-current')).toHaveAttribute('data-design', was === 'Checklist' ? 'stickies' : 'checklist')
+  await expect(film.locator(was === 'Checklist' ? '.shot.is-current .sb-stickies li' : '.shot.is-current .sb-pad li')).toHaveCount(1)
+
+  // Move a scene earlier, leave one out, put it back, then undo everything.
+  // The opening is fixed, so the scenes that can move start after it.
+  const second = before[2]!
+  await page.getByRole('button', { name: `Move ${second} earlier` }).click()
+  expect((await marks()).slice(0, 3)).toEqual([before[0], second, before[1]])
+  await page.getByRole('button', { name: 'Leave out The camera roll' }).click()
+  expect(await marks()).not.toContain('The camera roll')
+  expect(await marks()).toHaveLength(7)
+  await expect(row('The camera roll')).toContainText('Left out.')
+  await page.getByRole('button', { name: 'Put back The camera roll' }).click()
+  expect(await marks()).toHaveLength(8)
+  await expect(film).toHaveAttribute('data-phase', 'playing')
+  await page.getByRole('button', { name: 'Undo my changes to the scenes' }).click()
+  expect(await marks()).toEqual(before)
+  await page.getByRole('button', { name: 'Done' }).click()
+
+  // It still ends on the candle and the sender's last line, then the credits.
+  const shots = await walk(page, (shot) => shot.kind === 'wish')
+  expect(shots.map((s) => s.text).join(' ')).toContain('Sends an eleven-minute voice note called “quick gist”')
+  await expect(film.locator('.shot.is-current .sb-cake')).toBeVisible()
+  await page.getByRole('button', { name: 'Blow out the candle' }).click()
+  await expect(page.locator('.film').getByRole('status')).toContainText('And yes, you can have my chips.')
+  await page.getByRole('button', { name: 'Next' }).click()
+  await expect(film.locator('.shot.is-current .sb-libcard')).toContainText('Starring')
+  await expect(film.locator('.shot.is-current')).toContainText('Zara and Tobi are fictional')
+
+  // And back to the Screening, which opens on its ticket again.
+  await chooseStyle(page, 'The Screening')
+  await expect(film).toHaveAttribute('data-world', 'screening')
+  await expect(page.getByRole('button', { name: 'Admit one: Zara. Tap to begin' })).toBeVisible()
   expect(errors).toEqual([])
 })

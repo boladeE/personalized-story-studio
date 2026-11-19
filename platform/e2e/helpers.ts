@@ -11,13 +11,21 @@ export const filmState = (page: Page) =>
     phase: window.__ltFilm?.phase(),
     shot: window.__ltFilm?.shot() ?? -1,
     time: window.__ltFilm?.time() ?? 0,
-    kind: document.querySelector<HTMLElement>('.shot.is-current')?.dataset.shotKind,
-    text: document.querySelector<HTMLElement>('.shot.is-current')?.dataset.text ?? '',
+    // The film itself, not the small stills of it in the scene editor.
+    kind: document.querySelector<HTMLElement>('.film:not(.still) .shot.is-current')?.dataset.shotKind,
+    text: document.querySelector<HTMLElement>('.film:not(.still) .shot.is-current')?.dataset.text ?? '',
   }))
 
-/** Tear the ticket and wait for the countdown to finish. */
+/** Pick the kind of film on the preview. A new film's kind is drawn from its seed, so tests that need one choose it. */
+export async function chooseStyle(page: Page, name: 'The Screening' | 'The Scrapbook') {
+  await page.getByRole('button', { name: /^Style/ }).click()
+  await page.getByRole('radio', { name: new RegExp(`^${name}`) }).check()
+  await page.getByRole('button', { name: 'Done' }).click()
+}
+
+/** Tear the ticket (or open the album) and wait for the film to start. */
 export async function startFilm(page: Page) {
-  await page.getByRole('button', { name: /Tap to begin/ }).click()
+  await page.getByRole('button', { name: /Tap to (begin|open)/ }).click()
   await page.waitForFunction(() => window.__ltFilm?.phase() === 'playing', undefined, { timeout: 15_000 })
 }
 

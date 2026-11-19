@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { audioState, filmState, open, startFilm } from './helpers'
+import { audioState, chooseStyle, filmState, open, startFilm } from './helpers'
 
 test('end to end: build, write and make a song, lock, send, recipient unlocks and plays, sender deletes', async ({ page, browser, baseURL }) => {
   // Against a running server (E2E_BASE_URL) the song may be a real one, which takes about a minute to make.
@@ -13,9 +13,17 @@ test('end to end: build, write and make a song, lock, send, recipient unlocks an
   await page.getByRole('button', { name: 'Fill with the sample' }).click()
   await page.getByRole('button', { name: 'Build the story' }).click()
 
-  // Light edits: pick a look.
-  await page.getByRole('button', { name: 'Look & music' }).click()
-  await page.getByRole('radio', { name: 'Paper' }).check()
+  // Light edits: pick the kind of film, its colours and a scene's design. These travel with the gift.
+  await chooseStyle(page, 'The Scrapbook')
+  await expect(page.locator('.film')).toHaveAttribute('data-world', 'scrapbook')
+  await page.getByRole('button', { name: 'Scenes' }).click()
+  const memory = page.locator('.scene-row').filter({ hasText: 'Memory lane' })
+  await page.getByRole('button', { name: 'Another design for Memory lane' }).click()
+  const memoryDesign = (await memory.locator('small').textContent()) === 'Clipped cards' ? 'clipped' : 'taped'
+  await page.getByRole('button', { name: 'Leave out The camera roll' }).click()
+  await page.getByRole('button', { name: 'Done' }).click()
+  await page.getByRole('button', { name: /^Style/ }).click()
+  await page.getByRole('radio', { name: 'White card' }).check()
   await expect(page.locator('.film')).toHaveAttribute('data-look', 'paper')
 
   // The song. The studio writes the words from the sender's details (never the letter).
@@ -59,7 +67,7 @@ test('end to end: build, write and make a song, lock, send, recipient unlocks an
   await page.getByRole('link', { name: 'Play the film with this song' }).click()
   await startFilm(page)
   await expect.poll(async () => (await audioState(page))?.trackId).toBe('song')
-  await page.getByRole('button', { name: 'Look & music' }).click()
+  await page.getByRole('button', { name: /^Style/ }).click()
   await page.getByText('Read the lyrics').click()
   await expect(page.locator('.song-lyrics')).toContainText('And yes, you can have my chips')
   await page.getByRole('button', { name: 'Done' }).click()
@@ -67,7 +75,7 @@ test('end to end: build, write and make a song, lock, send, recipient unlocks an
   // Lock and send.
   await page.getByRole('link', { name: 'Send this gift' }).click()
   await expect(page.locator('.gift-summary')).toContainText('written for Zara')
-  await expect(page.locator('.gift-summary')).toContainText('Paper look')
+  await expect(page.locator('.gift-summary')).toContainText('8 scenes, The Scrapbook, White card look')
   await page.getByLabel('A question only Zara can answer').fill('What did you call me at games night?')
   await page.getByLabel('The answer').fill('A cheat')
   await page.getByRole('button', { name: 'Create the private link' }).click()
@@ -99,7 +107,7 @@ test('end to end: build, write and make a song, lock, send, recipient unlocks an
   await recipient.getByLabel('What did you call me at games night?').fill('  a CHEAT ')
   await recipient.getByRole('button', { name: 'Open it' }).click()
 
-  await expect(recipient.getByRole('button', { name: 'Admit one: Zara. Tap to begin' })).toBeVisible()
+  await expect(recipient.getByRole('button', { name: 'A book made for Zara. Tap to open' })).toBeVisible()
   await startFilm(recipient)
   await expect.poll(async () => (await audioState(recipient))?.trackId).toBe('song')
   const t1 = (await audioState(recipient))!.currentTime
@@ -109,6 +117,9 @@ test('end to end: build, write and make a song, lock, send, recipient unlocks an
   // The locked song is streamed with the unlock cookie, not downloaded whole first.
   expect((await audioState(recipient))!.songMode).toBe('stream')
   await expect(recipient.locator('.film')).toHaveAttribute('data-look', 'paper')
+  await expect(recipient.locator('.film')).toHaveAttribute('data-world', 'scrapbook')
+  // The sender's cut came with it: no camera roll, and the memory design they picked.
+  expect(await recipient.locator('.film-controls .mark').evaluateAll((els) => els.map((e) => e.getAttribute('title')))).not.toContain('The camera roll')
 
   // Walk to a photo and check it loaded from the private store.
   for (let i = 0; i < 30 && (await filmState(recipient)).kind !== 'photo'; i++) await recipient.keyboard.press('ArrowRight')
@@ -116,9 +127,13 @@ test('end to end: build, write and make a song, lock, send, recipient unlocks an
   await expect(img).toHaveAttribute('src', new RegExp(`^/api/media/${slug}/`))
   await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0)
 
+  // The memories are drawn in the design the sender picked.
+  for (let i = 0; i < 12 && !['taped', 'clipped'].includes((await recipient.locator('.shot.is-current').getAttribute('data-design')) ?? ''); i++) await recipient.keyboard.press('ArrowRight')
+  await expect(recipient.locator('.shot.is-current')).toHaveAttribute('data-design', memoryDesign)
+
   // Reloading keeps the gift open for the recipient.
   await open(recipient, link)
-  await expect(recipient.getByRole('button', { name: /Tap to begin/ })).toBeVisible()
+  await expect(recipient.getByRole('button', { name: /Tap to open/ })).toBeVisible()
 
   // The sender deletes it; the link stops working.
   await page.getByRole('button', { name: 'Delete this gift' }).click()

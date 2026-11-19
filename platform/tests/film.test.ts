@@ -4,7 +4,8 @@ import { generateStory } from '../src/story/generate'
 import { trackById } from '../src/story/music'
 import { emptyIntake, SAMPLE_INTAKE, SAMPLE_NOTE } from '../src/story/sample'
 
-const story = generateStory(SAMPLE_INTAKE, 7)
+const screening = { ...SAMPLE_INTAKE, world: 'screening' as const }
+const story = generateStory(screening, 7)
 const film = buildFilm(story)
 
 describe('film timeline', () => {
@@ -62,7 +63,7 @@ describe('film timeline', () => {
     expect(credits.text).toContain('Written by: Tobi')
     // A sender's own film carries no notice; the sample says under its credits that its people are invented.
     expect(credits.text).not.toContain('fictional')
-    const sample = buildFilm({ ...generateStory(SAMPLE_INTAKE, 7), note: SAMPLE_NOTE }).shots.at(-1)!
+    const sample = buildFilm({ ...generateStory(screening, 7), note: SAMPLE_NOTE }).shots.at(-1)!
     expect(sample.kind).toBe('credits')
     expect(sample.text).toContain('Zara and Tobi are fictional')
     expect(SAMPLE_NOTE).not.toMatch(/\bAI\b/)
@@ -84,7 +85,44 @@ describe('film timeline', () => {
   })
 
   it('still makes a short film from two names alone', () => {
-    const tiny = buildFilm(generateStory({ ...emptyIntake(), sender: 'Ada', recipient: 'Kemi' }, 3))
+    const tiny = buildFilm(generateStory({ ...emptyIntake(), sender: 'Ada', recipient: 'Kemi', world: 'screening' }, 3))
     expect(tiny.shots.map((s) => s.kind)).toEqual(['line', 'name', 'line', 'wish', 'reveal', 'credits'])
+  })
+})
+
+describe('the same story as a scrapbook', () => {
+  const album = buildFilm(generateStory({ ...SAMPLE_INTAKE, world: 'scrapbook', cut: { designs: { reasons: 'bunting', redFlags: 'stickies' } } }, 7))
+
+  it('says everything the Screening says, word for word', () => {
+    const all = album.shots.map((s) => s.text).join('\n')
+    const said = [SAMPLE_INTAKE.spotlight, SAMPLE_INTAKE.wish, ...SAMPLE_INTAKE.habits, ...SAMPLE_INTAKE.reasons, ...SAMPLE_INTAKE.memories.flatMap((m) => [m.title, m.story]), ...SAMPLE_INTAKE.letter.split(/\n+/)]
+    for (const text of said) expect(all).toContain(text.trim())
+    expect(all).toContain('For Zara. From Tobi.')
+  })
+
+  it('opens on one title page and never cuts hard', () => {
+    const [first, second] = album.shots
+    expect(first).toMatchObject({ kind: 'name', name: 'Zara', kicker: 'For Zara. From Tobi.' })
+    expect(second.kind).toBe('card')
+    expect(album.shots.filter((s) => s.kind === 'line' && s.enter === 'cut')).toEqual([])
+  })
+
+  it('keeps the page while a list builds, then turns it', () => {
+    const reasons = album.shots.filter((s) => s.kind === 'reason')
+    expect(reasons.map((s) => s.exit)).toEqual(['cut', 'cut', 'fade'])
+    expect(reasons.every((s) => s.kind === 'reason' && s.all.length === 3 && s.design === 'bunting')).toBe(true)
+    const flags = album.shots.filter((s) => s.kind === 'flag')
+    expect(flags.every((s) => s.exit === 'cut' && s.sceneType === 'redFlags')).toBe(true)
+    // The verdict lands on the page the flags are on, so it knows what they were.
+    const verdict = album.shots[flags.at(-1)!.index + 1]
+    expect(verdict.kind === 'line' && verdict.items).toEqual(SAMPLE_INTAKE.habits)
+  })
+
+  it('still cuts on whole beats and waits at the candle', () => {
+    for (const shot of album.shots) {
+      const beats = shot.duration / (60 / trackById(shot.trackId)!.bpm)
+      expect(Math.abs(beats - Math.round(beats))).toBeLessThan(1e-6)
+    }
+    expect(album.shots.map((s) => s.kind).slice(-3)).toEqual(['wish', 'reveal', 'credits'])
   })
 })

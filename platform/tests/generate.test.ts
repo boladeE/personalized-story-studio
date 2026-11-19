@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { canGenerate, generateStory, sceneStatus } from '../src/story/generate'
+import { canGenerate, generateStory, moveScene, nextDesign, sceneBoard, sceneStatus, toggleScene } from '../src/story/generate'
+import { designsFor, WORLDS } from '../src/story/worlds'
 import { SCENES } from '../src/story/library'
 import { trackById } from '../src/story/music'
 import { emptyIntake, SAMPLE_INTAKE } from '../src/story/sample'
@@ -72,6 +73,87 @@ describe('generateStory', () => {
 
   it('respects a chosen look', () => {
     expect(generateStory({ ...SAMPLE_INTAKE, look: 'paper' }, 1).look).toBe('paper')
+  })
+
+  it('draws the kind of film and each scene’s design from the seed, and keeps what the sender chose', () => {
+    const stories = Array.from({ length: 40 }, (_, seed) => generateStory(SAMPLE_INTAKE, seed))
+    expect(new Set(stories.map((s) => s.world))).toEqual(new Set(WORLDS.map((w) => w.id)))
+    for (const story of stories) {
+      for (const scene of story.scenes) {
+        const options = designsFor(story.world, scene.type).map((d) => d.id)
+        if (options.length) expect(options).toContain(scene.design)
+        else expect(scene.design).toBeUndefined()
+      }
+    }
+    // Many different films from the same words and photos.
+    const cuts = new Set(stories.map((s) => [s.world, ...s.scenes.map((sc) => `${sc.type}:${sc.design ?? ''}`)].join()))
+    expect(cuts.size).toBeGreaterThan(15)
+    for (const seed of [1, 2, 3, 4, 5, 6]) {
+      const chosen = generateStory({ ...SAMPLE_INTAKE, world: 'scrapbook', cut: { designs: { redFlags: 'checklist', reasons: 'nonsense' } } }, seed)
+      expect(chosen.world).toBe('scrapbook')
+      expect(chosen.scenes.find((s) => s.type === 'redFlags')!.design).toBe('checklist')
+      // A design this kind of film doesn't have is ignored, not broken.
+      expect(['bunting', 'cards']).toContain(chosen.scenes.find((s) => s.type === 'reasons')!.design)
+    }
+  })
+
+  it('choosing the kind of film or a design changes nothing else', () => {
+    const strip = (s: Story) => ({ ...s, world: undefined, scenes: s.scenes.map((sc) => ({ ...sc, design: undefined })) })
+    for (const seed of [3, 8, 21]) {
+      const base = generateStory({ ...SAMPLE_INTAKE, world: 'screening' }, seed)
+      const album = generateStory({ ...SAMPLE_INTAKE, world: 'scrapbook', cut: { designs: { cameraRoll: 'strip' } } }, seed)
+      expect(strip(album)).toEqual(strip(base))
+    }
+  })
+
+  it('lets the sender move a scene, leave one out and put it back', () => {
+    const intake: Intake = { ...SAMPLE_INTAKE, world: 'scrapbook' }
+    const story = generateStory(intake, 5)
+    const middle = (s: Story) => types(s).filter((t) => !['ticket', 'hello', 'wish'].includes(t))
+    const before = middle(story)
+    expect(types(story)[0]).toBe('ticket')
+
+    const moved = generateStory({ ...intake, cut: moveScene(story, undefined, before[2], -1) }, 5)
+    expect(middle(moved)).toEqual([before[0], before[2], before[1], ...before.slice(3)])
+    expect(types(moved).slice(0, 2)).toEqual(['ticket', 'hello'])
+    expect(types(moved).at(-1)).toBe('wish')
+    // The scene itself is the same scene: same words, same photos.
+    expect(moved.scenes.find((s) => s.type === before[2])!.frames).toEqual(story.scenes.find((s) => s.type === before[2])!.frames)
+    // The first scene can't move earlier, and the opening and ending can't be moved or dropped.
+    expect(middle(generateStory({ ...intake, cut: moveScene(story, undefined, before[0], -1) }, 5))).toEqual(before)
+    expect(types(generateStory({ ...intake, cut: { off: ['hello', 'wish', 'ticket'], order: ['wish', 'hello'] } }, 5))).toEqual(types(story))
+
+    const without = toggleScene(undefined, 'cameraRoll', false)
+    const shorter = generateStory({ ...intake, cut: without }, 5)
+    expect(types(shorter)).toEqual(types(story).filter((t) => t !== 'cameraRoll'))
+    expect(sceneBoard({ ...intake, cut: without }, shorter).find((r) => r.type === 'cameraRoll')).toMatchObject({ state: 'off' })
+    expect(types(generateStory({ ...intake, cut: toggleScene(without, 'cameraRoll', true) }, 5))).toEqual(types(story))
+  })
+
+  it('puts a scene the sender fills in later after the one it normally follows', () => {
+    const early: Intake = { ...SAMPLE_INTAKE, world: 'screening', letter: '', cut: { order: ['reasons', 'spotlight', 'memoryLane', 'redFlags', 'cameraRoll'] } }
+    const later = generateStory({ ...early, letter: SAMPLE_INTAKE.letter }, 9)
+    expect(types(later).slice(-2)).toEqual(['letter', 'wish'])
+    expect(types(later).slice(2, 4)).toEqual(['reasons', 'spotlight'])
+  })
+
+  it('steps a scene through its designs and lists the film for the editor', () => {
+    const intake: Intake = { ...SAMPLE_INTAKE, world: 'scrapbook' }
+    const story = generateStory(intake, 2)
+    const first = story.scenes.find((s) => s.type === 'memoryLane')!.design
+    const cut = nextDesign(story, undefined, 'memoryLane')
+    const second = generateStory({ ...intake, cut }, 2)
+    expect(second.scenes.find((s) => s.type === 'memoryLane')!.design).not.toBe(first)
+    expect(generateStory({ ...intake, cut: nextDesign(second, cut, 'memoryLane') }, 2).scenes.find((s) => s.type === 'memoryLane')!.design).toBe(first)
+    // A scene with one design has nothing to step through.
+    expect(nextDesign(story, undefined, 'letter')).toEqual({})
+
+    const board = sceneBoard(intake, story)
+    expect(board.map((r) => r.type)).toEqual(types(story).filter((t) => t !== 'ticket'))
+    expect(board.find((r) => r.type === 'hello')).toMatchObject({ fixed: true, state: 'in' })
+    expect(board.find((r) => r.type === 'memoryLane')!.designs.map((d) => d.id)).toEqual(['taped', 'clipped'])
+    const thin = { ...minimal(), world: 'scrapbook' as const }
+    expect(sceneBoard(thin, generateStory(thin, 2)).find((r) => r.type === 'letter')).toMatchObject({ state: 'missing', missing: 'Write a short letter (a few sentences)' })
   })
 
   it('gives every scene a real track, and scenes of one mood share it', () => {

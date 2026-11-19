@@ -79,8 +79,23 @@ describe('intake validation', () => {
     expect(parseIntake({ ...SAMPLE_INTAKE, sender: ' ' })).toEqual({ ok: false, error: 'Both names are needed' })
     expect(parseIntake({ ...SAMPLE_INTAKE, letter: 'x'.repeat(7000) }).ok).toBe(false)
     expect(parseIntake({ ...SAMPLE_INTAKE, look: 'neon' }).ok).toBe(false)
+    expect(parseIntake({ ...SAMPLE_INTAKE, world: 'opera' })).toEqual({ ok: false, error: 'Unknown kind of film' })
     expect(parseIntake({ ...SAMPLE_INTAKE, photos: [{ id: '../x', caption: '' }] }).ok).toBe(false)
     expect(parseIntake({ ...SAMPLE_INTAKE, memories: [{ id: 'm1', title: 'a', story: 'b', photoId: 'p-missing' }] }).ok).toBe(false)
+  })
+
+  it('keeps the kind of film and the sender’s own cut, and refuses a malformed one', () => {
+    const cut = { order: ['reasons', 'spotlight'], off: ['cameraRoll'], designs: { redFlags: 'checklist' } }
+    const parsed = parseIntake({ ...SAMPLE_INTAKE, world: 'scrapbook', cut })
+    expect(parsed.ok && parsed.intake.world).toBe('scrapbook')
+    expect(parsed.ok && parsed.intake.cut).toEqual(cut)
+    // Gifts made before worlds carry neither.
+    const plain = parseIntake(SAMPLE_INTAKE)
+    expect(plain.ok && 'world' in plain.intake).toBe(false)
+    expect(plain.ok && 'cut' in plain.intake).toBe(false)
+    for (const bad of [{ order: 'reasons' }, { off: [7] }, { designs: { redFlags: '<script>' } }, { order: Array(40).fill('reasons') }, ['reasons'], 'x']) {
+      expect(parseIntake({ ...SAMPLE_INTAKE, cut: bad }).ok, JSON.stringify(bad)).toBe(false)
+    }
   })
 
   it('drops photo sources sent by the browser', () => {

@@ -8,6 +8,7 @@ import { formatTime } from '../film/timeline'
 import { generateStory } from '../story/generate'
 import { OCCASIONS } from '../story/occasions'
 import { SAMPLE_INTAKE, SAMPLE_NOTE, SAMPLE_SOUNDTRACK } from '../story/sample'
+import { WORLDS } from '../story/worlds'
 
 export const Route = createFileRoute('/')({
   head: () => ({
@@ -72,7 +73,7 @@ const FOCUS: StepFocus = { memory: 0, habit: 0, reason: 0 }
 
 function Home() {
   // The hero is the product itself: the fictional sample, ready to play.
-  const sample = useMemo(() => ({ ...generateStory({ ...SAMPLE_INTAKE, look: 'screening' }, 20261113), soundtrack: SAMPLE_SOUNDTRACK, note: SAMPLE_NOTE }), [])
+  const sample = useMemo(() => ({ ...generateStory({ ...SAMPLE_INTAKE, look: 'screening', world: 'screening' }, 20261113), soundtrack: SAMPLE_SOUNDTRACK, note: SAMPLE_NOTE }), [])
   const rain = SAMPLE_INTAKE.memories[1]
   return (
     <div className="home-shell">
@@ -144,6 +145,32 @@ function Home() {
                   </span>
                   <span className="stub-tear" aria-hidden="true">
                     <span>Begin</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section id="kinds" className="home-section" aria-labelledby="kinds-title">
+          <div className="section-intro">
+            <h2 id="kinds-title">The same story, told two ways.</h2>
+            <p>
+              Your photos and words can become a night at the pictures or a handmade album. The studio picks one to start with. You can
+              switch, give any scene another design, move it or leave it out.
+            </p>
+          </div>
+          <ul className="kinds">
+            {WORLDS.map((world) => (
+              <li key={world.id}>
+                <Link to="/preview" search={{ sample: 1, style: world.id }} className="kind">
+                  <span className="kind-frame">
+                    <Still {...previewFor(world.id === 'scrapbook' ? 'memories' : 'who', SAMPLE_INTAKE, { ...FOCUS, memory: 1 }, world.id === 'scrapbook' ? 'paper' : 'screening')} world={world.id} />
+                  </span>
+                  <span className="kind-words">
+                    <b>{world.name}</b>
+                    <span>{world.blurb}</span>
+                    <span className="kind-go">Watch the sample this way</span>
                   </span>
                 </Link>
               </li>

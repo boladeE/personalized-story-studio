@@ -15,6 +15,9 @@ interface ShotBase {
   /** Index into story.scenes. */
   scene: number
   sceneName: string
+  /** The scene's type and the design it is drawn in, so a world can draw the same shot differently. */
+  sceneType: string
+  design?: string
   mood: Mood
   trackId: string
   start: number
@@ -30,12 +33,15 @@ interface ShotBase {
 
 export type Shot = ShotBase &
   (
-    | { kind: 'line'; kicker?: string; title: string; body?: string }
-    | { kind: 'name'; name: string; sub: string }
+    /** `items`: what the scene has already listed, for a closing line that lands on top of the list. */
+    | { kind: 'line'; kicker?: string; title: string; body?: string; items?: string[] }
+    /** `kicker` and `body`: the dedication and opening line, when a world puts the whole opening on one page. */
+    | { kind: 'name'; name: string; sub: string; kicker?: string; body?: string }
     | { kind: 'card'; number: string; title: string }
     | { kind: 'photo'; photo: Photo; kicker: string; title: string; body?: string; layout: PhotoLayout }
-    | { kind: 'flag'; label: string; text: string; n: number; total: number }
-    | { kind: 'reason'; text: string; n: number; total: number }
+    /** `all`: every item in the scene, for designs that build a list up one at a time. */
+    | { kind: 'flag'; label: string; text: string; n: number; total: number; all: string[] }
+    | { kind: 'reason'; text: string; n: number; total: number; all: string[] }
     | { kind: 'montage'; kicker: string; title: string; photos: Photo[] }
     | { kind: 'letter'; greeting: string; paragraphs: string[]; signoff: string }
     | { kind: 'wish'; title: string; body: string; prop: EndingProp; action: string }
@@ -57,7 +63,7 @@ export interface Film {
 }
 
 type DistOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never
-type Draft = DistOmit<Shot, 'id' | 'index' | 'start' | 'duration' | 'scene' | 'sceneName' | 'mood' | 'trackId' | 'text'> & { seconds: number; text?: string }
+type Draft = DistOmit<Shot, 'id' | 'index' | 'start' | 'duration' | 'scene' | 'sceneName' | 'sceneType' | 'design' | 'mood' | 'trackId' | 'text'> & { seconds: number; text?: string }
 
 const ORDINALS = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
 const words = (...parts: Array<string | undefined>) => parts.join(' ').split(/\s+/).filter(Boolean).length
@@ -72,6 +78,9 @@ export function buildFilm(story: Story): Film {
   let clock = 0
   let numbered = 0
   let opened = false
+  const world = story.world ?? 'screening'
+  // An album turns a page between shots; only the Screening cuts hard on the beat.
+  const album = world === 'scrapbook'
 
   story.scenes.forEach((scene, sceneIndex) => {
     if (scene.type === 'ticket') return
@@ -79,6 +88,10 @@ export function buildFilm(story: Story): Film {
     const beat = 60 / bpm
     const playful = scene.mood === 'playful'
     const drafts: Draft[] = []
+    const listed = scene.frames.flatMap((f) => (f.kind === 'item' ? [f.text] : []))
+    // Designs that build a list keep the page and add to it, so there is no transition between items.
+    const builds = album || scene.design === 'docket' || scene.design === 'ledger'
+    let itemsSeen = 0
 
     // Chapters between the opening and the ending get a numbered title card.
     const isChapter = scene.type !== 'hello' && scene.type !== 'wish'
@@ -95,6 +108,21 @@ export function buildFilm(story: Story): Film {
           if (!opened) {
             // The film's first words: a dedication that turns to dust and re-forms as their name.
             opened = true
+            if (album) {
+              // The album's title page carries the dedication, their name and the opening line together.
+              drafts.push({
+                kind: 'name',
+                name: story.recipient,
+                sub: frame.title,
+                kicker: frame.kicker,
+                body: frame.body,
+                seconds: 6.5 + read(words(frame.body), 0),
+                enter: 'type',
+                exit: 'fade',
+                text: [frame.kicker, `${story.recipient}.`, frame.title, frame.body].filter(Boolean).join(' '),
+              })
+              break
+            }
             drafts.push({ kind: 'line', title: frame.kicker, seconds: 4, enter: 'type', exit: 'dissolve' })
             drafts.push({ kind: 'name', name: story.recipient, sub: frame.title, seconds: 5.2, enter: 'assemble', exit: 'dissolve' })
             if (frame.body) drafts.push({ kind: 'line', title: frame.body, seconds: read(words(frame.body)) + 0.4, enter: 'type', exit: 'fade' })
@@ -107,9 +135,11 @@ export function buildFilm(story: Story): Film {
             kicker,
             title: frame.title,
             body: frame.body,
+            // A line that closes a list (the verdict) knows what it lands on.
+            ...(itemsSeen ? { items: listed } : {}),
             seconds: read(words(kicker, frame.title, frame.body)) + 0.5,
-            enter: playful ? 'cut' : 'type',
-            exit: playful ? 'cut' : 'fade',
+            enter: playful && !album ? 'cut' : 'type',
+            exit: playful && !album ? 'cut' : 'fade',
           })
           break
         }
@@ -127,13 +157,16 @@ export function buildFilm(story: Story): Film {
             text: [frame.kicker, frame.title, frame.body, frame.photo.caption].filter(Boolean).join('. '),
           })
           break
-        case 'item':
+        case 'item': {
+          itemsSeen++
+          const last = frame.index === frame.total - 1
           if (frame.marker === 'flag') {
-            drafts.push({ kind: 'flag', label: frame.kicker, text: frame.text, n: frame.index + 1, total: frame.total, seconds: read(words(frame.text), 2.4) + 0.6, enter: 'cut', exit: 'cut' })
+            drafts.push({ kind: 'flag', label: frame.kicker, text: frame.text, n: frame.index + 1, total: frame.total, all: listed, seconds: read(words(frame.text), 2.4) + 0.6, enter: 'cut', exit: 'cut' })
           } else {
-            drafts.push({ kind: 'reason', text: frame.text, n: frame.index + 1, total: frame.total, seconds: read(words(frame.text)) + 0.8, enter: 'type', exit: 'fade' })
+            drafts.push({ kind: 'reason', text: frame.text, n: frame.index + 1, total: frame.total, all: listed, seconds: read(words(frame.text)) + 0.8, enter: 'type', exit: builds && !last ? 'cut' : 'fade' })
           }
           break
+        }
         case 'montage':
           drafts.push({
             kind: 'montage',
@@ -194,6 +227,8 @@ export function buildFilm(story: Story): Film {
         index,
         scene: sceneIndex,
         sceneName: scene.name,
+        sceneType: scene.type,
+        ...(scene.design ? { design: scene.design } : {}),
         mood: scene.mood,
         trackId: scene.trackId,
         start: clock,
@@ -211,7 +246,7 @@ function spoken(shot: Record<string, unknown>): string {
   const pick = (...keys: string[]) => keys.map((k) => shot[k]).filter((v): v is string => typeof v === 'string' && v.length > 0)
   switch (shot.kind) {
     case 'name':
-      return pick('name', 'sub').join('. ')
+      return pick('kicker', 'name', 'sub', 'body').join('. ')
     case 'card':
       return pick('number', 'title').join(': ')
     case 'flag':

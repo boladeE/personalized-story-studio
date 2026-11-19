@@ -1,5 +1,7 @@
 import { useLayoutEffect, useRef } from 'react'
 import type { CSSProperties, ElementType, ReactNode } from 'react'
+import type { WorldId } from '../story/types'
+import { PageBody } from './scrapbook'
 import type { Shot } from './timeline'
 
 /**
@@ -9,7 +11,7 @@ import type { Shot } from './timeline'
  * shot's text once through its own live region.
  */
 
-const vars = (v: Record<string, string | number>) => v as CSSProperties
+export const vars = (v: Record<string, string | number>) => v as CSSProperties
 
 export function Type({
   text,
@@ -67,7 +69,7 @@ export function Type({
   )
 }
 
-const seconds = (text: string | undefined, perWord = 0.07) => (text ? text.split(/\s+/).length * perWord : 0)
+export const seconds = (text: string | undefined, perWord = 0.07) => (text ? text.split(/\s+/).length * perWord : 0)
 
 export interface ShotActions {
   onBlow: (flame: DOMRect | null) => void
@@ -76,7 +78,7 @@ export interface ShotActions {
   ended: boolean
 }
 
-export function ShotView({ shot, state, loud, actions }: { shot: Shot; state: 'current' | 'leaving'; loud: { bg: string; ink: string; accent: string } | null; actions: ShotActions }) {
+export function ShotView({ shot, state, loud, actions, world = 'screening' }: { shot: Shot; state: 'current' | 'leaving'; loud: { bg: string; ink: string; accent: string } | null; actions: ShotActions; world?: WorldId }) {
   const style = vars({
     '--dur': `${shot.duration}s`,
     ...(loud ? { '--loud-bg': loud.bg, '--f-ink': loud.ink, '--f-soft': loud.ink, '--f-accent': loud.accent } : {}),
@@ -85,11 +87,12 @@ export function ShotView({ shot, state, loud, actions }: { shot: Shot; state: 'c
     <section
       className={`shot shot-${shot.kind} is-${state}${loud ? ' is-loud' : ''} enter-${shot.enter} exit-${shot.exit}`}
       data-shot-kind={shot.kind}
+      data-design={shot.design}
       data-shot={shot.index}
       data-text={shot.text}
       style={style}
     >
-      <ShotBody shot={shot} actions={actions} leaving={state === 'leaving'} />
+      {world === 'scrapbook' ? <PageBody shot={shot} actions={actions} leaving={state === 'leaving'} /> : <ShotBody shot={shot} actions={actions} leaving={state === 'leaving'} />}
     </section>
   )
 }
@@ -141,6 +144,7 @@ function ShotBody({ shot, actions, leaving }: { shot: Shot; actions: ShotActions
         </div>
       )
     case 'flag':
+      if (shot.design === 'docket') return <Roll shot={shot} />
       return (
         <div className="flag" aria-hidden="true">
           <p className="flag-count">
@@ -157,6 +161,7 @@ function ShotBody({ shot, actions, leaving }: { shot: Shot; actions: ShotActions
         </div>
       )
     case 'reason':
+      if (shot.design === 'ledger') return <Roll shot={shot} />
       return (
         <div className="reason" aria-hidden="true">
           <span className="reason-num">{shot.n}</span>
@@ -264,7 +269,7 @@ function ShotBody({ shot, actions, leaving }: { shot: Shot; actions: ShotActions
 }
 
 /** Where each print lands (centre x %, centre y %, tilt), by how many there are. */
-const SPREADS: Record<number, Array<[number, number, number]>> = {
+export const SPREADS: Record<number, Array<[number, number, number]>> = {
   1: [[50, 50, -3]],
   2: [[33, 50, -5], [67, 52, 4]],
   3: [[22, 52, -6], [50, 46, 3], [78, 54, -3]],
@@ -273,7 +278,44 @@ const SPREADS: Record<number, Array<[number, number, number]>> = {
   6: [[14, 32, -6], [32, 68, 5], [50, 30, 3], [56, 72, -4], [76, 34, 6], [86, 70, -5]],
 }
 
-function Letter({ shot }: { shot: Extract<Shot, { kind: 'letter' }> }) {
+/**
+ * A list that builds: every item so far, the newest at the foot and the older
+ * ones rolling up and out of the top. The red flags as a charge sheet, the
+ * reasons as a running list.
+ */
+function Roll({ shot }: { shot: Extract<Shot, { kind: 'flag' | 'reason' }> }) {
+  const flag = shot.kind === 'flag'
+  return (
+    <div className={`roll-list ${flag ? 'is-docket' : 'is-ledger'}`} aria-hidden="true">
+      {flag && (
+        <p className="flag-label">
+          <FlagIcon />
+          {shot.label}
+        </p>
+      )}
+      <ol>
+        {shot.all.slice(0, shot.n).map((text, i) => (
+          <li key={i} className={i === shot.n - 1 ? 'is-new' : ''} style={vars({ '--age': shot.n - 1 - i })}>
+            <b>{String(i + 1).padStart(2, '0')}</b>
+            {i === shot.n - 1 ? <Type as="span" text={text} by={flag ? 'word' : 'char'} delay={0.1} step={flag ? 85 : 26} /> : <span>{text}</span>}
+          </li>
+        ))}
+      </ol>
+      {flag ? (
+        <p className="flag-count">
+          <b>{String(shot.n).padStart(2, '0')}</b>
+          <span>of {String(shot.total).padStart(2, '0')}</span>
+        </p>
+      ) : (
+        <p className="roll-count">
+          {shot.n} of {shot.total}
+        </p>
+      )}
+    </div>
+  )
+}
+
+export function Letter({ shot }: { shot: Extract<Shot, { kind: 'letter' }> }) {
   const sheet = useRef<HTMLDivElement>(null)
   // The sheet scrolls by exactly as much as doesn't fit, over the life of the shot.
   useLayoutEffect(() => {
@@ -308,7 +350,7 @@ function Letter({ shot }: { shot: Extract<Shot, { kind: 'letter' }> }) {
   )
 }
 
-function FlagIcon() {
+export function FlagIcon() {
   return (
     <svg className="flag-icon" viewBox="0 0 16 16" aria-hidden="true">
       <path d="M3 1.5v13" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
