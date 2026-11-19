@@ -146,11 +146,11 @@ function Start() {
         <div className="start-fields">
           <label>
             <span>Their name</span>
-            <input value={intake.recipient} maxLength={LIMITS.name} placeholder={intake.relationship === 'mother' ? 'Mum' : intake.relationship === 'father' ? 'Dad' : 'Their first name'} onChange={(e) => setIntake((c) => ({ ...c, recipient: e.target.value }))} />
+            <input value={intake.recipient} maxLength={LIMITS.name} onChange={(e) => setIntake((c) => ({ ...c, recipient: e.target.value }))} />
           </label>
           <label>
             <span>Your name</span>
-            <input value={intake.sender} maxLength={LIMITS.name} placeholder="How you’d sign a card" autoComplete="given-name" onChange={(e) => setIntake((c) => ({ ...c, sender: e.target.value }))} />
+            <input value={intake.sender} maxLength={LIMITS.name} autoComplete="given-name" onChange={(e) => setIntake((c) => ({ ...c, sender: e.target.value }))} />
           </label>
         </div>
       ),

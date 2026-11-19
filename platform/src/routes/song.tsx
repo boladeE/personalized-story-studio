@@ -174,7 +174,6 @@ function SongRoom() {
                     aria-label="Song title"
                     value={words.title}
                     maxLength={LYRIC_LIMITS.title}
-                    placeholder="Song title"
                     disabled={busy}
                     onChange={(e) => setWords({ ...words, title: e.target.value })}
                   />

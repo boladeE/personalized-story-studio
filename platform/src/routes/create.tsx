@@ -164,11 +164,11 @@ function Create() {
           <p className="sentence">
             <span className="clause">
               <span>For</span>
-              <SentenceInput label="Their name" placeholder="their name" value={intake.recipient} onChange={(v) => set('recipient', v)} />
+              <SentenceInput label="Their name" value={intake.recipient} onChange={(v) => set('recipient', v)} />
             </span>
             <span className="clause">
               <span>from</span>
-              <SentenceInput label="Your name" placeholder="your name" value={intake.sender} onChange={(v) => set('sender', v)} autoComplete="given-name" />
+              <SentenceInput label="Your name" value={intake.sender} onChange={(v) => set('sender', v)} autoComplete="given-name" />
             </span>
           </p>
           <fieldset className="occasion-pick">
@@ -207,12 +207,11 @@ function Create() {
             {intake.photos.map((photo, i) => (
               <li key={photo.id} className="print">
                 <img src={photo.src} alt={`Photo ${i + 1}`} />
-                <label className="visually-hidden" htmlFor={`cap-${photo.id}`}>
-                  Caption for photo {i + 1}
+                <label className="print-label" htmlFor={`cap-${photo.id}`}>
+                  Caption<span className="visually-hidden"> for photo {i + 1}</span>
                 </label>
                 <GrowingText
                   id={`cap-${photo.id}`}
-                  placeholder="Add a caption"
                   maxLength={LIMITS.caption}
                   value={photo.caption}
                   onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
@@ -354,7 +353,6 @@ function Create() {
             label="Habit"
             values={intake.habits}
             max={LIMITS.habits}
-            placeholder="Says “I’m not hungry,” then eats my chips"
             onChange={(v) => set('habits', v)}
             onActive={(i) => setFocus((f) => ({ ...f, habit: i }))}
           />
@@ -371,7 +369,6 @@ function Create() {
             label="Reason"
             values={intake.reasons}
             max={LIMITS.reasons}
-            placeholder="You remember the things I mention once"
             onChange={(v) => set('reasons', v)}
             onActive={(i) => setFocus((f) => ({ ...f, reason: i }))}
           />
@@ -614,18 +611,18 @@ function Cross() {
 }
 
 /** A name written into the sentence; it grows with what is typed. */
-function SentenceInput({ label, placeholder, value, onChange, autoComplete }: { label: string; placeholder: string; value: string; onChange: (value: string) => void; autoComplete?: string }) {
+function SentenceInput({ label, value, onChange, autoComplete }: { label: string; value: string; onChange: (value: string) => void; autoComplete?: string }) {
   return (
     <input
       className="blank"
       aria-label={label}
-      placeholder={placeholder}
       value={value}
       required
       maxLength={LIMITS.name}
       autoComplete={autoComplete ?? 'off'}
       autoCapitalize="words"
-      style={{ width: `${Math.max(value.length, placeholder.length) * 0.52 + 0.7}em` }}
+      // An empty blank is still a line long enough to read as somewhere to write.
+      style={{ width: `${Math.max(value.length, 8) * 0.52 + 0.7}em` }}
       onChange={(e) => onChange(e.target.value)}
     />
   )
@@ -659,14 +656,12 @@ function ListEditor({
   label,
   values,
   max,
-  placeholder,
   onChange,
   onActive,
 }: {
   label: string
   values: string[]
   max: number
-  placeholder: string
   onChange: (values: string[]) => void
   onActive: (index: number) => void
 }) {
@@ -707,7 +702,6 @@ function ListEditor({
               aria-label={`${label} ${i + 1}`}
               value={value}
               maxLength={LIMITS.listItem}
-              placeholder={i === 0 ? placeholder : ''}
               enterKeyHint="next"
               onFocus={() => onActive(i)}
               onKeyDown={(e) => onKey(e, i)}
