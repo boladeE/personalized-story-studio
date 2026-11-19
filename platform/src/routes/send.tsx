@@ -109,7 +109,12 @@ function Send() {
           </div>
           <div>
             <dt>Music</dt>
-            <dd>{song ? `“${song.label}”, ${song.sung === false ? 'an original instrumental' : `written for ${story.recipient}`}` : 'Studio score'}</dd>
+            <dd>{song ? `“${song.label}”, ${song.sung === false ? 'an original instrumental' : `written for ${story.recipient}`}` : (
+                <>
+                  No song yet, so this film would play without music. <Link to="/song">Make {story.recipient}’s song</Link>
+                </>
+              )}
+            </dd>
           </div>
         </dl>
 

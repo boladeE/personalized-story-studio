@@ -25,14 +25,12 @@ export const Route = createFileRoute('/preview')({
 
 function Preview() {
   const { sample, style } = Route.useSearch()
-  const { intake, setIntake, seed, setSeed, song, job, playJobSong } = useDraft()
+  const { intake, setIntake, seed, setSeed, song, job, songs, plan, startSong, playJobSong } = useDraft()
   const [panel, setPanel] = useState<'none' | 'more' | 'look'>('none')
   // The scene the sender last changed: the film carries on from there.
   const [cue, setCue] = useState<{ type: string; key: number }>()
   const panelOpen = panel === 'look'
   const setPanelOpen = (open: boolean | ((was: boolean) => boolean)) => setPanel((was) => ((typeof open === 'function' ? open(was === 'look') : open) ? 'look' : 'none'))
-  // The sample plays its own song unless the viewer switches to the score or makes another.
-  const [sampleSong, setSampleSong] = useState(true)
   // The sample opens in the lightest look; a visitor can try the other two from the panel.
   const [sampleLook, setSampleLook] = useState<LookId>('paper')
   // A visitor can try the other kinds of film and rearrange the sample's scenes, too.
@@ -56,13 +54,25 @@ function Preview() {
     // The sample says its people are invented in its own end credits, not in the header.
     const built: Story = useSample ? { ...generateStory(source, seed), note: SAMPLE_NOTE } : generateStory(source, seed)
     if (song) return { ...built, soundtrack: { kind: 'song', src: song.src, label: song.label } }
-    return useSample && sampleSong ? { ...built, soundtrack: SAMPLE_SOUNDTRACK } : built
-  }, [source, seed, song, useSample, sampleSong])
+    // The sample plays the song that was made for it.
+    return useSample ? { ...built, soundtrack: SAMPLE_SOUNDTRACK } : built
+  }, [source, seed, song, useSample])
 
-  // A song made in the background goes straight onto the film if it hasn't started; otherwise the sender chooses when.
+  // Every film has its own song and no other music. A film that reaches here without one (built from
+  // the detailed form) has it made now.
+  const own = !useSample && canGenerate(intake)
   useEffect(() => {
-    if (job.state === 'ready' && !useSample && window.__ltFilm?.phase() === 'ticket') playJobSong()
-  }, [job.state, useSample])
+    if (own && songs && !song && job.state === 'idle') startSong(intake, plan)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [own, songs, song, job.state])
+  // The finished song goes straight onto the film, which has been waiting for it.
+  useEffect(() => {
+    if (job.state === 'ready' && own && window.__ltFilm?.phase() !== 'playing') playJobSong()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [job.state, own])
+  // The film is held at its opening until its song exists: it is never played without it.
+  const making = own && !song && (job.state === 'writing' || job.state === 'singing' || (job.state === 'idle' && songs !== false))
+  const locked = making ? `It starts when ${intake.recipient.trim()}’s song is ready.` : undefined
 
   if (!story || (useSample && sample !== 1)) {
     return (
@@ -92,7 +102,7 @@ function Preview() {
         </button>
         {!useSample && (
           <Link to="/song" className="button small ghost">
-            {song ? 'Song' : 'Add a song'}
+            Song
           </Link>
         )}
         <button
@@ -117,14 +127,13 @@ function Preview() {
           </Link>
         )}
       </StudioHeader>
-      {!useSample && job.state !== 'idle' && <SongStatus job={job} name={story.recipient} onPlay={playJobSong} />}
+      {!useSample && job.state !== 'idle' && <SongStatus job={job} name={story.recipient} onPlay={playJobSong} onRetry={() => startSong(intake, plan, true)} />}
       <div className="preview-body">
         {panel === 'more' && <ScenesPanel intake={source} story={story} own={!useSample} onCut={setCut} lastChange={lastChange} onUndo={() => lastChange && setCut(lastChange.before, lastChange.cue)} onClose={() => setPanel('none')} />}
         {panelOpen && (
           <AdjustPanel
             intake={source}
-            sampleSong={useSample ? sampleSong : null}
-            onSampleSong={setSampleSong}
+            sample={useSample}
             look={story.look}
             onLook={(look) => (useSample ? setSampleLook(look) : setIntake((c) => ({ ...c, look })))}
             world={story.world ?? 'screening'}
@@ -132,7 +141,7 @@ function Preview() {
             onClose={() => setPanelOpen(false)}
           />
         )}
-        <Film story={story} cue={cue} />
+        <Film story={story} cue={cue} locked={locked} />
       </div>
     </div>
   )
@@ -145,18 +154,18 @@ const SONG_STEPS = ['The words', 'The voice', 'On your film']
  * and that the film can be watched meanwhile. The bars are an estimate from how
  * long each step usually takes, not a measured percentage.
  */
-function SongStatus({ job, name, onPlay }: { job: SongJob; name: string; onPlay: () => void }) {
+function SongStatus({ job, name, onPlay, onRetry }: { job: SongJob; name: string; onPlay: () => void; onRetry: () => void }) {
   if (job.state === 'idle') return null
   if (job.state === 'failed') {
     return (
       <section className="song-status is-failed" role="status">
         <p className="song-status-words">
-          <b>The song didn’t come through.</b>
-          <span>{job.error} The film still plays with the studio’s music.</span>
+          <b>{name}’s song didn’t come through.</b>
+          <span>{job.error} Until it is made, the film has no music.</span>
         </p>
-        <Link to="/song" className="button small ghost">
+        <button type="button" className="button small ghost" onClick={onRetry}>
           Try again
-        </Link>
+        </button>
       </section>
     )
   }
@@ -174,13 +183,13 @@ function SongStatus({ job, name, onPlay }: { job: SongJob; name: string; onPlay:
         {job.state === 'writing' && (
           <>
             <b>Writing {name}’s song</b>
-            <span>Your film is ready now with the studio’s music. Watch it, or wait about a minute and a half for the song.</span>
+            <span>The film starts when its song is ready, in about a minute and a half. You can change its scenes and style while you wait.</span>
           </>
         )}
         {job.state === 'singing' && (
           <>
             <b>The words are written. {name}’s song is being sung.</b>
-            <span>About a minute more. Watch now with the studio’s music, or wait for the song.</span>
+            <span>About a minute more, then the film is ready to play.</span>
           </>
         )}
         {job.state === 'ready' && (
@@ -339,8 +348,7 @@ function ScenesPanel({
 
 function AdjustPanel({
   intake,
-  sampleSong,
-  onSampleSong,
+  sample,
   look,
   onLook,
   world,
@@ -349,9 +357,8 @@ function AdjustPanel({
 }: {
   /** The details the film is built from (the sender's own, or the sample). */
   intake: Intake
-  /** Whether the sample's own song is playing; null when this isn't the sample. */
-  sampleSong: boolean | null
-  onSampleSong: (on: boolean) => void
+  /** The sample film, which plays the one song that was made for it. */
+  sample: boolean
   look: LookId
   onLook: (look: LookId) => void
   world: WorldId
@@ -389,57 +396,40 @@ function AdjustPanel({
         </div>
       </fieldset>
       <fieldset className="adjust-group">
-        <legend>Soundtrack</legend>
-        <div className="adjust-options">
-          <label className="choice">
-            <input
-              type="radio"
-              name="soundtrack"
-              checked={!song && !sampleSong}
-              onChange={() => {
-                setSong(null)
-                onSampleSong(false)
-              }}
-            />
-            Studio score
-          </label>
-          {sampleSong !== null && (
-            <label className="choice">
-              <input
-                type="radio"
-                name="soundtrack"
-                checked={!song && sampleSong}
-                onChange={() => {
-                  setSong(null)
-                  onSampleSong(true)
-                }}
-              />
-              {SAMPLE_SOUNDTRACK.label}
-            </label>
-          )}
-          {takes.map((take, i) => (
-            <label key={take.id} className="choice">
-              <input type="radio" name="soundtrack" checked={song?.id === take.id} onChange={() => setSong(take)} />
-              “{take.label}”{takes.length > 1 ? `, take ${i + 1}` : ''}
-            </label>
-          ))}
-        </div>
-        {sampleSong === null ? (
-          <div className="song-maker">
-            <Link to="/song" className="button small primary">
-              {takes.length ? 'Change the song' : `Write ${recipient}’s song`}
-            </Link>
-          </div>
+        <legend>The song</legend>
+        {sample ? (
+          <>
+            <p className="song-now">“{SAMPLE_SOUNDTRACK.label}”, written and sung for this film.</p>
+            <p className="fine">Start your own and the studio writes a song like this about your person.</p>
+          </>
         ) : (
-          <p className="fine">Start your own story and the studio writes a song like this about your person.</p>
+          <>
+            {takes.length > 1 ? (
+              <div className="adjust-options">
+                {takes.map((take, i) => (
+                  <label key={take.id} className="choice">
+                    <input type="radio" name="soundtrack" checked={song?.id === take.id} onChange={() => setSong(take)} />
+                    “{take.label}”, take {i + 1}
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <p className="song-now">{song ? `“${song.label}”, written and sung for ${recipient}.` : `${recipient}’s song hasn’t been made yet.`}</p>
+            )}
+            <div className="song-maker">
+              <Link to="/song" className="button small primary">
+                {takes.length ? 'Change the song' : `Write ${recipient}’s song`}
+              </Link>
+            </div>
+          </>
         )}
-        {(song?.lyrics || (!song && sampleSong)) && (
+        {(song?.lyrics || sample) && (
           <details className="song-lyrics">
             <summary>Read the lyrics</summary>
             <p>{song?.lyrics || SAMPLE_LYRICS}</p>
           </details>
         )}
-        <p className="fine">Tap the ticket again to hear a change.</p>
+        {takes.length > 1 && <p className="fine">Tap the ticket again to hear a change.</p>}
       </fieldset>
       <button type="button" className="text-button" onClick={onClose}>
         Done

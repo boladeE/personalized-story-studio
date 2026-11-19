@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
 import { AudioEngine } from '../components/audio-engine'
-import { trackById } from '../story/music'
 import type { Story } from '../story/types'
 import { Backdrop } from './backdrop'
 import { isLight, loudFor, paletteFor, tableFor } from './looks'
@@ -31,7 +30,11 @@ export const FILM_HUSH = 'lt:film-hush'
  * edits a scene they see that scene, not the opening again. It only applies
  * once the film has been started, since sound needs their tap.
  */
-export function Film({ story, embedded = false, cue }: { story: Story; embedded?: boolean; cue?: { type: string; key: number } }) {
+/**
+ * `locked` holds the film at its opening and says why (its song is still being
+ * made): the film is never started without the music that was made for it.
+ */
+export function Film({ story, embedded = false, cue, locked }: { story: Story; embedded?: boolean; cue?: { type: string; key: number }; locked?: string }) {
   const film = useMemo(() => buildFilm(story), [story])
   const world = story.world ?? 'screening'
   const album = world === 'scrapbook'
@@ -65,6 +68,8 @@ export function Film({ story, embedded = false, cue }: { story: Story; embedded?
   /** While the opening plays (the ticket tearing, the countdown), this goes straight to the film. */
   const skipOpening = useRef<(() => void) | null>(null)
   const begun = useRef(false)
+  const lockedNow = useRef(Boolean(locked))
+  lockedNow.current = Boolean(locked)
 
   const shot = film.shots[Math.min(index, film.shots.length - 1)]
   const wishIndex = useMemo(() => film.shots.findIndex((s) => s.kind === 'wish'), [film])
@@ -143,12 +148,12 @@ export function Film({ story, embedded = false, cue }: { story: Story; embedded?
     const cued = cue && cue.key !== cueSeen.current ? film.shots.find((s) => s.sceneType === cue.type) : undefined
     cueSeen.current = cue?.key
     if (cued && begun.current) {
-      // The music carries on underneath: a song keeps playing, and the score only changes if the scene's track does.
+      // The song carries on underneath.
       clock.current = { t: cued.start, index: cued.index, wishDone: wishIndex >= 0 && cued.index > wishIndex, track: clock.current.track }
       setIndex(cued.index)
       setPhase('playing')
       setCount(0)
-      startMusic(cued, false)
+      startMusic()
       return clearTimers
     }
     begun.current = false
@@ -194,26 +199,14 @@ export function Film({ story, embedded = false, cue }: { story: Story; embedded?
 
   /* ---------- music ---------- */
 
-  const startMusic = useCallback(
-    (s: Shot, restart: boolean) => {
-      const audio = engine.current
-      if (!audio) return
-      if (story.soundtrack) {
-        if (clock.current.track !== 'song') {
-          clock.current.track = 'song'
-          void audio.playSong(story.soundtrack.src)
-          setNowPlaying({ title: story.soundtrack.label, by: 'An original song for this film', key: Date.now() })
-        }
-        return
-      }
-      const changed = clock.current.track !== s.trackId
-      if (!changed && !restart) return
-      clock.current.track = s.trackId
-      audio.play(s.trackId, restart)
-      if (changed) setNowPlaying({ title: trackById(s.trackId)?.title ?? 'Score', by: 'Little Things studio score', key: Date.now() })
-    },
-    [story.soundtrack],
-  )
+  // The only music a film has is the song made for it. Without one it plays in silence.
+  const startMusic = useCallback(() => {
+    const audio = engine.current
+    if (!audio || !story.soundtrack || clock.current.track === 'song') return
+    clock.current.track = 'song'
+    void audio.playSong(story.soundtrack.src)
+    setNowPlaying({ title: story.soundtrack.label, by: 'An original song for this film', key: Date.now() })
+  }, [story.soundtrack])
 
   /* ---------- the clock ---------- */
 
@@ -226,11 +219,6 @@ export function Film({ story, embedded = false, cue }: { story: Story; embedded?
       // A frame's timestamp can be earlier than the moment this clock was started; time never runs backwards.
       const dt = Math.max(0, Math.min(0.1, (now - last) / 1000))
       last = now
-      const beat = engine.current?.beat()
-      const pulse = beat && !calm.current ? (1 - beat.phase) ** 3 : 0
-      if (backdrop.current) backdrop.current.pulse = pulse
-      if (particles.current) particles.current.pulse = pulse
-      root.current?.style.setProperty('--beat', pulse.toFixed(3))
       if (live.current.paused || live.current.phase !== 'playing') return
 
       const c = clock.current
@@ -266,7 +254,7 @@ export function Film({ story, embedded = false, cue }: { story: Story; embedded?
     const stage = root.current
     const dust = particles.current
     if (!stage) return
-    startMusic(shot, false)
+    startMusic()
     const gone = stage.querySelector<HTMLElement>('.shot.is-leaving [data-fx-out]')
     if (gone && leaving?.exit === 'dissolve' && dust && !calm.current) {
       dust.scatter(gone)
@@ -299,13 +287,13 @@ export function Film({ story, embedded = false, cue }: { story: Story; embedded?
       setWaiting(false)
       setIndex(target.index)
       setPhase('playing')
-      startMusic(target, true)
+      startMusic()
     },
     [film, wishIndex, startMusic],
   )
 
   const begin = useCallback(async () => {
-    if (live.current.phase !== 'ticket') return
+    if (live.current.phase !== 'ticket' || lockedNow.current) return
     begun.current = true
     window.dispatchEvent(new Event(FILM_SOUND))
     const ok = (await engine.current?.start()) ?? false
@@ -509,7 +497,7 @@ export function Film({ story, embedded = false, cue }: { story: Story; embedded?
         </p>
       )}
 
-      {!started && <Opening recipient={story.recipient} occasion={ticketLabel(story)} torn={phase === 'leader'} count={count} onBegin={begin} onSkip={() => skipOpening.current?.()} album={album} />}
+      {!started && <Opening recipient={story.recipient} occasion={ticketLabel(story)} torn={phase === 'leader'} count={count} onBegin={begin} onSkip={() => skipOpening.current?.()} album={album} locked={locked} />}
 
       <p className="visually-hidden" role="status" aria-live="polite">
         {started ? shot.text : ''}
@@ -575,7 +563,8 @@ function ticketLabel(story: Story) {
   return 'Your birthday'
 }
 
-function Opening({ recipient, occasion, torn, count, onBegin, onSkip, album }: { recipient: string; occasion: string; torn: boolean; count: number; onBegin: () => void; onSkip: () => void; album: boolean }) {
+function Opening({ recipient, occasion, torn, count, onBegin, onSkip, album, locked }: { recipient: string; occasion: string; torn: boolean; count: number; onBegin: () => void; onSkip: () => void; album: boolean; locked?: string }) {
+  const hint = locked ?? 'Sound on, if you can. It plays by itself.'
   const tilt = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.pointerType !== 'mouse' || torn) return
     const box = event.currentTarget.getBoundingClientRect()
@@ -586,15 +575,15 @@ function Opening({ recipient, occasion, torn, count, onBegin, onSkip, album }: {
   }
   if (album) {
     return (
-      <div className={`opening sb-opening${torn ? ' is-torn' : ''}`}>
-        <button type="button" className="ticket-hit" onClick={torn ? onSkip : onBegin} aria-label={torn ? 'Skip the opening' : `A book made for ${recipient}. Tap to open`} />
+      <div className={`opening sb-opening${torn ? ' is-torn' : ''}${locked ? ' is-locked' : ''}`}>
+        <button type="button" className="ticket-hit" onClick={torn ? onSkip : onBegin} disabled={Boolean(locked)} aria-label={locked ? `A book made for ${recipient}. ${locked}` : torn ? 'Skip the opening' : `A book made for ${recipient}. Tap to open`} />
         <CoverArt recipient={recipient} occasion={occasion} />
-        <p className="opening-hint">Sound on, if you can. It plays by itself.</p>
+        <p className="opening-hint">{hint}</p>
       </div>
     )
   }
   return (
-    <div className={`opening${torn ? ' is-torn' : ''}`} onPointerMove={tilt}>
+    <div className={`opening${torn ? ' is-torn' : ''}${locked ? ' is-locked' : ''}`} onPointerMove={tilt}>
       <div className="leader" aria-hidden="true">
         <span className="leader-ring" />
         <span className="leader-cross" />
@@ -606,9 +595,9 @@ function Opening({ recipient, occasion, torn, count, onBegin, onSkip, album }: {
         )}
       </div>
       {/* Once torn, the same tap skips the countdown: the opening never holds the viewer. */}
-      <button type="button" className="ticket-hit" onClick={torn ? onSkip : onBegin} aria-label={torn ? 'Skip the opening' : `Admit one: ${recipient}. Tap to begin`} />
+      <button type="button" className="ticket-hit" onClick={torn ? onSkip : onBegin} disabled={Boolean(locked)} aria-label={locked ? `Admit one: ${recipient}. ${locked}` : torn ? 'Skip the opening' : `Admit one: ${recipient}. Tap to begin`} />
       <TicketArt recipient={recipient} occasion={occasion} />
-      <p className="opening-hint">Sound on, if you can. It plays by itself.</p>
+      <p className="opening-hint">{hint}</p>
       {torn && (
         <p className="opening-skip" aria-hidden="true">
           Tap to skip

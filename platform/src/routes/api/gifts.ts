@@ -53,7 +53,7 @@ export const Route = createFileRoute('/api/gifts')({
         let soundtrack: GiftRecord['story']['soundtrack']
         if (typeof payload.songId === 'string' && payload.songId) {
           const song = await readSong(payload.songId)
-          if (!song) return json({ error: 'That song has expired. Make a new one or use the studio score.' }, { status: 400 })
+          if (!song) return json({ error: 'That song has expired. Make a new one, then send again.' }, { status: 400 })
           files.push({ id: 'song', bytes: song.bytes })
           media.song = song.meta.contentType
           soundtrack = { kind: 'song', src: `/api/media/${slug}/song`, label: song.meta.title || (vibeById(song.meta.vibe)?.name ?? 'Original song') }

@@ -26,10 +26,10 @@ export interface StepPreview {
   ghost: boolean
 }
 
-type Body<K extends Shot['kind']> = Omit<Extract<Shot, { kind: K }>, 'id' | 'index' | 'scene' | 'sceneName' | 'sceneType' | 'design' | 'mood' | 'trackId' | 'start' | 'duration' | 'enter' | 'exit' | 'text' | 'hold'> & { text?: string }
+type Body<K extends Shot['kind']> = Omit<Extract<Shot, { kind: K }>, 'id' | 'index' | 'scene' | 'sceneName' | 'sceneType' | 'design' | 'mood' | 'start' | 'duration' | 'enter' | 'exit' | 'text' | 'hold'> & { text?: string }
 
 function shot<K extends Shot['kind']>(id: string, mood: Mood, body: Body<K>, enter: Shot['enter'] = 'type'): StillContent {
-  const made = { text: '', ...body, id, index: 0, scene: 0, sceneName: '', sceneType: '', mood, trackId: '', start: 0, duration: 8, enter, exit: 'fade' } as unknown as Shot
+  const made = { text: '', ...body, id, index: 0, scene: 0, sceneName: '', sceneType: '', mood, start: 0, duration: 8, enter, exit: 'fade' } as unknown as Shot
   return { kind: 'shot', shot: made }
 }
 

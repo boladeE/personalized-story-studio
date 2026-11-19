@@ -1047,3 +1047,8 @@ select:focus-visible {
     border-width: 2px;
   }
 }
+
+.song-now {
+  margin: 0 0 10px;
+  font-weight: 600;
+}

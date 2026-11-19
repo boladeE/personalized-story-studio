@@ -1830,3 +1830,38 @@
     display: none;
   }
 }
+
+/* Held at the opening until the film's song is ready: the ticket is there, but not yet for tearing. */
+.opening.is-locked .ticket-hit {
+  cursor: progress;
+}
+.opening.is-locked .ticket-float,
+.opening.is-locked .sb-book-float {
+  filter: drop-shadow(0 34px 50px rgba(0, 0, 0, 0.5)) saturate(0.55) brightness(0.86);
+}
+.opening.is-locked .ticket-stub span,
+.opening.is-locked .sb-book-hint {
+  visibility: hidden;
+}
+.opening.is-locked .opening-hint {
+  padding: 0.5em 1.1em;
+  border-radius: 999px;
+  background: rgba(14, 9, 11, 0.72);
+  color: #f6e9d8;
+  font-weight: 600;
+}
+.opening.is-locked .opening-hint::before {
+  content: '';
+  display: inline-block;
+  width: 0.55em;
+  height: 0.55em;
+  margin-right: 0.6em;
+  border-radius: 50%;
+  background: #f2c26b;
+  animation: locked-pulse 1s ease-in-out infinite alternate;
+}
+@keyframes locked-pulse {
+  to {
+    opacity: 0.25;
+  }
+}

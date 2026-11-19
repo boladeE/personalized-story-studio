@@ -36,27 +36,14 @@ export const Route = createFileRoute('/start')({
 })
 
 function Start() {
-  const { intake, setIntake, setSeed, about, setAbout, sortedFrom, setSortedFrom, occasionGiven, setOccasionGiven, plan, setPlan, startSong } = useDraft()
+  const { intake, setIntake, setSeed, about, setAbout, sortedFrom, setSortedFrom, occasionGiven, setOccasionGiven, plan, setPlan, startSong, songs } = useDraft()
   const navigate = useNavigate()
   const { step: stepParam, occasion: asked } = Route.useSearch()
   const photos = usePhotos()
   const fileInput = useRef<HTMLInputElement>(null)
   const heading = useRef<HTMLHeadingElement>(null)
-  // Songs need the studio's music service; without it the step is left out.
-  const [songs, setSongs] = useState<boolean | null>(null)
   const [busy, setBusy] = useState('')
   const [dragging, setDragging] = useState(false)
-
-  useEffect(() => {
-    let live = true
-    fetch('/api/music')
-      .then((r) => r.json() as Promise<{ provider: string; lyrics: boolean }>)
-      .then((s) => live && setSongs(s.provider !== 'off' && s.lyrics))
-      .catch(() => live && setSongs(false))
-    return () => {
-      live = false
-    }
-  }, [])
 
   useEffect(() => {
     if (!asked) return
@@ -89,7 +76,7 @@ function Start() {
   }, [stepId])
 
   /** Sort the sender's words into scenes, build the film, and start the song behind it. */
-  const finish = async (withSong: boolean) => {
+  const finish = async () => {
     if (!canGenerate(intake)) return go('names')
     let draft = intake
     const text = about.trim()
@@ -110,8 +97,9 @@ function Start() {
       setSortedFrom(text)
     }
     setSeed(newSeed())
-    // If the check for the music service hasn't answered yet, try anyway: a song that can't be made says so on the preview.
-    if (withSong && songs !== false) startSong(draft, plan)
+    // Every film gets its own song. If the check for the music service hasn't answered yet, try anyway:
+    // a song that can't be made says so on the preview.
+    if (songs !== false) startSong(draft, plan, true)
     await navigate({ to: '/preview' })
   }
 
@@ -366,7 +354,7 @@ function Start() {
           onSubmit={(e) => {
             e.preventDefault()
             if (working || !page.canNext) return
-            if (last) void finish(stepId === 'song')
+            if (last) void finish()
             else next()
           }}
         >
@@ -387,11 +375,6 @@ function Start() {
               {working ? 'Making the film…' : last ? 'Make the film' : (page.nextLabel ?? 'Next')}
             </button>
           </div>
-          {last && stepId === 'song' && !working && (
-            <button type="button" className="text-button start-skip" onClick={() => void finish(false)}>
-              Skip the song and use the studio’s own music
-            </button>
-          )}
           {busy && <Working className="start-busy">{busy}</Working>}
         </form>
         {stepId === 'who' && (

@@ -89,13 +89,12 @@ export interface Scene {
   type: string
   name: string
   mood: Mood
-  trackId: string
   /** Which of the world's designs this scene is drawn in. Gifts stored before designs existed carry none. */
   design?: string
   frames: Frame[]
 }
 
-/** An uploaded or generated song that replaces the built-in score for the whole story. */
+/** The song made for a film: the only music it has. */
 export interface Soundtrack {
   kind: 'song'
   src: string

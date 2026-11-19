@@ -1,4 +1,3 @@
-import { trackById } from '../story/music'
 import type { EndingProp, Mood, Photo, PhotoLayout, Story } from '../story/types'
 
 /**
@@ -19,7 +18,6 @@ interface ShotBase {
   sceneType: string
   design?: string
   mood: Mood
-  trackId: string
   start: number
   duration: number
   /** The film waits here for the viewer (the candle or the note, or the end). */
@@ -63,7 +61,7 @@ export interface Film {
 }
 
 type DistOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never
-type Draft = DistOmit<Shot, 'id' | 'index' | 'start' | 'duration' | 'scene' | 'sceneName' | 'sceneType' | 'design' | 'mood' | 'trackId' | 'text'> & { seconds: number; text?: string }
+type Draft = DistOmit<Shot, 'id' | 'index' | 'start' | 'duration' | 'scene' | 'sceneName' | 'sceneType' | 'design' | 'mood' | 'text'> & { seconds: number; text?: string }
 
 const ORDINALS = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
 const words = (...parts: Array<string | undefined>) => parts.join(' ').split(/\s+/).filter(Boolean).length
@@ -84,8 +82,8 @@ export function buildFilm(story: Story): Film {
 
   story.scenes.forEach((scene, sceneIndex) => {
     if (scene.type === 'ticket') return
-    const bpm = story.soundtrack ? DEFAULT_BPM : (trackById(scene.trackId)?.bpm ?? DEFAULT_BPM)
-    const beat = 60 / bpm
+    // A song made for the film has no beat map, so cuts keep one steady pulse.
+    const beat = 60 / DEFAULT_BPM
     const playful = scene.mood === 'playful'
     const drafts: Draft[] = []
     const listed = scene.frames.flatMap((f) => (f.kind === 'item' ? [f.text] : []))
@@ -200,15 +198,13 @@ export function buildFilm(story: Story): Film {
     })
 
     if (scene.type === 'wish') {
-      const tracks = story.soundtrack
-        ? story.soundtrack.label
-        : [...new Set(story.scenes.map((s) => trackById(s.trackId)?.title).filter(Boolean))].join(', ')
       const hasPhotos = story.scenes.some((s) => s.frames.some((f) => f.kind === 'photo' || f.kind === 'montage'))
       const lines = [
         { role: 'Starring', name: story.recipient },
         { role: 'Written by', name: story.sender },
         ...(hasPhotos ? [{ role: 'Photographs', name: `${story.sender}’s camera roll` }] : []),
-        { role: 'Music', name: tracks },
+        // The only music a film has is its own song. Without one there is no music to credit.
+        ...(story.soundtrack ? [{ role: 'Music', name: story.soundtrack.label }] : []),
       ]
       drafts.push({ kind: 'credits', lines, last: `For ${story.recipient}, with love.`, note: story.note, seconds: 4 + lines.length * 1.7, hold: true, enter: 'type', exit: 'fade' })
     }
@@ -230,7 +226,6 @@ export function buildFilm(story: Story): Film {
         sceneType: scene.type,
         ...(scene.design ? { design: scene.design } : {}),
         mood: scene.mood,
-        trackId: scene.trackId,
         start: clock,
         duration,
         text: text ?? spoken(rest),

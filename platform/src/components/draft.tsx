@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { emptyIntake } from '../story/sample'
 import type { Intake } from '../story/types'
@@ -29,9 +29,9 @@ export interface DraftWords {
 
 const MAX_TAKES = 6
 
-/** What the short flow asks about the song. `surprise` lets the studio pick; `none` keeps the studio score. */
+/** What the short flow asks about the song. `surprise` lets the studio pick the style or the voice. */
 export interface SongPlan {
-  vibe: VibeId | 'surprise' | 'none'
+  vibe: VibeId | 'surprise'
   voice: Voice
 }
 
@@ -51,7 +51,7 @@ interface DraftValue {
   setIntake: (update: (current: Intake) => Intake) => void
   seed: number
   setSeed: (seed: number) => void
-  /** The song the film plays; null for the studio score. */
+  /** The song the film plays. Null until one has been made: a film has no other music. */
   song: DraftSong | null
   setSong: (song: DraftSong | null) => void
   /** Every version of the song made in this sitting, oldest first. */
@@ -71,8 +71,10 @@ interface DraftValue {
   plan: SongPlan
   setPlan: (plan: SongPlan) => void
   job: SongJob
-  /** Write and sing a song for this intake without holding the sender up. */
-  startSong: (intake: Intake, plan: SongPlan) => void
+  /** Whether this studio can make songs: null until it has answered. */
+  songs: boolean | null
+  /** Write and sing a song for this intake. Does nothing while one is already being made, unless `restart` is set. */
+  startSong: (intake: Intake, plan: SongPlan, restart?: boolean) => void
   /** Put the finished song on the film. */
   playJobSong: () => void
 }
@@ -91,10 +93,27 @@ export function DraftProvider({ children }: { children: ReactNode }) {
   const [plan, setPlan] = useState<SongPlan>({ vibe: 'surprise', voice: 'surprise' })
   const [job, setJob] = useState<SongJob>({ state: 'idle' })
   const run = useRef(0)
+  // Songs need the studio's music service. Asked once, when the studio opens.
+  const [songs, setSongs] = useState<boolean | null>(null)
+  useEffect(() => {
+    let live = true
+    fetch('/api/music')
+      .then((r) => r.json() as Promise<{ provider: string; lyrics: boolean }>)
+      .then((s) => live && setSongs(s.provider !== 'off' && s.lyrics))
+      .catch(() => live && setSongs(false))
+    return () => {
+      live = false
+    }
+  }, [])
 
-  const startSong = useCallback((forIntake: Intake, forPlan: SongPlan) => {
+  // True while a song is being written or sung, so it is never asked for twice.
+  const inFlight = useRef(false)
+  const startSong = useCallback((forIntake: Intake, forPlan: SongPlan, restart = false) => {
     const details = songDetails(forIntake)
-    if (!details || forPlan.vibe === 'none') return
+    if (!details) return
+    // One song at a time. Only a deliberate restart (the sender changed their words and made the film again) replaces one under way.
+    if (inFlight.current && !restart) return
+    inFlight.current = true
     const mine = ++run.current
     const current = () => mine === run.current
     const post = async (url: string, payload: unknown) => {
@@ -117,9 +136,12 @@ export function DraftProvider({ children }: { children: ReactNode }) {
         if (!current()) return
         const song: DraftSong = { id: String(made.id), src: String(made.src), label: String(made.label ?? 'Original song'), sung: Boolean(made.sung), lyrics: String(made.lyrics ?? lyrics), vibe }
         setTakes((list) => [...list, song].slice(-MAX_TAKES))
+        inFlight.current = false
         setJob({ state: 'ready', song })
       } catch (error) {
-        if (current()) setJob({ state: 'failed', error: error instanceof Error ? error.message : 'The song didn’t come through.' })
+        if (!current()) return
+        inFlight.current = false
+        setJob({ state: 'failed', error: error instanceof Error ? error.message : 'The song didn’t come through.' })
       }
     })()
   }, [])
@@ -147,6 +169,7 @@ export function DraftProvider({ children }: { children: ReactNode }) {
       plan,
       setPlan,
       job,
+      songs,
       startSong,
       playJobSong: () => {
         if (job.state !== 'ready') return
@@ -154,7 +177,7 @@ export function DraftProvider({ children }: { children: ReactNode }) {
         setJob({ state: 'idle' })
       },
     }),
-    [intake, seed, song, takes, words, about, sortedFrom, occasionGiven, plan, job, startSong],
+    [intake, seed, song, takes, words, about, sortedFrom, occasionGiven, plan, job, songs, startSong],
   )
   return <DraftContext.Provider value={value}>{children}</DraftContext.Provider>
 }

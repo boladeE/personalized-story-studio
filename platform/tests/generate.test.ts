@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import { canGenerate, generateStory, moveScene, nextDesign, sceneBoard, sceneStatus, toggleScene } from '../src/story/generate'
 import { designsFor, WORLDS } from '../src/story/worlds'
 import { SCENES } from '../src/story/library'
-import { trackById } from '../src/story/music'
 import { emptyIntake, SAMPLE_INTAKE } from '../src/story/sample'
 import type { Frame, Intake, Story } from '../src/story/types'
 
@@ -156,13 +155,4 @@ describe('generateStory', () => {
     expect(sceneBoard(thin, generateStory(thin, 2)).find((r) => r.type === 'letter')).toMatchObject({ state: 'missing', missing: 'Write a short letter (a few sentences)' })
   })
 
-  it('gives every scene a real track, and scenes of one mood share it', () => {
-    const story = generateStory(SAMPLE_INTAKE, 12)
-    const byMood = new Map<string, Set<string>>()
-    for (const scene of story.scenes) {
-      expect(trackById(scene.trackId)).toBeDefined()
-      byMood.set(scene.mood, (byMood.get(scene.mood) ?? new Set()).add(scene.trackId))
-    }
-    for (const tracks of byMood.values()) expect(tracks.size).toBe(1)
-  })
 })

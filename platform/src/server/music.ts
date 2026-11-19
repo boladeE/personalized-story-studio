@@ -14,7 +14,7 @@ import { sniffAudio, songsDir } from './store'
  * openrouter (OPENROUTER_API_KEY): Lyria 3 Pro (legacy) via OpenRouter's
  *   streaming audio output. Lyria 3.5 isn't on OpenRouter yet.
  * demo: a locally synthesised test tone, for development and tests.
- * off: the studio keeps its built-in score.
+ * off: films play without music.
  * MUSIC_PROVIDER forces one; otherwise the first configured key wins.
  */
 

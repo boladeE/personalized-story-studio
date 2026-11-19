@@ -160,7 +160,7 @@ function SongRoom() {
         {status === null ? (
           <p className="fine">Opening the music room…</p>
         ) : !available ? (
-          <p className="notice">Songs aren’t switched on in this studio yet, so the film plays the studio score.</p>
+          <p className="notice">Songs aren’t switched on in this studio yet, so films play without music for now.</p>
         ) : (
           <div className="song-columns">
             <section className="song-sheet" aria-labelledby="sheet-heading" data-muted={wordless || undefined}>
@@ -283,10 +283,6 @@ function SongRoom() {
                       </li>
                     ))}
                   </ol>
-                  <label className="choice">
-                    <input type="radio" name="take" checked={!song} onChange={() => setSong(null)} />
-                    None of these, use the studio score
-                  </label>
                   <p className="fine">The film plays the take you choose here.</p>
                 </fieldset>
               )}

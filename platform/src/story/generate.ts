@@ -1,6 +1,5 @@
 import { sceneLabel, SCENES, SKELETONS } from './library'
 import type { BuildContext } from './library'
-import { tracksForMood, TRACKS } from './music'
 import { createRng } from './rng'
 import type { Cut, Intake, LookId, Photo, Scene, Story, WorldId } from './types'
 import { designsFor, WORLDS } from './worlds'
@@ -61,7 +60,7 @@ function arrange(types: string[], cut: Cut | undefined): string[] {
 /**
  * Build a story. The same intake and seed always give the same story; a new
  * seed (Shuffle) varies the kind of film, each scene's design, order, wording
- * variants, layouts, colours and music. Anything the sender has chosen stays put.
+ * variants, layouts and colours. Anything the sender has chosen stays put.
  */
 export function generateStory(intake: Intake, seed: number): Story {
   if (!canGenerate(intake)) throw new Error('Both names are needed to build a story')
@@ -105,7 +104,6 @@ export function generateStory(intake: Intake, seed: number): Story {
     designs.set(type, options.some((d) => d.id === chosen) ? chosen! : options[Math.floor(drawn * options.length)].id)
   }
 
-  const trackForMood = new Map<string, string>()
   // Scenes are built in the studio's order, so moving or dropping one doesn't change the others.
   const built = new Map<string, Omit<Scene, 'id'>>()
   const order: string[] = []
@@ -117,12 +115,8 @@ export function generateStory(intake: Intake, seed: number): Story {
       const def = SCENES[type]
       const frames = def.build(ctx)
       if (!frames.length) continue
-      if (!trackForMood.has(def.mood)) {
-        const options = tracksForMood(def.mood)
-        trackForMood.set(def.mood, (options.length ? rng.pick(options) : TRACKS[0]).id)
-      }
       order.push(type)
-      built.set(type, { type, name: sceneLabel(def, intake).name, mood: def.mood, trackId: trackForMood.get(def.mood)!, ...(designs.has(type) ? { design: designs.get(type) } : {}), frames })
+      built.set(type, { type, name: sceneLabel(def, intake).name, mood: def.mood, ...(designs.has(type) ? { design: designs.get(type) } : {}), frames })
     }
   }
 

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { buildFilm, shotAt } from '../src/film/timeline'
+import { buildFilm, DEFAULT_BPM, shotAt } from '../src/film/timeline'
 import { generateStory } from '../src/story/generate'
-import { trackById } from '../src/story/music'
 import { emptyIntake, SAMPLE_INTAKE, SAMPLE_NOTE } from '../src/story/sample'
 
 const screening = { ...SAMPLE_INTAKE, world: 'screening' as const }
@@ -21,9 +20,9 @@ describe('film timeline', () => {
     expect(film.duration).toBeLessThan(420)
   })
 
-  it('cuts on whole beats of each scene’s music', () => {
+  it('cuts on whole beats of one steady pulse', () => {
     for (const shot of film.shots) {
-      const beat = 60 / trackById(shot.trackId)!.bpm
+      const beat = 60 / DEFAULT_BPM
       const beats = shot.duration / beat
       expect(Math.abs(beats - Math.round(beats))).toBeLessThan(1e-6)
       expect(Math.round(beats) % 2).toBe(0)
@@ -90,6 +89,21 @@ describe('film timeline', () => {
   })
 })
 
+describe('music', () => {
+  it('has no built-in music: a film carries a song made for it, or nothing', () => {
+    // Nothing in a story or its film names any other music.
+    const plain = JSON.stringify([story, film])
+    expect(plain).not.toMatch(/trackId|score/i)
+    const silent = film.shots.at(-1)!
+    expect(silent.kind === 'credits' && silent.lines.map((l) => l.role)).not.toContain('Music')
+    // With its song, the credits name it, and the film is cut exactly the same.
+    const withSong = buildFilm({ ...story, soundtrack: { kind: 'song', src: '/song.mp3', label: 'Zara’s song' } })
+    const sung = withSong.shots.at(-1)!
+    expect(sung.kind === 'credits' && sung.lines).toContainEqual({ role: 'Music', name: 'Zara’s song' })
+    expect(withSong.shots.slice(0, -1).map((s) => [s.kind, s.start, s.duration])).toEqual(film.shots.slice(0, -1).map((s) => [s.kind, s.start, s.duration]))
+  })
+})
+
 describe('the same story as a scrapbook', () => {
   const album = buildFilm(generateStory({ ...SAMPLE_INTAKE, world: 'scrapbook', cut: { designs: { reasons: 'bunting', redFlags: 'stickies' } } }, 7))
 
@@ -120,7 +134,7 @@ describe('the same story as a scrapbook', () => {
 
   it('still cuts on whole beats and waits at the candle', () => {
     for (const shot of album.shots) {
-      const beats = shot.duration / (60 / trackById(shot.trackId)!.bpm)
+      const beats = shot.duration / (60 / DEFAULT_BPM)
       expect(Math.abs(beats - Math.round(beats))).toBeLessThan(1e-6)
     }
     expect(album.shots.map((s) => s.kind).slice(-3)).toEqual(['wish', 'reveal', 'credits'])

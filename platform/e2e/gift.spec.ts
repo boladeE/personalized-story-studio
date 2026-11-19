@@ -11,7 +11,12 @@ test('end to end: build, write and make a song, lock, send, recipient unlocks an
   // Sender builds a story from the sample details.
   await open(page, '/create')
   await page.getByRole('button', { name: 'Fill with the sample' }).click()
+  // Building the film has its song made: the studio writes the words from the sender's details (never the letter).
+  const wordsRequest = page.waitForRequest((r) => r.url().endsWith('/api/lyrics') && r.method() === 'POST')
   await page.getByRole('button', { name: 'Build the story' }).click()
+  const brief = (await wordsRequest).postDataJSON() as { details?: Record<string, unknown> }
+  expect(brief.details).toMatchObject({ occasion: 'birthday', recipient: 'Zara', sender: 'Tobi' })
+  expect(JSON.stringify(brief)).not.toContain('holding everything together')
 
   // Light edits: pick the kind of film, its colours and a scene's design. These travel with the gift.
   await chooseStyle(page, 'The Scrapbook')
@@ -22,19 +27,15 @@ test('end to end: build, write and make a song, lock, send, recipient unlocks an
   const memoryDesign = (await memory.locator('small').textContent()) === 'Clipped cards' ? 'clipped' : 'taped'
   await page.getByRole('button', { name: 'Leave out The camera roll' }).click()
   await page.getByRole('button', { name: 'Done' }).click()
+  await expect(page.locator('.song-status')).toHaveCount(0, { timeout: live ? 260_000 : 15_000 })
   await page.getByRole('button', { name: /^Style/ }).click()
   await page.getByRole('radio', { name: 'White card' }).check()
   await expect(page.locator('.film')).toHaveAttribute('data-look', 'paper')
 
-  // The song. The studio writes the words from the sender's details (never the letter).
-  await page.getByRole('link', { name: 'Write Zara’s song' }).click()
+  // The song can be rewritten and sung again. Its words are the ones the studio wrote for the first take.
+  await page.getByRole('link', { name: 'Change the song' }).click()
   await expect(page.getByRole('heading', { name: 'Zara’s song' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Make the song' })).toBeDisabled()
-  const wordsRequest = page.waitForRequest((r) => r.url().endsWith('/api/lyrics') && r.method() === 'POST')
-  await page.getByRole('button', { name: 'Write Zara’s song' }).click()
-  const brief = (await wordsRequest).postDataJSON() as { details?: Record<string, unknown> }
-  expect(brief.details).toMatchObject({ occasion: 'birthday', recipient: 'Zara', sender: 'Tobi' })
-  expect(JSON.stringify(brief)).not.toContain('holding everything together')
+  await expect(page.getByText(/studio score/i)).toHaveCount(0)
   const sheet = page.getByLabel('Lyrics')
   await expect(sheet).toHaveValue(/Zara/, { timeout: live ? 90_000 : 5_000 })
   await expect(page.getByLabel('Song title')).not.toHaveValue('')
@@ -43,7 +44,7 @@ test('end to end: build, write and make a song, lock, send, recipient unlocks an
   const written = await sheet.inputValue()
   await sheet.fill(`${written}\nHappy birthday to you`)
   await expect(page.getByRole('alert')).toContainText('line from another song')
-  await expect(page.getByRole('button', { name: 'Make the song' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Make another take' })).toBeDisabled()
   await sheet.fill(`${written}\nAnd yes, you can have my chips`)
   await expect(page.getByRole('alert')).toHaveCount(0)
 
@@ -56,13 +57,13 @@ test('end to end: build, write and make a song, lock, send, recipient unlocks an
 
   // Hear it sung: the approved words go to the music model as they are.
   const songRequest = page.waitForRequest((r) => r.url().endsWith('/api/music') && r.method() === 'POST')
-  await page.getByRole('button', { name: 'Make the song' }).click()
+  await page.getByRole('button', { name: 'Make another take' }).click()
   const asked = (await songRequest).postDataJSON() as { vibe: string; details?: Record<string, unknown>; lyrics?: string }
   expect(asked.vibe).toBe('highlife')
   expect(asked.details).toMatchObject({ recipient: 'Zara', sender: 'Tobi' })
   expect(asked.lyrics).toContain('And yes, you can have my chips')
   expect(JSON.stringify(asked)).not.toContain('holding everything together')
-  await expect(page.getByRole('radio', { name: 'Take 1, Highlife guitar' })).toBeChecked({ timeout: live ? 260_000 : 5_000 })
+  await expect(page.getByRole('radio', { name: 'Take 2, Highlife guitar' })).toBeChecked({ timeout: live ? 260_000 : 5_000 })
   await expect(page.getByRole('button', { name: 'Make another take' })).toBeEnabled()
   await page.getByRole('link', { name: 'Play the film with this song' }).click()
   await startFilm(page)
