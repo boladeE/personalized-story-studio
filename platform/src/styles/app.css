@@ -549,36 +549,145 @@ select:focus-visible {
 
 /* ---------- Preview: the song arriving, and what else could go in ---------- */
 
+/* The song being made behind the film. It sits between the header and the film and never takes the film's room. */
+.preview-shell {
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+.preview-shell > .studio-header {
+  grid-row: 1;
+}
+.preview-shell > .song-status {
+  grid-row: 2;
+}
+.preview-shell > .preview-body {
+  grid-row: 3;
+}
 .song-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 22px;
   margin: 0;
-  padding: 9px clamp(16px, 4vw, 40px);
+  padding: 12px clamp(16px, 4vw, 40px);
+  background: var(--palm-deep);
+  color: var(--chalk);
+  animation: song-status-in 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes song-status-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+.song-levels {
+  flex: none;
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 28px;
+}
+.song-levels i {
+  width: 4px;
+  height: 30%;
+  border-radius: 2px;
   background: var(--candle);
-  color: #33121d;
-  font-size: 15.5px;
-  font-weight: 600;
+  animation: song-level 0.8s ease-in-out infinite alternate;
 }
-.song-status.is-writing::before,
-.song-status.is-singing::before {
-  content: '';
-  display: inline-block;
-  width: 9px;
-  height: 9px;
-  margin-right: 9px;
-  border-radius: 50%;
-  background: var(--hibiscus);
-  animation: song-pulse 1.2s ease-in-out infinite alternate;
-}
-@keyframes song-pulse {
+.song-levels i:nth-child(2) { animation-delay: -0.5s; animation-duration: 0.62s; }
+.song-levels i:nth-child(3) { animation-delay: -0.2s; animation-duration: 0.94s; }
+.song-levels i:nth-child(4) { animation-delay: -0.7s; animation-duration: 0.7s; }
+.song-levels i:nth-child(5) { animation-delay: -0.35s; animation-duration: 0.86s; }
+@keyframes song-level {
   to {
-    opacity: 0.25;
+    height: 100%;
+  }
+}
+.song-status.is-ready .song-levels i {
+  animation: none;
+  height: 70%;
+}
+.song-status-words {
+  /* Narrow enough to stay beside the meter on a phone. */
+  flex: 1 1 220px;
+  margin: 0;
+  display: grid;
+  gap: 1px;
+  line-height: 1.32;
+}
+.song-status-words b {
+  font-size: 17px;
+  font-weight: 700;
+}
+.song-status-words span {
+  font-size: 14.5px;
+  color: rgba(255, 253, 248, 0.8);
+  text-wrap: pretty;
+}
+.song-steps {
+  flex: 0 1 380px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 620;
+  color: rgba(255, 253, 248, 0.62);
+}
+.song-steps li {
+  display: grid;
+  gap: 5px;
+}
+.song-steps li.is-done,
+.song-steps li.is-now {
+  color: var(--chalk);
+}
+.song-step-bar {
+  display: block;
+  height: 4px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgba(255, 253, 248, 0.2);
+}
+.song-step-bar i {
+  display: block;
+  height: 100%;
+  background: var(--candle);
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+}
+.song-steps li.is-done .song-step-bar i,
+.song-status.is-ready li.is-now .song-step-bar i {
+  transform: none;
+}
+/* Each step fills over about as long as it usually takes, slowing as it goes, and never quite finishes by itself. */
+.song-status.is-writing li.is-now .song-step-bar i {
+  animation: song-fill 26s cubic-bezier(0.15, 0.6, 0.3, 1) forwards;
+}
+.song-status.is-singing li.is-now .song-step-bar i {
+  animation: song-fill 85s cubic-bezier(0.15, 0.6, 0.3, 1) forwards;
+}
+@keyframes song-fill {
+  to {
+    transform: scaleX(0.94);
   }
 }
 .song-status.is-failed {
   background: #f6d8de;
+  color: #33121d;
 }
-.song-status .text-button {
-  padding: 0;
-  color: var(--hibiscus-deep);
+.song-status.is-failed .song-status-words span {
+  color: #5a2a37;
+}
+.song-status.is-failed .button.ghost {
+  border-color: #33121d;
+  color: #33121d;
+}
+@media (max-width: 720px) {
+  .song-steps {
+    flex-basis: 100%;
+  }
 }
 .more-panel h2 {
   margin: 0;
@@ -616,8 +725,14 @@ select:focus-visible {
   font-weight: 650;
 }
 @media (prefers-reduced-motion: reduce) {
-  .song-status::before {
-    animation: none;
+  /* No moving bars: a still meter and a half-filled step say "in progress". */
+  .song-levels i {
+    animation: none !important;
+    height: 60%;
+  }
+  .song-status li.is-now .song-step-bar i {
+    animation: none !important;
+    transform: scaleX(0.5);
   }
 }
 

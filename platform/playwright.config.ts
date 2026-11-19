@@ -19,7 +19,8 @@ export default defineConfig({
         command: 'npx vite dev --port 3123 --host 127.0.0.1 --strictPort',
         url: 'http://127.0.0.1:3123',
         reuseExistingServer: false,
-        env: { DATA_DIR: 'test-results/.data', MUSIC_PROVIDER: 'demo' },
+        // The suite makes more demo songs in a run than one visitor is allowed in an hour.
+        env: { DATA_DIR: 'test-results/.data', MUSIC_PROVIDER: 'demo', MUSIC_HOURLY_PER_CLIENT: '60', MUSIC_DAILY_LIMIT: '200' },
         timeout: 60_000,
       },
 })

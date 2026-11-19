@@ -499,3 +499,79 @@ test('the sample plays as a scrapbook, and its scenes can be redesigned, moved, 
   await expect(page.getByRole('button', { name: 'Admit one: Zara. Tap to begin' })).toBeVisible()
   expect(errors).toEqual([])
 })
+
+for (const [width, height] of [[1360, 800], [360, 740]]) {
+  test(`while the song is being made the film is on screen and can be watched (${width}px)`, async ({ page }) => {
+    await page.setViewportSize({ width, height })
+    // Hold the song back, the way a real one takes a minute or more.
+    const hold = (ms: number) => async (route: import('@playwright/test').Route) => {
+      if (route.request().method() === 'POST') await new Promise((done) => setTimeout(done, ms))
+      await route.continue()
+    }
+    await page.route('**/api/lyrics', hold(2500))
+    await page.route('**/api/music', hold(3500))
+    await open(page, '/start')
+    await page.getByRole('button', { name: 'Wife', exact: true }).click()
+    await page.getByLabel('Their name').fill('Kemi')
+    await page.getByLabel('Your name').fill('Ada')
+    await page.getByLabel('Your name').press('Enter')
+    await page.getByRole('button', { name: 'Anniversary' }).click()
+    await page.getByRole('button', { name: 'Skip photos' }).click()
+    await page.getByLabel('About Kemi').fill(NOTE)
+    await page.getByRole('button', { name: 'Next' }).click()
+    await page.getByRole('button', { name: 'Make the film' }).click()
+    await expect(page).toHaveURL(/\/preview$/)
+
+    // The notice says what is happening and that the film can be watched; it is a strip, not the page.
+    const status = page.locator('.song-status')
+    const film = page.locator('.preview-body > .film')
+    await expect(status).toContainText('Writing Kemi’s song')
+    await expect(status).toContainText('Your film is ready now')
+    await expect(status.locator('.song-steps li')).toHaveText(['The words', 'The voice', 'On your film'])
+    const room = async () => ({ status: (await status.boundingBox())!.height, film: (await film.boundingBox())!.height })
+    const writing = await room()
+    expect(writing.film, 'the film has most of the screen while the song is written').toBeGreaterThan(height * 0.5)
+    expect(writing.status).toBeLessThan(height * 0.25)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
+    await expect(page.getByRole('button', { name: /Tap to (begin|open)/ })).toBeVisible()
+
+    await expect(status).toContainText('Kemi’s song is being sung', { timeout: 10_000 })
+    await expect(status.locator('.song-steps li.is-done')).toHaveCount(1)
+    expect((await room()).film).toBeGreaterThan(height * 0.5)
+
+    // Nobody tapped, so the finished song goes onto the film by itself and the notice leaves.
+    await expect(status).toHaveCount(0, { timeout: 15_000 })
+    expect((await film.boundingBox())!.height).toBeGreaterThan(writing.film)
+    await startFilm(page)
+    await expect.poll(async () => (await audioState(page))?.trackId, { timeout: 15_000 }).toBe('song')
+  })
+}
+
+test('a song that lands after the film has started waits to be asked for', async ({ page }) => {
+  await page.route('**/api/music', async (route) => {
+    if (route.request().method() === 'POST') await new Promise((done) => setTimeout(done, 3000))
+    await route.continue()
+  })
+  await open(page, '/start')
+  await page.getByRole('button', { name: 'Friend', exact: true }).click()
+  await page.getByLabel('Their name').fill('Kemi')
+  await page.getByLabel('Your name').fill('Ada')
+  await page.getByLabel('Your name').press('Enter')
+  await page.getByRole('button', { name: 'Thank you' }).click()
+  await page.getByRole('button', { name: 'Skip photos' }).click()
+  await page.getByLabel('About Kemi').fill(NOTE)
+  await page.getByRole('button', { name: 'Next' }).click()
+  await page.getByRole('button', { name: 'Make the film' }).click()
+  await expect(page).toHaveURL(/\/preview$/)
+  // Watching straight away plays the studio's music.
+  await startFilm(page)
+  await expect.poll(async () => (await audioState(page))?.trackId).toBeTruthy()
+  expect((await audioState(page))!.trackId).not.toBe('song')
+  const status = page.locator('.song-status')
+  await expect(status).toContainText('Kemi’s song is ready.', { timeout: 15_000 })
+  await expect(page.locator('.preview-body > .film')).toHaveAttribute('data-phase', 'playing')
+  await status.getByRole('button', { name: 'Play the film with it' }).click()
+  await expect(status).toHaveCount(0)
+  await startFilm(page)
+  await expect.poll(async () => (await audioState(page))?.trackId, { timeout: 15_000 }).toBe('song')
+})

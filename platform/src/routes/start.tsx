@@ -108,7 +108,8 @@ function Start() {
       setSortedFrom(text)
     }
     setSeed(newSeed())
-    if (withSong && songs) startSong(draft, plan)
+    // If the check for the music service hasn't answered yet, try anyway: a song that can't be made says so on the preview.
+    if (withSong && songs !== false) startSong(draft, plan)
     await navigate({ to: '/preview' })
   }
 

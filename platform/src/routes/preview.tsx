@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Film } from '../film/Film'
 import { StudioHeader } from '../components/StudioHeader'
 import { useDraft } from '../components/draft'
+import type { SongJob } from '../components/draft'
 import { Still } from '../film/Still'
 import { scenePosters } from '../film/previews'
 import { canGenerate, generateStory, LOOKS, moveScene, nextDesign, sceneBoard, toggleScene } from '../story/generate'
@@ -113,28 +114,7 @@ function Preview() {
           </Link>
         )}
       </StudioHeader>
-      {!useSample && job.state !== 'idle' && (
-        <p className={`song-status is-${job.state}`} role="status">
-          {job.state === 'writing' && `Writing ${story.recipient}’s song…`}
-          {job.state === 'singing' && `The words are written. ${story.recipient}’s song is being sung, about a minute more.`}
-          {job.state === 'ready' && (
-            <>
-              {story.recipient}’s song is ready.{' '}
-              <button type="button" className="text-button" onClick={playJobSong}>
-                Play the film with it
-              </button>
-            </>
-          )}
-          {job.state === 'failed' && (
-            <>
-              The song didn’t come through. {job.error}{' '}
-              <Link to="/song" className="text-button">
-                Try again
-              </Link>
-            </>
-          )}
-        </p>
-      )}
+      {!useSample && job.state !== 'idle' && <SongStatus job={job} name={story.recipient} onPlay={playJobSong} />}
       <div className="preview-body">
         {panel === 'more' && <ScenesPanel intake={source} story={story} own={!useSample} onCut={setCut} onClose={() => setPanel('none')} />}
         {panelOpen && (
@@ -152,6 +132,77 @@ function Preview() {
         <Film story={story} cue={cue} />
       </div>
     </div>
+  )
+}
+
+const SONG_STEPS = ['The words', 'The voice', 'On your film']
+
+/**
+ * The song being made behind the film: what is happening, how far along it is,
+ * and that the film can be watched meanwhile. The bars are an estimate from how
+ * long each step usually takes, not a measured percentage.
+ */
+function SongStatus({ job, name, onPlay }: { job: SongJob; name: string; onPlay: () => void }) {
+  if (job.state === 'idle') return null
+  if (job.state === 'failed') {
+    return (
+      <section className="song-status is-failed" role="status">
+        <p className="song-status-words">
+          <b>The song didn’t come through.</b>
+          <span>{job.error} The film still plays with the studio’s music.</span>
+        </p>
+        <Link to="/song" className="button small ghost">
+          Try again
+        </Link>
+      </section>
+    )
+  }
+  const stage = job.state === 'writing' ? 0 : job.state === 'singing' ? 1 : 2
+  return (
+    <section className={`song-status is-${job.state}`} role="status">
+      <span className="song-levels" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+        <i />
+        <i />
+      </span>
+      <p className="song-status-words">
+        {job.state === 'writing' && (
+          <>
+            <b>Writing {name}’s song</b>
+            <span>Your film is ready now with the studio’s music. Watch it, or wait about a minute and a half for the song.</span>
+          </>
+        )}
+        {job.state === 'singing' && (
+          <>
+            <b>The words are written. {name}’s song is being sung.</b>
+            <span>About a minute more. Watch now with the studio’s music, or wait for the song.</span>
+          </>
+        )}
+        {job.state === 'ready' && (
+          <>
+            <b>{name}’s song is ready.</b>
+            <span>The film goes back to the start and plays with it.</span>
+          </>
+        )}
+      </p>
+      <ol className="song-steps" aria-hidden="true">
+        {SONG_STEPS.map((label, i) => (
+          <li key={label} className={i < stage ? 'is-done' : i === stage ? 'is-now' : ''}>
+            <span className="song-step-bar">
+              <i />
+            </span>
+            {label}
+          </li>
+        ))}
+      </ol>
+      {job.state === 'ready' && (
+        <button type="button" className="button small primary" onClick={onPlay}>
+          Play the film with it
+        </button>
+      )}
+    </section>
   )
 }
 
