@@ -16,6 +16,19 @@
   margin: 0 auto;
   padding: 0 clamp(14px, 3vw, 40px) 64px;
 }
+/* The field carries on from the header behind the reel, and the page and screen hang over its edge. */
+.writer::before {
+  content: '';
+  grid-area: 1 / 1 / 2 / -1;
+  z-index: -1;
+  margin-bottom: calc(-1 * clamp(40px, 6vw, 84px));
+  background: var(--hibiscus);
+  box-shadow: 0 0 0 100vmax var(--hibiscus);
+  clip-path: inset(0 -100vmax);
+}
+.writer > .reel {
+  grid-area: reel;
+}
 
 /* ---------- The reel ---------- */
 
@@ -34,10 +47,10 @@
   scrollbar-width: none;
   border-radius: 5px;
   background:
-    radial-gradient(circle, var(--room) 0 2.6px, transparent 3.1px) 2px 3px / 16px 9px repeat-x,
-    radial-gradient(circle, var(--room) 0 2.6px, transparent 3.1px) 2px calc(100% - 3px) / 16px 9px repeat-x,
-    var(--room-2);
-  box-shadow: 0 0 0 1px var(--hairline);
+    radial-gradient(circle, var(--hibiscus) 0 2.6px, transparent 3.1px) 2px 3px / 16px 9px repeat-x,
+    radial-gradient(circle, var(--hibiscus) 0 2.6px, transparent 3.1px) 2px calc(100% - 3px) / 16px 9px repeat-x,
+    var(--wine-deep);
+  box-shadow: 0 10px 26px rgba(58, 18, 32, 0.35);
 }
 .reel ol::-webkit-scrollbar {
   display: none;
@@ -53,15 +66,15 @@
   padding: 7px 22px 9px 11px;
   border: 0;
   border-radius: 2px;
-  background: rgba(238, 240, 231, 0.055);
-  color: var(--on-room-faint);
+  background: rgba(255, 244, 230, 0.07);
+  color: rgba(255, 244, 230, 0.72);
   text-align: left;
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
 }
 .frame:hover {
-  background: rgba(238, 240, 231, 0.14);
-  color: var(--on-room);
+  background: rgba(255, 244, 230, 0.16);
+  color: #fff4e6;
 }
 .frame-n {
   font-size: 12px;
@@ -75,7 +88,7 @@
   white-space: nowrap;
 }
 .frame.is-ready {
-  color: var(--on-room);
+  color: #fff4e6;
 }
 /* A lit lamp on every frame whose scene has enough to be in the film. */
 .frame.is-ready::after {
@@ -110,9 +123,19 @@
   gap: 14px;
 }
 .reel-count {
-  font-size: 14px;
-  color: var(--candle);
+  font-size: 14.5px;
+  font-weight: 620;
+  color: #fff;
   white-space: nowrap;
+}
+.reel-end .button.ghost {
+  border-color: rgba(255, 255, 255, 0.8);
+  color: #fff;
+}
+.reel-end .button.ghost:hover:not(:disabled) {
+  background: #fff;
+  border-color: #fff;
+  color: var(--hibiscus-deep);
 }
 .reel-end .button.ghost:disabled {
   opacity: 0.45;
@@ -120,8 +143,8 @@
 }
 .reel-end .button.ghost:disabled:hover {
   background: transparent;
-  color: var(--on-room);
-  border-color: rgba(238, 240, 231, 0.5);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.8);
 }
 
 /* ---------- Page and screen, side by side ---------- */
@@ -185,8 +208,8 @@
   margin: 0 calc(-1 * clamp(18px, 3.2vw, 46px));
   padding: 14px clamp(18px, 3.2vw, 46px);
   border-top: 1px solid var(--line);
-  border-radius: 0 0 6px 6px;
-  background: var(--chalk);
+  border-radius: 0 0 8px 8px;
+  background: var(--card);
 }
 .page-nav .button.primary {
   margin-left: auto;
@@ -201,9 +224,8 @@
   border-radius: 8px;
   overflow: hidden;
   box-shadow:
-    0 0 0 1px var(--hairline),
-    0 40px 100px rgba(0, 0, 0, 0.55),
-    0 0 120px rgba(194, 42, 89, 0.16);
+    0 0 0 1px rgba(20, 38, 31, 0.14),
+    0 30px 70px rgba(20, 38, 31, 0.28);
 }
 .scene-line {
   position: relative;
@@ -225,9 +247,9 @@
   color: var(--on-room);
 }
 .scene-line.is-ready::before {
-  border-color: var(--candle);
-  background: var(--candle);
-  box-shadow: 0 0 10px rgba(242, 194, 107, 0.7);
+  border-color: var(--hibiscus);
+  background: var(--hibiscus);
+  box-shadow: none;
 }
 .projection .fine {
   margin: 4px 2px 0 20px;

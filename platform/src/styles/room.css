@@ -1,45 +1,65 @@
 /* ==========================================================================
-   The studio as a screening room: a dark room, one lit sheet of paper to
-   write on, and the film itself as the brightest thing on the page.
-   Loaded after app.css; colours that differ between the dark room and paper
-   are custom properties so components don't need two sets of rules.
+   The studio's working pages: the detailed form, the song, sending and
+   managing a gift. Like the home page, each opens on a field of hibiscus (the
+   header and a band beneath it) with the work itself on white cards that hang
+   over the edge of the field onto a bright wall.
+   Loaded after app.css. Colours that differ between the wall, a card and the
+   field are custom properties, so components don't need a set of rules each.
+   The older names (--room, --on-room…) are kept: they now mean the wall and
+   the ink on it.
    ========================================================================== */
 
 :root {
-  --room: #07140f;
-  --room-2: #0e261d;
+  --room: var(--chalk);
+  --room-2: #f3f1e8;
+  --on-room: var(--ink);
+  --on-room-soft: #3b4a43;
+  --on-room-faint: var(--muted);
+  --hairline: var(--line);
+  --blush: var(--hibiscus-deep);
+  --wine-deep: #3a1220;
+  --card: #fff;
+  --card-shadow: 0 0 0 1px rgba(20, 38, 31, 0.1), 0 24px 60px rgba(20, 38, 31, 0.16);
+
+  --title: var(--palm);
+  --body: var(--ink);
+  --quiet: var(--muted);
+  --link: var(--hibiscus-deep);
+  --focus: var(--hibiscus);
+}
+/* The home page was drawn against the old dark room in places; it keeps those values. */
+.home-shell {
   --on-room: #eef0e7;
   --on-room-soft: rgba(238, 240, 231, 0.76);
   --on-room-faint: rgba(238, 240, 231, 0.62);
   --hairline: rgba(238, 240, 231, 0.14);
   --blush: #f08bab;
-
-  --title: var(--on-room);
-  --body: var(--on-room-soft);
-  --quiet: var(--on-room-faint);
-  --link: var(--blush);
-  --focus: var(--candle);
 }
 
 body {
-  background: var(--room);
-  color: var(--on-room);
+  background: var(--chalk);
+  color: var(--ink);
 }
-body::before {
+/* The film a recipient opens is its own dark room. */
+body:has(.gate),
+body:has(.recipient-shell) {
+  background: #050304;
+}
+/* The field: a band of hibiscus behind the top of a page whose work sits on a card. */
+body:has(.studio-page.send)::before,
+body:has(.studio-page.manage)::before {
   content: '';
-  position: fixed;
-  inset: 0;
+  position: absolute;
+  inset: 0 0 auto;
   z-index: -1;
-  background:
-    radial-gradient(90% 60% at 80% -10%, rgba(29, 82, 64, 0.6), transparent 70%),
-    radial-gradient(60% 50% at 0% 100%, rgba(78, 26, 44, 0.35), transparent 70%);
-  pointer-events: none;
+  height: clamp(250px, 36vh, 360px);
+  background: var(--hibiscus);
 }
 :focus-visible {
   outline-color: var(--focus);
 }
 
-/* Anything written on paper goes back to ink. */
+/* Anything written on a card. */
 .page,
 .studio-page.send,
 .studio-page.manage,
@@ -52,19 +72,23 @@ body::before {
   color: var(--ink);
 }
 
+/* The header is the top of the field. */
 .studio-header {
-  background: transparent;
-  border-bottom-color: var(--hairline);
+  background: var(--hibiscus);
+  border-bottom: 0;
 }
-.wordmark {
-  color: var(--on-room);
+.studio-header .wordmark {
+  color: #fff;
 }
-.wordmark span {
-  color: var(--blush);
+.studio-header .wordmark span {
+  color: var(--candle);
 }
-.studio-tag {
-  color: var(--on-room-faint);
-  border-color: var(--hairline);
+.studio-header .studio-tag {
+  color: rgba(255, 255, 255, 0.9);
+  border-color: rgba(255, 255, 255, 0.45);
+}
+.studio-header :focus-visible {
+  outline-color: var(--candle);
 }
 .studio-title {
   color: var(--title);
@@ -95,31 +119,46 @@ body::before {
   transform: translateY(1px);
 }
 .button.ghost {
-  border-color: rgba(238, 240, 231, 0.5);
-  color: var(--on-room);
-}
-.button.ghost:hover {
-  background: var(--on-room);
-  border-color: var(--on-room);
-  color: var(--room);
-}
-.page .button.ghost,
-.adjust-panel .button.ghost,
-.studio-page.send .button.ghost,
-.studio-page.manage .button.ghost {
   border-color: var(--palm);
   color: var(--palm);
 }
-.page .button.ghost:hover,
-.adjust-panel .button.ghost:hover,
-.studio-page.send .button.ghost:hover,
-.studio-page.manage .button.ghost:hover {
+.button.ghost:hover {
   background: var(--palm);
+  border-color: var(--palm);
   color: var(--chalk);
 }
+/* On the field, outlines and words are white. */
+.studio-header .button.ghost,
+.on-field .button.ghost {
+  border-color: rgba(255, 255, 255, 0.75);
+  color: #fff;
+}
+.studio-header .button.ghost:hover,
+.on-field .button.ghost:hover:not(:disabled) {
+  background: #fff;
+  border-color: #fff;
+  color: var(--hibiscus-deep);
+}
+/* A hibiscus button would vanish on the field, so there it is white. The preview's header is not on the field. */
+.studio-header .button.primary {
+  background: #fff;
+  color: var(--hibiscus-deep);
+}
+.studio-header .button.primary:hover {
+  background: var(--candle);
+  color: var(--wine-deep);
+}
+.preview-shell .studio-header .button.primary {
+  background: var(--hibiscus);
+  color: #fff;
+}
+.preview-shell .studio-header .button.primary:hover {
+  background: var(--hibiscus-deep);
+  color: #fff;
+}
 .button.primary:disabled {
-  background: #2c463b;
-  color: #a9b8ae;
+  background: #d9ddd2;
+  color: #76827a;
 }
 
 /* ---------- Home ---------- */
@@ -217,9 +256,9 @@ body::before {
 .page,
 .studio-page.send,
 .studio-page.manage {
-  background: var(--chalk);
-  border-radius: 6px;
-  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.45);
+  background: var(--card);
+  border-radius: 8px;
+  box-shadow: var(--card-shadow);
 }
 .studio-page.send,
 .studio-page.manage {

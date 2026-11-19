@@ -52,7 +52,7 @@ The gift is a film that plays by itself, not a slideshow.
 - `scrapbook.tsx` and `src/styles/scrapbook.css`: the Scrapbook. The same shots drawn as pages of an album: a closed book that opens, one title page, chapter pages with a band of tape, prints with tape, corners and clips, handwriting (Caveat) and typed slips (Courier Prime, both under the Open Font License in `public/fonts`). The page turns between shots; a list (sticky notes, checklist, tags, cards) builds on the page it is on. No smoke, dust or letterbox bars.
 - `looks.ts`: the three colourways of each world as palettes.
 - Reduced motion: no countdown, particles or smoke movement; shots still change with simple fades.
-- Styles: `src/styles/film.css` (sized in container units, so the film scales to its box) and `src/styles/room.css` (the dark studio theme).
+- Styles: `src/styles/film.css` (sized in container units, so the film scales to its box) and `src/styles/room.css` (the studio's working pages: a hibiscus field with white cards over a bright wall, the same language as the home page).
 
 ## Server
 

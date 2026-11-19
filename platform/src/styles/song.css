@@ -25,9 +25,9 @@
   padding: 26px clamp(18px, 3vw, 34px) 22px clamp(46px, 6vw, 74px);
   background:
     linear-gradient(var(--hibiscus), var(--hibiscus)) clamp(30px, 4.4vw, 54px) 0 / 1.5px 100% no-repeat,
-    var(--chalk);
-  border-radius: 3px;
-  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.45);
+    var(--card);
+  border-radius: 4px;
+  box-shadow: var(--card-shadow);
 }
 .song-room .notice {
   max-width: 36em;
@@ -122,10 +122,14 @@
   margin: 0;
 }
 
-/* The desk stays in the dark of the room. */
+/* The desk: a second card beside the sheet. */
 .song-desk {
   display: grid;
   gap: 16px;
+  padding: clamp(16px, 2vw, 24px);
+  border-radius: 8px;
+  background: var(--card);
+  box-shadow: var(--card-shadow);
 }
 .song-desk fieldset {
   border: 0;
@@ -153,13 +157,13 @@
 }
 .tune,
 .takes li {
-  border: 1.5px solid var(--hairline);
+  border: 1.5px solid #c3cabd;
   border-radius: 12px;
-  background: var(--room-2);
+  background: var(--card);
 }
 .tune[data-picked],
 .takes li[data-picked] {
-  border-color: var(--candle);
+  border-color: var(--hibiscus);
 }
 .tune {
   display: flex;
@@ -168,7 +172,7 @@
   padding: 6px 8px 6px 14px;
 }
 .tune[data-picked] {
-  box-shadow: inset 4px 0 0 var(--candle);
+  box-shadow: inset 4px 0 0 var(--hibiscus);
 }
 .tune label {
   flex: 1;
@@ -182,7 +186,7 @@
   width: 18px;
   height: 18px;
   flex: none;
-  accent-color: var(--candle);
+  accent-color: var(--hibiscus);
 }
 .tune b {
   display: block;
@@ -202,14 +206,14 @@
   place-items: center;
   border: 0;
   border-radius: 50%;
-  background: var(--on-room);
+  background: var(--palm);
   cursor: pointer;
 }
 .tune-play:hover {
-  background: var(--candle);
+  background: var(--palm-deep);
 }
 .tune-play[aria-pressed='true'] {
-  background: var(--blush);
+  background: var(--hibiscus);
 }
 .glyph-play {
   width: 0;
@@ -225,7 +229,7 @@
   background: var(--room);
 }
 .song-desk .choice input {
-  accent-color: var(--candle);
+  accent-color: var(--hibiscus);
 }
 .choice.wordless {
   font-weight: 500;
@@ -251,4 +255,32 @@
   .song-columns {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* The song's name and what happens here sit on the field; the sheet and the desk hang over its edge. */
+.song-room {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+.song-room::before {
+  content: '';
+  grid-area: 1 / 1 / 3 / 2;
+  z-index: -1;
+  margin: calc(-1 * clamp(24px, 5vw, 56px)) 0 calc(-1 * clamp(44px, 6vw, 88px));
+  background: var(--hibiscus);
+  box-shadow: 0 0 0 100vmax var(--hibiscus);
+  clip-path: inset(0 -100vmax);
+}
+.song-room > .studio-title {
+  grid-area: 1 / 1;
+  color: #fff;
+}
+.song-room > .lede {
+  grid-area: 2 / 1;
+  margin-bottom: 0;
+  color: rgba(255, 255, 255, 0.94);
+}
+.song-room > .fine,
+.song-room > .notice {
+  margin-top: clamp(64px, 8vw, 112px);
 }
