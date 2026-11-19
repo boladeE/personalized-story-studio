@@ -638,6 +638,51 @@ test('a song that fails leaves the film silent, never with other music, and can 
   await expect.poll(async () => (await audioState(page))?.trackId, { timeout: 15_000 }).toBe('song')
 })
 
+test('words the music model refuses are written again and sung, without troubling the sender', async ({ page }) => {
+  // The model refuses lyrics that come too close to an existing song. The first draft is refused here.
+  let sung = 0
+  await page.route('**/api/music', async (route) => {
+    if (route.request().method() !== 'POST') return route.continue()
+    // Each attempt takes a moment, as a real one does, so the notice can be watched throughout.
+    await new Promise((done) => setTimeout(done, 1200))
+    if (++sung === 1) return route.fulfill({ status: 422, contentType: 'application/json', body: JSON.stringify({ error: 'A line is too close to another song.' }) })
+    await route.continue()
+  })
+  const drafts: Array<Record<string, unknown>> = []
+  page.on('request', (r) => r.method() === 'POST' && r.url().endsWith('/api/lyrics') && drafts.push(r.postDataJSON() as Record<string, unknown>))
+  await open(page, '/start')
+  await page.getByRole('button', { name: 'Friend', exact: true }).click()
+  await page.getByLabel('Their name').fill('Kemi')
+  await page.getByLabel('Your name').fill('Ada')
+  await page.getByLabel('Your name').press('Enter')
+  await page.getByRole('button', { name: 'Thank you' }).click()
+  await page.getByRole('button', { name: 'Skip photos' }).click()
+  await page.getByLabel('About Kemi').fill(NOTE)
+  await page.getByRole('button', { name: 'Next' }).click()
+  await page.getByRole('button', { name: 'Make the film' }).click()
+  await expect(page).toHaveURL(/\/preview$/)
+  // It never reaches the sender as a failure: the notice stays on "being made" until the song is there.
+  const status = page.locator('.song-status')
+  await expect(status).toBeVisible()
+  const seen = new Set<string>()
+  await expect
+    .poll(
+      async () => {
+        // Asked of the page directly: a locator would wait for a notice that has already gone.
+        const state = await page.evaluate(() => document.querySelector('.song-status')?.className ?? null)
+        if (state) seen.add(state)
+        return state
+      },
+      { timeout: 20_000, intervals: [100] },
+    )
+    .toBeNull()
+  expect([...seen].join(' ')).not.toContain('is-failed')
+  expect(sung).toBe(2)
+  expect(drafts.map((d) => d.fresh)).toEqual([false, true])
+  await startFilm(page)
+  await expect.poll(async () => (await audioState(page))?.trackId, { timeout: 15_000 }).toBe('song')
+})
+
 test('an iPhone photo (HEIC) is converted on the device, and files that are not photos are named', async ({ page }) => {
   test.setTimeout(90_000)
   const errors = trackErrors(page)

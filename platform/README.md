@@ -48,6 +48,7 @@ A film's only music is the song written and sung for it. There is no built-in or
 - When the song arrives it goes onto the film by itself and the film can be played.
 - If the song fails, or songs are switched off in this studio, the film plays in silence, the credits carry no Music line, and the send page says the film has no song.
 - A song is never asked for twice at once (`inFlight` in `src/components/draft.tsx`).
+- Google's music model refuses lyrics that come too close to an existing song (seen live on a thank-you song for a friend). When that happens the words are written again, with a note to the writer to keep clear of song titles and famous lines, and sung again, up to three times, before the sender is told anything.
 
 ## The film (`src/film/`)
 

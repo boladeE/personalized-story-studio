@@ -59,7 +59,11 @@ const SCHEMA = {
   required: ['title', 'sections'],
 }
 
-export async function writeLyrics(details: SongDetails, tone: LyricTone = 'smooth'): Promise<WrittenLyrics> {
+/** What the writer is told when its last draft was refused for coming too close to an existing song. */
+export const FRESH_NOTE =
+  'An earlier draft of this song was refused because a line was too close to the words of an existing, published song. Write it again with wording of your own. Do not use any phrase that is the title or a well-known line of an existing song (for example "thank you for being a friend", "you are the sunshine of my life", "I will always love you"), and keep the hook to plain words taken from the details above.'
+
+export async function writeLyrics(details: SongDetails, tone: LyricTone = 'smooth', fresh = false): Promise<WrittenLyrics> {
   const provider = lyricsProvider()
   if (provider === 'off') throw new MusicError('Songs aren’t switched on for this studio yet.', 503)
   if (provider === 'demo') return demoLyrics(details)
@@ -74,7 +78,7 @@ export async function writeLyrics(details: SongDetails, tone: LyricTone = 'smoot
       signal: controller.signal,
       headers: { 'x-goog-api-key': process.env.GEMINI_API_KEY ?? '', 'content-type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: lyricsBrief(details, tone) }] }],
+        contents: [{ role: 'user', parts: [{ text: fresh ? `${lyricsBrief(details, tone)}\n\n${FRESH_NOTE}` : lyricsBrief(details, tone) }] }],
         generationConfig: {
           responseMimeType: 'application/json',
           responseSchema: SCHEMA,

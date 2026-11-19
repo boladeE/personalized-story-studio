@@ -12,10 +12,13 @@ export const Route = createFileRoute('/api/lyrics')({
       POST: async ({ request }) => {
         let details
         let tone: LyricTone = 'smooth'
+        // Set when an earlier draft of these words was refused by the music model.
+        let fresh = false
         try {
-          const body = (await request.json()) as { details?: unknown; tone?: unknown }
+          const body = (await request.json()) as { details?: unknown; tone?: unknown; fresh?: unknown }
           details = parseSongDetails(body.details)
           if (isLyricTone(body.tone)) tone = body.tone
+          fresh = body.fresh === true
         } catch {
           details = null
         }
@@ -25,7 +28,7 @@ export const Route = createFileRoute('/api/lyrics')({
         const allowed = allowLyrics(client)
         if (!allowed.allowed) return json({ error: allowed.reason }, { status: 429 })
         try {
-          return json(await writeLyrics(details, tone), { status: 201 })
+          return json(await writeLyrics(details, tone, fresh), { status: 201 })
         } catch (error) {
           if (error instanceof MusicError) return json({ error: error.message }, { status: error.status })
           throw error

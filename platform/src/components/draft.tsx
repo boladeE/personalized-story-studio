@@ -28,6 +28,8 @@ export interface DraftWords {
 }
 
 const MAX_TAKES = 6
+/** How many times a song's words are written and sung before the sender is told it didn't come through. */
+const SONG_ATTEMPTS = 3
 
 /** What the short flow asks about the song. `surprise` lets the studio pick the style or the voice. */
 export interface SongPlan {
@@ -119,20 +121,32 @@ export function DraftProvider({ children }: { children: ReactNode }) {
     const post = async (url: string, payload: unknown) => {
       const response = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })
       const body = (await response.json().catch(() => ({}))) as Record<string, unknown>
-      if (!response.ok) throw new Error(typeof body.error === 'string' ? body.error : 'The song didn’t come through.')
+      if (!response.ok) throw Object.assign(new Error(typeof body.error === 'string' ? body.error : 'The song didn’t come through.'), { status: response.status })
       return body
     }
     setJob({ state: 'writing' })
     void (async () => {
       try {
-        const written = await post('/api/lyrics', { details, tone: 'smooth' })
-        if (!current()) return
-        const lyrics = String(written.lyrics ?? '')
-        const title = String(written.title ?? '')
-        setWords({ title, lyrics })
-        setJob({ state: 'singing' })
         const vibe = forPlan.vibe === 'surprise' ? DEFAULT_VIBE : forPlan.vibe
-        const made = await post('/api/music', { vibe, details, lyrics, title, voice: forPlan.voice })
+        let lyrics = ''
+        let made: Record<string, unknown> | undefined
+        // The music model refuses words that come too close to an existing song (a 422). The sender did
+        // nothing wrong, so the words are written afresh and sung again before anything is said to them.
+        for (let attempt = 1; !made; attempt++) {
+          const written = await post('/api/lyrics', { details, tone: 'smooth', fresh: attempt > 1 })
+          if (!current()) return
+          lyrics = String(written.lyrics ?? '')
+          const title = String(written.title ?? '')
+          setWords({ title, lyrics })
+          setJob({ state: 'singing' })
+          try {
+            made = await post('/api/music', { vibe, details, lyrics, title, voice: forPlan.voice })
+          } catch (error) {
+            if (!current()) return
+            if ((error as { status?: number }).status !== 422 || attempt >= SONG_ATTEMPTS) throw error
+            setJob({ state: 'writing' })
+          }
+        }
         if (!current()) return
         const song: DraftSong = { id: String(made.id), src: String(made.src), label: String(made.label ?? 'Original song'), sung: Boolean(made.sung), lyrics: String(made.lyrics ?? lyrics), vibe }
         setTakes((list) => [...list, song].slice(-MAX_TAKES))
