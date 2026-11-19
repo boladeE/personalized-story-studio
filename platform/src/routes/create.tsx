@@ -130,7 +130,7 @@ function Create() {
 
   /* ---------- photos ---------- */
 
-  const { add: addPhotos, remove: removePhoto, error: photoError, setError: setPhotoError } = usePhotos()
+  const { add: addPhotos, remove: removePhoto, error: photoError, setError: setPhotoError, reading: photosReading } = usePhotos()
 
   const onDrop = (event: DragEvent) => {
     event.preventDefault()
@@ -193,12 +193,12 @@ function Create() {
           <input
             ref={fileInput}
             type="file"
-            accept="image/*"
+            accept="image/*,.heic,.heif"
             multiple
             hidden
             aria-label="Add photos"
             onChange={(e) => {
-              addPhotos(Array.from(e.target.files ?? []))
+              void addPhotos(Array.from(e.target.files ?? []))
               e.target.value = ''
             }}
           />
@@ -241,6 +241,11 @@ function Create() {
               </li>
             )}
           </ul>
+          {photosReading > 0 && (
+            <p className="photo-reading" role="status">
+              Reading {photosReading === 1 ? 'a photo' : `${photosReading} photos`}…
+            </p>
+          )}
           {photoError && (
             <p className="field-error" role="alert">
               {photoError}

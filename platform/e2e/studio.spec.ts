@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { readFileSync } from 'node:fs'
 import { audioState, chooseStyle, filmState, open, startFilm, trackErrors, walk } from './helpers'
 import { OCCASIONS } from '../src/story/occasions'
 
@@ -574,4 +575,54 @@ test('a song that lands after the film has started waits to be asked for', async
   await expect(status).toHaveCount(0)
   await startFilm(page)
   await expect.poll(async () => (await audioState(page))?.trackId, { timeout: 15_000 }).toBe('song')
+})
+
+test('an iPhone photo (HEIC) is converted on the device, and files that are not photos are named', async ({ page }) => {
+  test.setTimeout(90_000)
+  const errors = trackErrors(page)
+  const sent: string[] = []
+  page.on('request', (r) => r.method() !== 'GET' && sent.push(`${r.method()} ${new URL(r.url()).pathname}`))
+  const heic = readFileSync(new URL('./fixtures/beach.heic', import.meta.url))
+  await open(page, '/start')
+  await page.getByRole('button', { name: 'Friend', exact: true }).click()
+  await page.getByLabel('Their name').fill('Kemi')
+  await page.getByLabel('Your name').fill('Ada')
+  await page.getByLabel('Your name').press('Enter')
+  await page.getByRole('button', { name: 'Just because' }).click()
+  // The picker offers HEIC files, which have no "image" type on most computers.
+  await expect(page.locator('input[type=file]')).toHaveAttribute('accept', 'image/*,.heic,.heif')
+
+  await page.locator('input[type=file]').setInputFiles([
+    // Straight off an iPhone, as a computer sees it: no type, only the name.
+    { name: 'IMG_0042.HEIC', mimeType: '', buffer: heic },
+    // The same photo with nothing to go on but its first bytes.
+    { name: 'from-airdrop', mimeType: 'application/octet-stream', buffer: heic },
+    { name: 'plain.png', mimeType: 'image/png', buffer: PNG },
+    { name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('not a photo') },
+    // Named like a photo, but not one.
+    { name: 'broken.heic', mimeType: 'image/heic', buffer: Buffer.from('this is not a picture at all') },
+  ])
+  const thumbs = page.locator('.start-photos img')
+  await expect(thumbs).toHaveCount(3, { timeout: 30_000 })
+  await expect(page.locator('.photo-reading')).toHaveCount(0)
+  await expect(page.getByRole('alert')).toHaveText('2 files couldn’t be read as photos.')
+  // Both iPhone photos became pictures this browser can draw, at their real size.
+  const sizes = await thumbs.evaluateAll((imgs) => Promise.all(imgs.map((img) => (img as HTMLImageElement).decode().then(() => [(img as HTMLImageElement).naturalWidth, (img as HTMLImageElement).naturalHeight]))))
+  expect(sizes).toEqual([[900, 514], [900, 514], [1, 1]])
+  expect(await thumbs.first().getAttribute('src')).toMatch(/^blob:/)
+  expect(await thumbs.first().evaluate(async (img) => (await (await fetch((img as HTMLImageElement).src)).blob()).type)).toBe('image/jpeg')
+  // Nothing left the device to do it.
+  expect(sent).toEqual([])
+
+  // And it plays in the film like any other photo.
+  await page.getByRole('button', { name: 'Next' }).click()
+  await page.getByLabel('About Kemi').fill(NOTE)
+  await page.getByRole('button', { name: 'Next' }).click()
+  await page.getByRole('button', { name: 'Skip the song and use the studio’s own music' }).click()
+  await expect(page).toHaveURL(/\/preview$/)
+  await startFilm(page)
+  await walk(page, (shot) => shot.kind === 'photo')
+  const shown = page.locator('.preview-body > .film .shot.is-current img').first()
+  await expect.poll(() => shown.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0)
+  expect(errors).toEqual([])
 })

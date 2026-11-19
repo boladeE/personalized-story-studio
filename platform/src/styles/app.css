@@ -282,6 +282,26 @@ select:focus-visible {
   color: var(--hibiscus-deep);
   font-weight: 600;
 }
+.photo-reading {
+  margin: 12px 0 0;
+  font-weight: 600;
+  color: var(--palm);
+}
+.photo-reading::before {
+  content: '';
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 9px;
+  border-radius: 50%;
+  background: var(--hibiscus);
+  animation: photo-reading 0.9s ease-in-out infinite alternate;
+}
+@keyframes photo-reading {
+  to {
+    opacity: 0.25;
+  }
+}
 
 
 

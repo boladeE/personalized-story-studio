@@ -187,12 +187,12 @@ function Start() {
           <input
             ref={fileInput}
             type="file"
-            accept="image/*"
+            accept="image/*,.heic,.heif"
             multiple
             hidden
             aria-label="Add photos"
             onChange={(e) => {
-              photos.add(Array.from(e.target.files ?? []))
+              void photos.add(Array.from(e.target.files ?? []))
               e.target.value = ''
             }}
           />
@@ -221,7 +221,7 @@ function Start() {
                   onDrop={(e) => {
                     e.preventDefault()
                     setDragging(false)
-                    photos.add(Array.from(e.dataTransfer.files))
+                    void photos.add(Array.from(e.dataTransfer.files))
                   }}
                 >
                   <b>{intake.photos.length ? 'Add more' : 'Add photos'}</b>
@@ -230,6 +230,11 @@ function Start() {
               </li>
             )}
           </ul>
+          {photos.reading > 0 && (
+            <p className="photo-reading" role="status">
+              Reading {photos.reading === 1 ? 'a photo' : `${photos.reading} photos`}…
+            </p>
+          )}
           {photos.error && (
             <p className="field-error" role="alert">
               {photos.error}
