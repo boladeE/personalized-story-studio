@@ -537,17 +537,21 @@
   border-color: var(--palm);
   box-shadow: inset 0 0 0 1px var(--palm);
 }
+/* Read down one column, then the next, the way a lyric sheet is. */
 .song-lyrics {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
-  align-items: start;
-  gap: 26px 40px;
+  columns: 250px 2;
+  column-gap: 44px;
   font-size: clamp(17.5px, 1.5vw, 20px);
   line-height: 1.55;
 }
 .lyric-part {
   display: grid;
   gap: 5px;
+  break-inside: avoid;
+  margin-bottom: 26px;
+}
+.lyric-part:last-child {
+  margin-bottom: 0;
 }
 .lyric-part h3 {
   margin: 0;
