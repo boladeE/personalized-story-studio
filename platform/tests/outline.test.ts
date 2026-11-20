@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { buildFilm } from '../src/film/timeline'
 import { generateStory, moveScene, nextDesign, sceneBoard, toggleScene } from '../src/story/generate'
-import { blankChapter, chapterName, cleanOutline, notesOf, outlineByWords, outlineOf } from '../src/story/outline'
+import { closeToTheirWords } from '../src/story/notes'
+import { blankChapter, chapterName, cleanOutline, notesOf, outlineByWords, outlineOf, pagesOf } from '../src/story/outline'
 import { emptyIntake, SAMPLE_FIXED, SAMPLE_INTAKE } from '../src/story/sample'
 import type { Chapter, Intake } from '../src/story/types'
 import { parseIntake } from '../src/story/validate'
@@ -94,7 +95,6 @@ describe('outlining a film from what its sender wrote', () => {
     const brief = outlineBrief({ ...BRIEF, photos: 4, letter: true })
     expect(brief).toContain('There is no standard set of scenes to fill')
     expect(brief).toContain('Never use a stock label')
-    expect(brief).toContain('Use only Tobi\'s own words, copied as written')
     expect(brief).toContain('Photos given: 4.')
     expect(brief).toContain(`The note:\n${NOTE}`)
     expect(outlineBrief(BRIEF)).toContain('Do not use `photos`')
@@ -177,7 +177,8 @@ describe('a film with its own scenes', () => {
     // That scene is the outline's own when it has one, under its own name, wherever it was put.
     const named = generateStory(maya({ photos, outline: [{ id: 'pics', name: 'Us, lately', layout: 'photos', mood: 'warm', lines: [] }, OUTLINE[0]] }), 5)
     expect(named.scenes.map((s) => s.name)).toContain('Us, lately')
-    expect(outlineOf(maya())).toBe(OUTLINE)
+    // A film always has a scene for its photos, so there is somewhere to add one.
+    expect(outlineOf(maya())!.map((c) => c.layout)).toEqual([...OUTLINE.map((c) => c.layout), 'photos'])
   })
 
   it('draws two lists that follow each other differently, and a design the sender picks stays', () => {
@@ -283,5 +284,42 @@ describe('“Surprise me” for the song', () => {
     expect(songChoiceLine(chosen, { tune: false, voice: true })).toBe('For the song it chose a man’s voice.')
     expect(songChoiceLine(chosen, { tune: false, voice: false })).toBe('')
     expect(songChoiceLine({}, { tune: true, voice: true })).toBe('')
+  })
+})
+
+describe('the director tidies what was written, and a told scene runs over pages', () => {
+  const RAMBLE = 'so basically um Warri is like the funniest person I know, he is always cracking jokes and like the whole room just gets lively you know. and he used to say half bread is better than chim chim lol'
+  it('keeps a line that says what the sender said more cleanly, and refuses one that says something new', () => {
+    expect(closeToTheirWords('Warri is the funniest person I know.', RAMBLE)).toBe(true)
+    expect(closeToTheirWords('He cracks jokes and the whole room gets lively.', RAMBLE)).toBe(true)
+    expect(closeToTheirWords('He used to say “half bread is better than chim chim”.', RAMBLE)).toBe(true)
+    expect(closeToTheirWords('His laughter echoes through every hallway like sunshine.', RAMBLE)).toBe(false)
+    expect(closeToTheirWords('Pure magic.', RAMBLE)).toBe(false)
+    const tidied = cleanOutline(
+      [{ name: 'Half bread', layout: 'moment', mood: 'playful', lines: ['Warri is the funniest person I know.', 'He cracks jokes and the whole room gets lively.', 'He used to say “half bread is better than chim chim”.', 'He lights up every heart with boundless golden warmth.'] }],
+      { source: RAMBLE },
+    )
+    expect(tidied[0].lines).toHaveLength(3)
+  })
+
+  it('gives each page of a told scene a screen: the first beside the photo, the rest under the scene’s name', () => {
+    const told: Chapter = { id: 'who', name: 'Half bread', layout: 'moment', mood: 'playful', lines: ['Warri is the funniest person I know.', 'He cracks jokes and the whole room gets lively.', 'He used to say “half bread is better than chim chim”.'] }
+    const film = buildFilm(generateStory(maya({ outline: [told], photos: SAMPLE_FIXED.photos.slice(0, 1) }), 5))
+    const mine = film.shots.filter((s) => s.sceneName === 'Half bread')
+    expect(mine.map((s) => s.kind)).toEqual(['photo', 'line', 'line'])
+    expect(mine[1]).toMatchObject({ kicker: 'Half bread', title: 'He cracks jokes and the whole room gets lively.' })
+    // One long paragraph is turned over at a sentence's end, so nothing is crowded onto one screen.
+    const long = 'Warri is the funniest person I know and he has been since the day we met in school. He cracks jokes and the whole room gets lively, even on the worst days. He used to say that half bread is better than chim chim, and he said it like it was scripture. I still say it to myself when things go wrong.'
+    const pages = pagesOf({ ...told, lines: [long] })
+    expect(pages.length).toBeGreaterThan(1)
+    expect(pages.join(' ')).toBe(long)
+    for (const page of pages.slice(1)) expect(page.length).toBeLessThanOrEqual(150)
+  })
+
+  it('tells the model to edit like an editor and add nothing', () => {
+    const brief = outlineBrief(BRIEF)
+    expect(brief).toContain('Edit it the way a good film editor would')
+    expect(brief).toContain('Never add a fact')
+    expect(brief).toContain('`lines` holds its pages')
   })
 })

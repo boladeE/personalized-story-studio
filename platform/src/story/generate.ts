@@ -1,6 +1,6 @@
 import { sceneLabel, SCENES, SKELETONS } from './library'
 import type { BuildContext } from './library'
-import { chapterLines, chapterMissing, chapterName, outlineOf } from './outline'
+import { chapterLines, chapterMissing, chapterName, outlineOf, pagesOf } from './outline'
 import { createRng } from './rng'
 import type { Chapter, Cut, Frame, Intake, LookId, Photo, PhotoLayout, Scene, SceneLayout, Story, WorldId } from './types'
 import { designKey, designsFor, WORLDS } from './worlds'
@@ -80,13 +80,15 @@ function chapterFrames(chapter: Chapter, ctx: BuildContext, loud: boolean): Fram
     case 'list':
       return lines.map<Frame>((text, index) => ({ kind: 'item', marker: loud ? 'loud' : 'calm', kicker: name, text, index, total: lines.length }))
     case 'moment': {
-      const body = lines.join(' ')
+      // The first page is told beside the photo; each page after it has the screen to itself, under the scene's name.
+      const [body, ...more] = pagesOf(chapter)
       if (!body) return []
+      const turned = more.map<Frame>((page) => (page.length <= 150 ? { kind: 'title', kicker: name, title: page } : { kind: 'title', kicker: '', title: name, body: page }))
       const photo = (chapter.photoId && ctx.photoById(chapter.photoId)) || ctx.takePhoto()
       // A telling with no name of its own, or one that opens with its name, is titled by its first sentence, said once.
       const [opening, ...after] = body.split(/(?<=[.!?])\s+/)
       const words = (!chapter.name.trim() || sameStart(name, body)) && opening.length <= 90 ? { kicker: '', title: opening, ...(after.length ? { body: after.join(' ') } : {}) } : { kicker: '', title: name, body }
-      return [photo ? { kind: 'photo', photo, layout: ctx.rng.pick<PhotoLayout>(['left', 'right']), ...words } : { kind: 'title', ...words }]
+      return [photo ? { kind: 'photo', photo, layout: ctx.rng.pick<PhotoLayout>(['left', 'right']), ...words } : { kind: 'title', ...words }, ...turned]
     }
     case 'photos': {
       const photos = ctx.unusedPhotos().slice(0, 6)

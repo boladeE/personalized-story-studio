@@ -1275,6 +1275,7 @@ select:focus-visible {
   accent-color: var(--hibiscus);
 }
 .scene-words textarea,
+.scene-words select,
 .scene-words input:not([type='radio']) {
   background: #fff;
   font-size: 16.5px;

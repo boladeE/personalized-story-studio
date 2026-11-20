@@ -9,7 +9,7 @@ import { cleanDirection, directLocally, DIRECTED_WORLDS } from '../story/directi
 import type { DirectionPlan } from '../story/direction'
 import { cleanAnswers, cleanFollowups, FOLLOWUP_LIMITS, followupsLocally, withAnswers } from '../story/followups'
 import { canGenerate, LOOKS } from '../story/generate'
-import { isTheirWords, NOTES_LIMIT } from '../story/notes'
+import { closeToTheirWords, NOTES_LIMIT } from '../story/notes'
 import { cleanOutline, notesOf, outlineByWords } from '../story/outline'
 import { occasionOf, OCCASIONS } from '../story/occasions'
 import { RELATIONSHIPS } from '../story/relationships'
@@ -146,10 +146,10 @@ function Start() {
         const response = await fetch('/api/sort', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text, sender: me, recipient: them, ...facts, answers }) })
         const body = (await response.json()) as { outline?: unknown; wish?: unknown; direction?: unknown }
         if (!response.ok) throw new Error('outline failed')
-        // Checked again here: whatever the scenes are called, only the sender's own words go inside them.
+        // Checked again here: the studio may tidy the sender's words, but every line must stay close to what they wrote.
         outline = cleanOutline(body.outline, { source: written, photos: intake.photos.length })
         if (!outline.some((c) => c.layout !== 'photos')) throw new Error('no scenes')
-        wish = typeof body.wish === 'string' && isTheirWords(body.wish, written) ? body.wish.trim().slice(0, LIMITS.wish) : ''
+        wish = typeof body.wish === 'string' && closeToTheirWords(body.wish, written) ? body.wish.trim().slice(0, LIMITS.wish) : ''
         // And the direction can only name a kind of film and colours the studio has.
         directed = cleanDirection(body.direction, DIRECTED_WORLDS)
       } catch {
@@ -371,7 +371,7 @@ function Start() {
     },
     about: {
       question: `Tell us about ${name}.`,
-      hint: 'A few sentences in your own words. The film’s scenes are made from them; nothing is added.',
+      hint: 'Write it however it comes out. The studio shapes it into scenes and tidies the wording, without adding anything you didn’t say.',
       canNext: about.trim().length >= ENOUGH,
       body: (
         <>
@@ -388,7 +388,7 @@ function Start() {
                 ? 'A sentence or two more and there’s enough for a film.'
                 : 'That’s enough for a film. Add more if it comes to you.'}
           </p>
-          <p className="fine">One of Google’s AI models reads this and decides what the film’s scenes are and what to call them. The words inside each scene stay yours, and you can rename any scene.</p>
+          <p className="fine">One of Google’s AI models reads this, decides what the film’s scenes are, and tidies your wording to fit the screen. It is told to keep what you meant and add nothing. You can change any word once the film is made.</p>
         </>
       ),
     },
@@ -533,11 +533,6 @@ function Start() {
           </div>
           {busy && <Working className="start-busy">{busy}</Working>}
         </form>
-        {stepId === 'who' && (
-          <p className="start-other">
-            Prefer to write every scene yourself? <Link to="/create">Use the detailed form.</Link>
-          </p>
-        )}
       </main>
     </div>
   )

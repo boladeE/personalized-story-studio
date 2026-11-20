@@ -68,7 +68,7 @@ function Preview() {
   const behind = useDeferredValue(source)
   const built = typing ? behind : source
   /** The scene whose words are being changed, and what that part of the draft was before. */
-  const [writing, setWriting] = useState<{ type: string; field: keyof Intake; before: unknown } | null>(null)
+  const [writing, setWriting] = useState<{ type: string; fields: Array<keyof Intake>; before: Partial<Intake> } | null>(null)
   /** The line of the scene being written, so the still shows that part of it. */
   const [line, setLine] = useState<{ type: string; at: number }>()
   /** What was done in the editor, oldest first, so Undo takes it back one step at a time. */
@@ -152,11 +152,11 @@ function Preview() {
   /** The words written since the scene's fields were first touched, as one change that can be taken back. */
   const typed = (): Change | null => {
     if (!writing) return null
-    const { before, type, field } = writing
+    const { before, type, fields } = writing
     // Photos have their own way back, offered as each one is removed.
-    if (field === 'photos' || JSON.stringify(intake[field]) === JSON.stringify(before)) return null
+    if (fields.includes('photos') || fields.every((field) => JSON.stringify(intake[field]) === JSON.stringify(before[field]))) return null
     const name = rows.find((r) => r.type === type)?.name ?? 'The scene'
-    return { label: `${name} changed.`, undo: () => setIntake((c) => ({ ...c, [field]: before })) }
+    return { label: `${name} changed.`, undo: () => setIntake((c) => ({ ...c, ...before })) }
   }
   /** Keep what was just done (and any words written before it) so it can be undone. */
   const record = (change?: Change) => {
@@ -192,10 +192,10 @@ function Preview() {
   const applyWorld = (next: Intake['world']) => (useSample ? setSampleWorld(isWorld(next) ? next : 'screening') : setIntake((c) => ({ ...c, world: next })))
   /** A scene's words, changed beside the still. What they were before the first change is kept for Undo. */
   const writeWords: typeof setIntake = (update) => {
-    const field = selected && fieldOf(selected)
-    if (selected && field && writing?.type !== selected.type) {
+    const fields = selected ? fieldsOf(selected, Boolean(intake.outline)) : []
+    if (selected && fields.length && writing?.type !== selected.type) {
       record()
-      setWriting({ type: selected.type, field, before: intake[field] })
+      setWriting({ type: selected.type, fields, before: Object.fromEntries(fields.map((field) => [field, intake[field]])) })
     }
     setIntake(update)
   }
@@ -349,7 +349,7 @@ function Preview() {
                   `Playing ${rows.find((r) => r.type === at.scene)?.name ?? 'the film'}.`
                 ) : shown.state === 'in' ? (
                   <>
-                    Scene {inFilm.indexOf(shown) + 1} of {inFilm.length}.{!useSample && fieldOf(shown) && side === 'scene' && <span className="wide-only"> What you type shows here as you write.</span>}
+                    Scene {inFilm.indexOf(shown) + 1} of {inFilm.length}.{!useSample && fieldsOf(shown, Boolean(intake.outline)).length > 0 && side === 'scene' && <span className="wide-only"> What you type shows here as you write.</span>}
                   </>
                 ) : (
                   ''
@@ -510,13 +510,19 @@ function SongStatus({ job, name, kept, onPlay, onRetry, onDismiss }: { job: Song
   )
 }
 
-/** The part of the draft a scene's words are written in: one of the older scenes' own fields, or the film's outline. */
-const fieldOf = (row: { type: string; layout?: string }): keyof Intake | null => (hasWords(row.type) ? SCENE_FIELDS[row.type] : row.layout ? 'outline' : null)
+/**
+ * The parts of the draft a scene's words are written in: one of the older scenes' own fields, the film's
+ * outline (and its photos, for the scene that shows them), or, for the opening of a film with its own
+ * scenes, the names and the occasion.
+ */
+const fieldsOf = (row: { type: string; layout?: string }, outlined: boolean): Array<keyof Intake> =>
+  hasWords(row.type) ? [SCENE_FIELDS[row.type]] : row.layout === 'photos' ? ['photos'] : row.layout ? ['outline'] : outlined && row.type === 'hello' ? ['recipient', 'sender', 'occasion'] : []
 
 /** The words on the line being written, to find the shot of the scene that shows them. */
 function writingNow(intake: Intake, type: string, at: number): string {
   const chapter = intake.outline?.find((c) => c.id === type)
-  if (chapter) return (chapter.lines[at] ?? '').trim()
+  // A page of a told scene may be turned over mid-way, so its opening words find it.
+  if (chapter) return (chapter.lines[at] ?? '').trim().split(/(?<=[.!?…])\s+/)[0].slice(0, 60)
   if (type === 'redFlags') return (intake.habits[at] ?? '').trim()
   if (type === 'reasons') return (intake.reasons[at] ?? '').trim()
   if (type === 'memoryLane') return (intake.memories[at]?.title ?? '').trim()

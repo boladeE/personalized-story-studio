@@ -1,5 +1,5 @@
-import { useRef } from 'react'
-import { occasionOf } from '../story/occasions'
+import { useRef, useState } from 'react'
+import { OCCASIONS, occasionOf } from '../story/occasions'
 import { OUTLINE_LIMITS, outlineOf, withChapter } from '../story/outline'
 import { endingOf } from '../story/types'
 import type { Chapter, Intake, Memory, SceneLayout } from '../story/types'
@@ -135,7 +135,7 @@ export function chapterAsk(layout: SceneLayout, intake: Intake): string {
     case 'list':
       return 'Each line gets its turn on screen. Two or more.'
     case 'moment':
-      return 'Something that happened, the way you’d tell a friend.'
+      return 'Something told, the way you’d tell a friend. A blank line starts a new page.'
     case 'photos':
       return `The photos of ${them} that no other scene shows.`
   }
@@ -146,6 +146,40 @@ const SHAPES: Array<{ id: Exclude<SceneLayout, 'photos'>; name: string }> = [
   { id: 'list', name: 'A list' },
   { id: 'moment', name: 'A moment' },
 ]
+
+/**
+ * The opening of a film with its own scenes: the two names and the occasion, which the ticket, the
+ * opening line and the ending are all written from. This is the only place they are changed.
+ */
+export function OpeningWords({ intake, setIntake }: { intake: Intake; setIntake: (update: (current: Intake) => Intake) => void }) {
+  const set: Setter = (key, value) => setIntake((c) => ({ ...c, [key]: value }))
+  // A film needs both names, so a name being retyped is held here until there is one to use.
+  const [names, setNames] = useState({ recipient: intake.recipient, sender: intake.sender })
+  const name = (key: 'recipient' | 'sender', value: string) => {
+    setNames((was) => ({ ...was, [key]: value }))
+    if (value.trim()) set(key, value)
+  }
+  return (
+    <>
+      <Field label="Their name">{(id) => <input id={id} maxLength={LIMITS.name} value={names.recipient} onChange={(e) => name('recipient', e.target.value)} />}</Field>
+      <Field label="Your name">{(id) => <input id={id} maxLength={LIMITS.name} value={names.sender} onChange={(e) => name('sender', e.target.value)} />}</Field>
+      <Field label="The occasion">
+        {(id) => (
+          <select id={id} value={intake.occasion} onChange={(e) => set('occasion', e.target.value as Intake['occasion'])}>
+            {OCCASIONS.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.name}
+              </option>
+            ))}
+          </select>
+        )}
+      </Field>
+    </>
+  )
+}
+
+/** The page of a told scene the cursor is on: pages are parted by a blank line. */
+const pageAt = (el: HTMLTextAreaElement) => el.value.slice(0, el.selectionStart).split('\n\n').length - 1
 
 /**
  * One of the film's own scenes, for changing beside the still: what it is
@@ -190,7 +224,21 @@ export function ChapterWords({
       {chapter.layout === 'list' && <ListEditor label="Line" values={lines} max={OUTLINE_LIMITS.lines} onChange={(v) => change({ lines: v })} onActive={onWriting} />}
       {chapter.layout === 'moment' && (
         <>
-          <Field label="What happened">{(id) => <textarea id={id} rows={4} maxLength={LIMITS.memoryStory} value={lines.join(' ')} onChange={(e) => change({ lines: [e.target.value] })} />}</Field>
+          <Field label="What it says">
+            {(id) => (
+              <textarea
+                id={id}
+                rows={5}
+                maxLength={LIMITS.memoryStory}
+                value={lines.join('\n\n')}
+                onSelect={(e) => onWriting(pageAt(e.currentTarget))}
+                onChange={(e) => {
+                  onWriting(pageAt(e.currentTarget))
+                  change({ lines: e.target.value.split('\n\n') })
+                }}
+              />
+            )}
+          </Field>
           {intake.photos.length > 0 && (
             <fieldset className="photo-pick">
               <legend>Photo for this scene</legend>

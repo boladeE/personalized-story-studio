@@ -2,7 +2,7 @@ import { cleanDirection, directLocally, DIRECTED_WORLDS } from '../story/directi
 import type { DirectionPlan } from '../story/direction'
 import { withAnswers } from '../story/followups'
 import type { Answered } from '../story/followups'
-import { isTheirWords } from '../story/notes'
+import { closeToTheirWords } from '../story/notes'
 import { occasionOf } from '../story/occasions'
 import { cleanOutline, notesOf, outlineByWords, OUTLINE_LIMITS } from '../story/outline'
 import { DIRECTION_REASONS } from '../story/types'
@@ -18,9 +18,11 @@ import { sortProvider } from './sort'
  * chooses the kind of film and its colours. The scenes are this note's and no
  * other's: nothing here offers the model a list of scenes to fill.
  *
- * The model may name a scene; it may not write what a scene says. Its answer
- * is checked line by line against the sender's text, and when it is off, slow
- * or wrong the film is outlined by rule, so a film is always made.
+ * The model may name a scene and may edit what the sender wrote so it reads
+ * well on screen (people write, and dictate, the way they talk); it may not
+ * say anything they did not. Each line of its answer is checked for staying
+ * close to the sender's own words, and when the model is off, slow or wrong
+ * the film is outlined by rule from the note as written, so a film is always made.
  */
 
 export interface OutlineBrief {
@@ -77,7 +79,7 @@ export function outlineBrief(brief: OutlineBrief) {
       'The scenes:',
       '- A scene is one thing: one moment that happened, one habit or saying that deserves a screen to itself, or a run of things that are alike. Group what belongs together and keep apart what does not.',
       `- name: what this scene is called, in one to four words. Take it from the scene's own words, or say plainly what they are about ("The coffee queue", "Voice notes", "Sunday calls"). It is a title, never a sentence, and never says what the scene will say. Never use a stock label such as "Memories", "Memory lane", "Reasons", "Reasons I love you", "Red flags", "Habits", "Quirks", "Little things" or "Highlights" unless the note itself uses those words. Never put a name, a place or a fact in a title that is not in the note. No two scenes share a name.`,
-      '- layout: `line` is a single sentence on a screen of its own (`lines` has exactly one item, at most 140 characters). `list` is two to seven short lines that are alike, shown one after another (one per item). `moment` is something that happened, told in one to three sentences (`lines` has one item: the whole telling); it is shown beside a photo when there is one.' +
+      '- layout: `line` is a single sentence on a screen of its own (`lines` has exactly one item, at most 140 characters). `list` is two to seven short lines that are alike, shown one after another (one per item). `moment` is something told: a thing that happened, or a longer thought about who they are. \`lines\` holds its pages, one to five, each one or two short sentences (at most 130 characters) that read well alone; the first is shown beside a photo when there is one, and each page after it has a screen to itself. Several paragraphs about one thing are one scene of several pages, not several scenes and not one crowded page.' +
         (brief.photos ? ` \`photos\` is a scene of ${from}'s photos, at most one, with a name and no lines; include it when there are more photos than moments.` : ' Do not use `photos`: there are none.'),
       `- mood: playful when the scene teases ${who} or is funny, tender when it is sincere or loving, warm otherwise.`,
       `- Put the scenes in the order the film should play. Open with what is most like ${who}. Playful scenes usually come before tender ones, and the film ends on the scene that means the most.`,
@@ -85,8 +87,10 @@ export function outlineBrief(brief: OutlineBrief) {
     ].join('\n'),
     [
       'The words inside the scenes:',
-      `- Use only ${from}'s own words, copied as written. You may cut a long sentence into shorter ones, drop a joining word such as "and" or "also", and fix a capital letter or a full stop. Nothing else.`,
-      '- Never add a fact, a name, a place, a feeling, a joke or a compliment that is not in the note. Never reword to make it sound better. Never change who is speaking or "she" to "you".',
+      `- ${from} wrote this the way people talk, and may have dictated it. Edit it the way a good film editor would: cut rambling, false starts, filler and repetition; mend grammar and spelling; break a long run-on thought into short sentences; and make each line fit a screen. ${who} must still hear ${from} in every line.`,
+      `- Keep what makes it theirs exactly as written: their phrases and jokes, anything in quotation marks, their names for people and things, their slang. If a sentence is already good, leave it alone.`,
+      `- Keep one way of speaking through the whole film. If the note wanders between talking to ${who} ("you") and about ${who} ("he", "she"), settle on the one the note uses most.`,
+      '- Never add a fact, a name, a place, a feeling, a joke or a compliment that is not in the note. Never make it more romantic, more formal or more poetic than they wrote it. Every line must be something they said, said more cleanly; never something new.',
     ].join('\n'),
     `wish: a closing line, hope or promise for ${who}, if the note has one, in ${from}'s words. It is not part of any scene. Otherwise empty.`,
     [
@@ -147,7 +151,7 @@ export function checkOutline(raw: unknown, brief: OutlineBrief): Omit<Outlined, 
   const outline = cleanOutline(r.scenes, { source: written, photos: brief.photos })
   if (!outline.some((c) => c.layout !== 'photos')) return null
   const said = typeof r.wish === 'string' ? r.wish.replace(/\s+/g, ' ').trim().slice(0, LIMITS.wish) : ''
-  const wish = said && isTheirWords(said, written) ? said : ''
+  const wish = said && closeToTheirWords(said, written) ? said : ''
   const facts = { occasion: brief.occasion, relationship: brief.relationship, recipient: brief.recipient, photos: brief.photos, letter: brief.letter }
   const chosen = cleanDirection({ world: r.world, look: r.look, because: r.because, tune: r.tune, voice: r.voice }, DIRECTED_WORLDS)
   // The song the model chose stands even when its kind of film is not one the studio directs.

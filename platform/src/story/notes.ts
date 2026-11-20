@@ -29,6 +29,22 @@ export function isTheirWords(piece: string, source: string): boolean {
   return strangers === 0 || (weighty.length >= 8 && strangers / weighty.length <= 0.1)
 }
 
+/**
+ * True when `piece` says what the sender said, in words close to theirs. The studio may tidy a note
+ * (cut rambling, mend grammar, shorten for the screen), so words may change their endings and a few
+ * may be new; but a line built mostly from words the sender never used is the studio's invention,
+ * and is refused. Short lines get no leeway: with so few words, one stranger is the whole line.
+ */
+export function closeToTheirWords(piece: string, source: string): boolean {
+  const root = (w: string) => w.slice(0, 4)
+  const have = new Set(words(source).filter((w) => w.length > 3).map(root))
+  const weighty = words(piece).filter((w) => w.length > 3)
+  if (!weighty.length) return words(piece).length > 0 && isTheirWords(piece, source)
+  const strangers = weighty.filter((w) => !have.has(root(w))).length
+  const leeway = weighty.length >= 4 ? Math.max(1, Math.floor(weighty.length * 0.3)) : weighty.length === 3 ? 1 : 0
+  return strangers <= leeway
+}
+
 /** Clean whatever the sorter returned: right shapes, capped, and only the sender's words. */
 export function keepTheirWords(raw: unknown, source: string): SortedNotes {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>

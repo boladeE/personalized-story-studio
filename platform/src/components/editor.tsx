@@ -9,7 +9,7 @@ import { outlineOf } from '../story/outline'
 import type { Cut, Intake, LookId, Story, WorldId } from '../story/types'
 import { WORLDS, worldOf } from '../story/worlds'
 import type { DraftSong, SongJob } from './draft'
-import { chapterAsk, ChapterWords, hasWords, sceneAsk, SceneWords } from './SceneWords'
+import { chapterAsk, ChapterWords, hasWords, OpeningWords, sceneAsk, SceneWords } from './SceneWords'
 
 /**
  * The editor around the film: the chosen scene's words, open beside the still
@@ -55,6 +55,9 @@ export function ScenePanel({
   // One of the film's own scenes: its name, its shape and its words are all the sender's to change.
   const chapter = row.layout ? (outlineOf(intake) ?? []).find((c) => c.id === row.type) : undefined
   const design = row.state === 'in' ? row.designs.find((d) => d.id === row.design)?.name : undefined
+  // A film with its own scenes is changed here and nowhere else, so its opening holds the names and the occasion.
+  const outlined = Boolean(intake.outline)
+  const opening = outlined && row.type === 'hello'
   const isField = (target: EventTarget) => target instanceof HTMLTextAreaElement || (target instanceof HTMLInputElement && target.type !== 'radio' && target.type !== 'file')
 
   return (
@@ -64,7 +67,7 @@ export function ScenePanel({
         <p>
           {row.state === 'missing' && `Not in the film yet. ${row.missing}.`}
           {row.state === 'off' && 'Left out of the film.'}
-          {row.state === 'in' && (own && words ? sceneAsk(words, intake) : own && chapter ? chapterAsk(chapter.layout, intake) : row.fixed ? 'Always in the film.' : 'In the film.')}
+          {row.state === 'in' && (own && words ? sceneAsk(words, intake) : own && chapter ? chapterAsk(chapter.layout, intake) : own && opening ? 'Who it is for, who it is from and what it is for. The opening and the ending are written from these.' : row.fixed ? 'Always in the film.' : 'In the film.')}
         </p>
       </header>
 
@@ -78,7 +81,12 @@ export function ScenePanel({
           <ChapterWords chapter={chapter} intake={intake} setIntake={setIntake} onWriting={onLine} />
         </div>
       )}
-      {own && !words && !chapter && (
+      {own && opening && (
+        <div className="scene-words" onFocus={(e) => isField(e.target) && onTyping(true)} onBlur={(e) => isField(e.target) && onTyping(false)}>
+          <OpeningWords intake={intake} setIntake={setIntake} />
+        </div>
+      )}
+      {own && !words && !chapter && !opening && (
         <p className="scene-panel-note">This scene is made from both names and the occasion. To change those, use “Edit every detail” below.</p>
       )}
       {!own && (words || chapter) && <p className="scene-panel-note">This is the sample’s film, so its words stay as they are. In your own film, this is where you change them.</p>}
@@ -114,7 +122,7 @@ export function ScenePanel({
           )}
           {row.state === 'in' && row.fixed && row.designs.length <= 1 && <span className="scene-fixed">It opens or closes the film, so it stays where it is.</span>}
         </div>
-        {(changed || own) && (
+        {(changed || (own && !outlined) || (own && chapter && row.state !== 'in')) && (
           <p className="scene-more">
             {changed && (
               <button type="button" className="text-button" onClick={() => onCut(undefined, 'hello', { label: 'All scenes are back to the studio’s choices.', cue: 'hello' })}>
@@ -126,7 +134,7 @@ export function ScenePanel({
                 Remove this scene
               </button>
             )}
-            {own && (
+            {own && !outlined && (
               <Link to="/create" className="text-button">
                 Edit every detail
               </Link>

@@ -448,21 +448,21 @@ test('the home page offers every occasion, and a ticket starts a short flow that
   await page.getByRole('button', { name: 'Open the note' }).click()
   await expect(page.locator('.film').getByRole('status')).toContainText('Thank you, Kemi. Love, Ada.')
 
-  // The detailed form is one step away, with the same draft, and asks its questions for the occasion.
+  // The names and the occasion are changed in the editor, on the opening scene. There is no other form to go to.
   await openEditor(page)
-  await page.getByRole('link', { name: 'Edit every detail' }).click()
-  await expect(page.getByRole('radio', { name: 'Thank you' })).toBeChecked()
-  await expect(page.locator('.projection .ticket-foot')).toContainText('A thank-you')
-  // The film's scenes are its own and are changed beside the film, so the form doesn't ask for the older fixed ones.
-  const steps = page.getByRole('navigation', { name: 'Steps' })
-  await expect(steps.getByRole('button')).toHaveText([/Names/, /Photos/, /Letter/, /Last line/, /Look/])
-  await page.getByRole('button', { name: 'Last line' }).click()
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('What should Kemi read when the note opens?')
-  await expect(page.locator('.question-hint')).toContainText('Thank you, Kemi. Love, Ada.')
-  await page.getByRole('button', { name: 'Names' }).click()
-  await page.getByRole('radio', { name: 'Birthday' }).check()
-  await expect(page.locator('.projection .ticket-foot')).toContainText('Your birthday')
-  await expect(page.getByRole('button', { name: 'The wish' })).toBeVisible()
+  await pickScene(page, 'Before we begin')
+  await expect(page.getByRole('link', { name: 'Edit every detail' })).toHaveCount(0)
+  await expect(page.getByLabel('Their name')).toHaveValue('Kemi')
+  await expect(page.getByLabel('The occasion')).toHaveValue('thank-you')
+  await page.getByLabel('The occasion').selectOption('birthday')
+  await expect(page.locator('.stage-still-frame .shot')).toHaveAttribute('data-text', /Today is about you|Happy birthday|birthday/i)
+  // Clearing a name to retype it doesn't lose the film.
+  await page.getByLabel('Their name').fill('')
+  await expect(page.locator('.scene-strip')).toBeVisible()
+  await page.getByLabel('Their name').fill('Keke')
+  await expect(page.locator('.stage-still-frame .shot')).toHaveAttribute('data-text', /Keke/)
+  await undoButton(page).click()
+  await expect(page.locator('.stage-still-frame .shot')).toHaveAttribute('data-text', /Kemi/)
   expect(errors).toEqual([])
 })
 
@@ -609,7 +609,7 @@ test('the short flow writes the film’s own scenes from the sender’s words, p
   await expect(film).toHaveAttribute('data-phase', 'ticket')
   expect((await audioState(page))?.trackId ?? null).toBeNull()
   await expect(page.getByLabel('Scene name')).toHaveValue('Moving day')
-  await expect(page.getByLabel('What happened')).toHaveValue('The lift broke, and you carried the sofa up five floors arguing about the angle.')
+  await expect(page.getByLabel('What it says')).toHaveValue('The lift broke, and you carried the sofa up five floors arguing about the angle.')
   await page.getByLabel('Scene name').fill('The day the lift broke')
   // A still of the scene follows what is written, and so does its place in the row.
   const still = page.locator('.stage-still-frame .shot')
@@ -650,12 +650,12 @@ test('the short flow writes the film’s own scenes from the sender’s words, p
   await page.getByRole('button', { name: 'Remove this scene' }).click()
   await expect(sceneTile(page, 'Her tea')).toHaveCount(0)
 
-  // The detailed form is still one link away, with the same draft. It keeps to what every film has.
-  await pickScene(page, 'Before we begin')
-  await page.getByRole('link', { name: 'Edit every detail' }).click()
-  await expect(page).toHaveURL(/\/create$/)
-  await expect(page.getByLabel('Their name')).toHaveValue('Zara')
-  await expect(page.getByRole('navigation', { name: 'Steps' }).getByRole('button', { name: /Red flags|Reasons|Memories|Main character/ })).toHaveCount(0)
+  // A told scene runs over pages: a blank line starts a new one, and the still follows the page being written.
+  await pickScene(page, 'The day the lift broke')
+  await page.getByLabel('What it says').fill('The lift broke, and you carried the sofa up five floors.\n\nYou argued about the angle the whole way.')
+  await expect(still).toHaveAttribute('data-text', 'The day the lift broke. You argued about the angle the whole way.')
+  // Everything is changed here: there is no second form.
+  await expect(page.getByRole('link', { name: 'Edit every detail' })).toHaveCount(0)
   expect(errors).toEqual([])
 })
 

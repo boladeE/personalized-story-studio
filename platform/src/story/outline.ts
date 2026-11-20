@@ -1,6 +1,6 @@
 import { overlap } from './followups'
 import type { Answered } from './followups'
-import { HABIT, isTheirWords, REASON } from './notes'
+import { closeToTheirWords, HABIT, isTheirWords, REASON } from './notes'
 import type { SortedNotes } from './notes'
 import { SCENE_LAYOUTS } from './types'
 import type { Chapter, Intake, Mood, SceneLayout } from './types'
@@ -22,6 +22,11 @@ export const OUTLINE_LIMITS = {
   lines: 7,
   /** A single line longer than this is told as a passage, not shouted. */
   line: 140,
+  /** The most pages a told scene keeps. */
+  pages: 6,
+  /** What fits beside a photo on a scene's first page, and on each page after it. */
+  firstPage: 230,
+  page: 130,
 } as const
 
 const MOODS: Mood[] = ['warm', 'playful', 'tender']
@@ -63,7 +68,8 @@ const STOCK_NAMES = /^(the\s+)?(red flags?|reasons?( i love you| why)?|memor(y|i
 /** Give each line to one layout: a scene's shape follows from how much it says. */
 function shape(layout: SceneLayout, lines: string[]): { layout: SceneLayout; lines: string[] } {
   if (layout === 'photos') return { layout, lines: [] }
-  if (layout === 'moment') return { layout, lines: [lines.join(' ').slice(0, LIMITS.memoryStory).trim()].filter(Boolean) }
+  // A told scene keeps its pages: each is a screen of its own.
+  if (layout === 'moment') return { layout, lines: lines.slice(0, OUTLINE_LIMITS.pages) }
   if (lines.length > 1) return { layout: 'list', lines: lines.slice(0, OUTLINE_LIMITS.lines) }
   if ((lines[0]?.length ?? 0) > OUTLINE_LIMITS.line) return { layout: 'moment', lines }
   return { layout: 'line', lines }
@@ -72,8 +78,8 @@ function shape(layout: SceneLayout, lines: string[]): { layout: SceneLayout; lin
 /**
  * Whatever outlined the film, made safe: scenes of a shape the studio can
  * draw, capped, each with a name and an id. With `source`, a line is kept only
- * when it is made of words the sender wrote, and each of their lines is used
- * once. `photos` is how many photos the sender gave: with none, a scene of
+ * when it stays close to words the sender wrote (the studio may tidy them, not
+ * invent them), and each line is used once. `photos` is how many photos the sender gave: with none, a scene of
  * photos is dropped.
  */
 export function cleanOutline(raw: unknown, { source, photos = 0 }: { source?: string; photos?: number } = {}): Chapter[] {
@@ -88,7 +94,7 @@ export function cleanOutline(raw: unknown, { source, photos = 0 }: { source?: st
     if (wanted === 'photos' && (!photos || out.some((c) => c.layout === 'photos'))) continue
     const kept = (Array.isArray(r.lines) ? r.lines : [])
       .map((l) => oneLine(l, wanted === 'moment' ? LIMITS.memoryStory : LIMITS.listItem))
-      .filter((l) => l && (!source || isTheirWords(l, source)))
+      .filter((l) => l && (!source || closeToTheirWords(l, source)))
       .filter((l) => (seen.has(l.toLowerCase()) ? false : (seen.add(l.toLowerCase()), true)))
     const { layout, lines } = shape(wanted, kept)
     if (layout !== 'photos' && !lines.length) continue
@@ -164,14 +170,35 @@ export function outlineByWords(text: string, answered: Answered[], them: string)
 }
 
 /**
- * The scenes an outlined film is made of. Photos that no scene of the outline
- * shows get a scene of their own, last, so a photo the sender added is always
- * seen. Null when the film has no outline and is told in the older fixed scenes.
+ * A told scene's words as the screens they fill: the first beside its photo, the rest a page each.
+ * A passage too long for its screen is turned over at a sentence's end, so several paragraphs about
+ * someone become several pages instead of one crowded one.
+ */
+export function pagesOf(chapter: Chapter): string[] {
+  const pages: string[] = []
+  for (const passage of chapterLines(chapter)) {
+    let page = ''
+    for (const sentence of passage.split(/(?<=[.!?…])\s+/)) {
+      const room = pages.length ? OUTLINE_LIMITS.page : OUTLINE_LIMITS.firstPage
+      if (page && `${page} ${sentence}`.length > room) {
+        pages.push(page)
+        page = sentence
+      } else page = page ? `${page} ${sentence}` : sentence
+    }
+    if (page) pages.push(page)
+  }
+  return pages
+}
+
+/**
+ * The scenes an outlined film is made of. One of them is always the photos: when the outline has
+ * no such scene it is added last, so a photo the sender adds is always seen, and so there is a
+ * place in the editor to add one. Null when the film has no outline and is told in the older fixed scenes.
  */
 export function outlineOf(intake: Pick<Intake, 'outline' | 'photos' | 'recipient'>): Chapter[] | null {
   const outline = intake.outline
   if (!outline) return null
-  if (!intake.photos.length || outline.some((c) => c.layout === 'photos')) return outline
+  if (outline.some((c) => c.layout === 'photos')) return outline
   return [...outline, { id: 'photos', name: `${intake.recipient.trim() || 'Them'}, in pictures`, layout: 'photos', mood: 'warm', lines: [] }]
 }
 
