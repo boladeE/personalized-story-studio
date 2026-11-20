@@ -34,12 +34,12 @@ export function usePhotos() {
     const clips: Photo[] = []
     if (videos.length) setReading(videos.length)
     for (const file of videos) {
-      if (clips.length >= clipRoom) clipNotes.push(`Only ${CLIP_LIMITS.count} clips fit in one film.`)
-      else if (file.size > CLIP_LIMITS.bytes) clipNotes.push('A clip is over 25 MB and was skipped. A few seconds is plenty.')
+      if (clips.length >= clipRoom) clipNotes.push(`Only ${CLIP_LIMITS.count} videos fit in one film.`)
+      else if (file.size > CLIP_LIMITS.bytes) clipNotes.push('A video is over 50 MB and was skipped. Try a shorter one.')
       else {
         const read = await readClip(file)
         if (read.ok) clips.push({ id: `p-${crypto.randomUUID()}`, src: URL.createObjectURL(read.poster), caption: '', clip: URL.createObjectURL(file), aspect: read.aspect })
-        else clipNotes.push(read.why === 'long' ? `A clip is longer than ${CLIP_LIMITS.seconds} seconds and was skipped.` : 'A clip couldn’t be played by this browser and was skipped.')
+        else clipNotes.push(read.why === 'long' ? 'A video is longer than a minute and was skipped.' : 'A video couldn’t be played by this browser and was skipped.')
       }
       setReading((n) => Math.max(0, n - 1))
     }

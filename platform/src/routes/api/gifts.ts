@@ -6,10 +6,10 @@ import { readSong } from '../../server/music'
 import { hashAnswer, json, newManageKey, newSlug, saveGift, sha256, sniffAudio, sniffImage, sniffVideo } from '../../server/store'
 import type { GiftRecord } from '../../server/store'
 
-const MAX_BODY = 150 * 1024 * 1024
+const MAX_BODY = 190 * 1024 * 1024
 const MAX_PHOTO = 10 * 1024 * 1024
 /** A little over what the browser lets in, for the form's own wrapping. */
-const MAX_CLIP = 26 * 1024 * 1024
+const MAX_CLIP = 52 * 1024 * 1024
 const MAX_CLIPS = 3
 const MAX_VOICE = 4 * 1024 * 1024
 
