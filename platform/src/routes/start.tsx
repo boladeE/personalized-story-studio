@@ -5,7 +5,7 @@ import { useDraft } from '../components/draft'
 import { UndoToast } from '../components/UndoToast'
 import { Working } from '../components/Working'
 import { useRecorder } from '../components/recorder'
-import { VoiceNotes } from '../components/VoiceNotes'
+import { useVoiceNotes, VoiceTile } from '../components/VoiceNotes'
 import { usePhotos } from '../components/photos'
 import { cleanDirection, directLocally, DIRECTED_WORLDS } from '../story/direction'
 import type { DirectionPlan } from '../story/direction'
@@ -118,6 +118,8 @@ function Start() {
   const heading = useRef<HTMLHeadingElement>(null)
   const [busy, setBusy] = useState('')
   const [dragging, setDragging] = useState(false)
+  const voiceInput = useRef<HTMLInputElement>(null)
+  const voiceNotes = useVoiceNotes(intake.voices ?? [], (voices) => setIntake((c) => ({ ...c, voices })))
   const [asking, setAsking] = useState(false)
 
   useEffect(() => {
@@ -340,8 +342,8 @@ function Start() {
       ),
     },
     photos: {
-      question: `Add photos and videos of ${name}.`,
-      hint: 'Three or more photos is best, and up to three short videos. Private: only you and the person you send it to will see them.',
+      question: 'Add photos, videos and voice notes.',
+      hint: `Three or more photos of ${name} is best. Private: only you and the person you send it to will see or hear them.`,
       canNext: true,
       nextLabel: intake.photos.length || intake.voices?.length ? undefined : 'Skip this',
       body: (
@@ -358,11 +360,26 @@ function Start() {
               e.target.value = ''
             }}
           />
-          <ul className="start-photos">
+          <ul
+            className={`start-photos start-tray${dragging ? ' is-over' : ''}${intake.photos.length || intake.voices?.length ? '' : ' is-empty'}`}
+            onDragOver={(e) => {
+              e.preventDefault()
+              setDragging(true)
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault()
+              setDragging(false)
+              const dropped = Array.from(e.dataTransfer.files)
+              void photos.add(dropped.filter((f) => !/^audio\//i.test(f.type)))
+              void voiceNotes.upload(dropped.filter((f) => /^audio\//i.test(f.type)))
+            }}
+          >
+            {!intake.photos.length && !intake.voices?.length && <li className="start-tray-empty">Drop them here, or use the buttons below.</li>}
             {intake.photos.map((photo, i) => (
               <li key={photo.id}>
                 <img src={photo.src} alt={`Photo ${i + 1}`} />
-                {photo.clip && <span className="clip-mark">Clip</span>}
+                {photo.clip && <span className="clip-mark">Video</span>}
                 <button type="button" onClick={() => photos.remove(photo.id)} aria-label={`Remove photo ${i + 1}`}>
                   <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
                     <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -370,36 +387,50 @@ function Start() {
                 </button>
               </li>
             ))}
-            {photos.room > 0 && (
-              <li className={intake.photos.length ? 'start-add' : 'start-add is-empty'}>
-                <button
-                  type="button"
-                  className={dragging ? 'is-over' : undefined}
-                  onClick={() => fileInput.current?.click()}
-                  onDragOver={(e) => {
-                    e.preventDefault()
-                    setDragging(true)
-                  }}
-                  onDragLeave={() => setDragging(false)}
-                  onDrop={(e) => {
-                    e.preventDefault()
-                    setDragging(false)
-                    void photos.add(Array.from(e.dataTransfer.files))
-                  }}
-                >
-                  <b>{intake.photos.length ? 'Add more' : 'Add photos or videos'}</b>
-                  <span>{intake.photos.length ? `${photos.room} more fit` : 'Choose them, or drop them here'}</span>
-                </button>
-              </li>
-            )}
+            {(intake.voices ?? []).map((note, i) => (
+              <VoiceTile key={note.id} note={note} n={i + 1} onRemove={() => voiceNotes.remove(note.id)} />
+            ))}
           </ul>
+          <input
+            ref={voiceInput}
+            type="file"
+            accept="audio/*,.m4a,.mp3,.ogg,.opus,.wav,.aac"
+            multiple
+            hidden
+            aria-label="Upload voice notes"
+            onChange={(e) => {
+              void voiceNotes.upload(Array.from(e.target.files ?? []))
+              e.target.value = ''
+            }}
+          />
+          <div className="start-tray-add">
+            <button type="button" className="chip-button" disabled={photos.room <= 0} onClick={() => fileInput.current?.click()}>
+              Photos or videos
+            </button>
+            {voiceNotes.recording ? (
+              <button type="button" className="chip-button is-main" onClick={voiceNotes.stop}>
+                Stop recording ({Math.floor(voiceNotes.seconds)}s)
+              </button>
+            ) : (
+              <button type="button" className="chip-button" disabled={voiceNotes.room <= 0} onClick={() => void voiceNotes.record()}>
+                Record a voice note
+              </button>
+            )}
+            <button type="button" className="chip-button" disabled={voiceNotes.room <= 0} onClick={() => voiceInput.current?.click()}>
+              Upload a voice note
+            </button>
+          </div>
+          {voiceNotes.problem && (
+            <p className="field-error" role="alert">
+              {voiceNotes.problem}
+            </p>
+          )}
           {photos.reading > 0 && <Working className="photo-reading">Reading {photos.reading === 1 ? 'a photo' : `${photos.reading} photos`}…</Working>}
           {photos.removed && (
             <UndoToast token={photos.removed.photo.id} onUndo={photos.restore} onDone={photos.forget}>
               Photo removed.
             </UndoToast>
           )}
-          <VoiceNotes notes={intake.voices ?? []} onChange={(voices) => setIntake((c) => ({ ...c, voices }))} />
           {photos.error && (
             <p className="field-error" role="alert">
               {photos.error}

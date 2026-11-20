@@ -194,7 +194,7 @@ test('a video clip plays silently in the film, is a still in the editor, and tra
   await expect(page.locator('.maker-occasion')).toHaveText('Your first day')
 
   // A clip goes in beside the photos, marked as one. A file that is no video is named, not taken.
-  await page.locator('input[type=file]').setInputFiles([
+  await page.getByLabel('Add photos', { exact: true }).setInputFiles([
     { name: 'wave.mp4', mimeType: 'video/mp4', buffer: clip },
     { name: 'broken.mov', mimeType: 'video/quicktime', buffer: Buffer.from('not a video at all') },
   ])

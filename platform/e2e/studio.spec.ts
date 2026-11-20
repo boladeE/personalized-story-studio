@@ -409,7 +409,7 @@ test('the home page is one screen, and a link with an occasion starts a short fl
   await page.getByLabel('Their name').fill('Kemi')
   await page.getByLabel('Your name').fill('Ada')
   await page.getByRole('button', { name: 'Next' }).click()
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Add photos and videos of Kemi.')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Add photos, videos and voice notes.')
   await page.getByRole('button', { name: 'Skip this' }).click()
   await page.getByLabel('About Kemi').fill(NOTE)
   await page.getByRole('button', { name: 'Next' }).click()
@@ -474,7 +474,7 @@ test('the short flow writes the film’s own scenes from the sender’s words, p
   await page.getByRole('button', { name: 'Anniversary' }).click()
 
   await expect(page.locator('.start-step')).toHaveText('Step 4 of 7')
-  await page.locator('input[type=file]').setInputFiles(['one', 'two', 'three'].map((name) => ({ name: `${name}.png`, mimeType: 'image/png', buffer: PNG })))
+  await page.getByLabel('Add photos', { exact: true }).setInputFiles(['one', 'two', 'three'].map((name) => ({ name: `${name}.png`, mimeType: 'image/png', buffer: PNG })))
   await expect(page.locator('.start-photos img')).toHaveCount(3)
   // Removing a photo happens at once and can be taken back.
   const third = await page.locator('.start-photos img').nth(2).getAttribute('src')
@@ -963,9 +963,9 @@ test('an iPhone photo (HEIC) is converted on the device, and files that are not 
   await page.getByLabel('Your name').press('Enter')
   await page.getByRole('button', { name: 'Just because' }).click()
   // The picker offers HEIC files, which have no "image" type on most computers.
-  await expect(page.locator('input[type=file]')).toHaveAttribute('accept', 'image/*,.heic,.heif,video/mp4,video/quicktime,video/webm,.mov')
+  await expect(page.getByLabel('Add photos', { exact: true })).toHaveAttribute('accept', 'image/*,.heic,.heif,video/mp4,video/quicktime,video/webm,.mov')
 
-  await page.locator('input[type=file]').setInputFiles([
+  await page.getByLabel('Add photos', { exact: true }).setInputFiles([
     // Straight off an iPhone, as a computer sees it: no type, only the name.
     { name: 'IMG_0042.HEIC', mimeType: '', buffer: heic },
     // The same photo with nothing to go on but its first bytes.
