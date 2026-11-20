@@ -824,3 +824,127 @@ body:has(.home-shell)::before {
     animation: none;
   }
 }
+
+
+/* ---------- The home page on one screen: the pitch, the sample, one way in ---------- */
+
+.home-one {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+.one-main {
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: clamp(20px, 4vh, 48px) var(--gutter) clamp(20px, 4vh, 44px);
+  display: grid;
+  align-content: center;
+  gap: clamp(24px, 5vh, 52px);
+}
+.one-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  align-items: center;
+  gap: clamp(24px, 4.5vw, 64px);
+}
+.one-pitch {
+  display: grid;
+  justify-items: start;
+  gap: clamp(14px, 2.2vh, 22px);
+}
+.one-pitch .studio-title {
+  margin: 0;
+  font-size: clamp(34px, 4.6vw, 62px);
+  line-height: 1.02;
+  color: var(--palm);
+  text-wrap: balance;
+}
+.one-pitch .lede {
+  margin: 0;
+  max-width: 27em;
+  font-size: clamp(17px, 1.5vw, 20px);
+  color: var(--body);
+}
+.one-film {
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+.one-screen {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #14261f;
+  box-shadow: 0 22px 50px rgba(11, 40, 31, 0.28), 0 0 0 1px rgba(11, 40, 31, 0.12);
+}
+.one-screen > .film {
+  position: absolute;
+  inset: 0;
+}
+.one-film figcaption {
+  font-size: 14.5px;
+  color: var(--quiet);
+}
+.one-steps {
+  list-style: none;
+  margin: 0;
+  padding: clamp(16px, 2.6vh, 24px) 0 0;
+  border-top: 1px solid var(--rule);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(14px, 3vw, 40px);
+}
+.one-steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.one-step-n {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--palm);
+  color: #fff;
+  font-weight: 750;
+  font-size: 15px;
+}
+.one-steps h2 {
+  margin: 2px 0 2px;
+  font-size: 17.5px;
+  line-height: 1.25;
+  color: var(--palm);
+}
+.one-steps p {
+  margin: 0;
+  font-size: 15.5px;
+  line-height: 1.4;
+  color: var(--quiet);
+}
+.one-footer a {
+  color: #e9efe6;
+  font-weight: 600;
+  text-underline-offset: 3px;
+}
+.questions-page .question-list {
+  margin: clamp(18px, 3vh, 30px) 0;
+}
+@media (max-width: 860px) {
+  .one-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .one-steps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .one-main {
+    align-content: start;
+  }
+}
+
+/* With nothing between them, the name sits at one end of the header and the way in at the other. */
+.home-one .home-header {
+  justify-content: space-between;
+}

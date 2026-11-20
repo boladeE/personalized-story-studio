@@ -1402,6 +1402,12 @@
   bottom: 7%;
   opacity: 0.9;
 }
+/* On a small frame the label fills the cover, and the hint would sit under it. The page says to tap. */
+@container film (max-width: 460px) {
+  .sb-book-hint {
+    display: none;
+  }
+}
 .opening:not(.is-torn) .ticket-hit:hover + .sb-book-float .sb-book-cover,
 .opening:not(.is-torn) .ticket-hit:focus-visible + .sb-book-float .sb-book-cover {
   transform: rotateY(-9deg);

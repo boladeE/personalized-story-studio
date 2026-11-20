@@ -2,7 +2,6 @@ import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { audioState, chooseStyle, closeEditor, filmState, open, openEditor, pickScene, sceneTile, startFilm, trackErrors, undoButton, walk } from './helpers'
-import { OCCASIONS } from '../src/story/occasions'
 
 // Tiny valid PNG (1x1) for upload tests.
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64')
@@ -250,15 +249,10 @@ for (const [width, height] of [[360, 740], [768, 900], [1360, 800]]) {
     }
     // The home page, top to bottom.
     await open(page, '/')
-    await expect(page.locator('.contact-sheet .still-box[data-fit]')).toHaveCount(11)
     expect(await page.evaluate(() => document.documentElement.scrollWidth), 'the home page is wider than the screen').toBeLessThanOrEqual(width)
-    const cramped = await page.evaluate(() =>
-      Array.from(document.querySelectorAll<HTMLElement>('.rack .stub, .home-nav a, .home-header .button'))
-        .filter((el) => el.offsetParent !== null)
-        .map((el) => el.getBoundingClientRect())
-        .filter((r) => r.left < -1 || r.right > window.innerWidth + 1).length,
-    )
-    expect(cramped, 'a ticket or header link runs off the home page').toBe(0)
+    // On a desktop the whole home page is one screen: nothing to scroll for.
+    if (width >= 1000) expect(await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight)).toBeLessThanOrEqual(0)
+    expect(await offScreen(page, '.home-header > *, .one-pitch > *, .one-steps li, .one-footer a')).toBe(0)
     await open(page, '/create')
     await page.getByRole('button', { name: 'Fill with the sample' }).click()
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
@@ -398,17 +392,21 @@ const offScreen = (page: Page, selector: string) =>
 const NOTE =
   'Moving day. The lift broke, and you carried the sofa up five floors arguing about the angle. You always steal the duvet, then ask why I am cold. You never finish your tea. I love you because you remember the small things I mention once.'
 
-test('the home page offers every occasion, and a ticket starts a short flow that makes a film for it', async ({ page }) => {
+test('the home page is one screen, and a link with an occasion starts a short flow that makes a film for it', async ({ page }) => {
   test.setTimeout(90_000)
   const errors = trackErrors(page)
   await open(page, '/')
   await expect(page.getByRole('heading', { level: 1 })).toContainText('turned into a film')
-  const tickets = page.locator('.rack a')
-  await expect(tickets).toHaveCount(OCCASIONS.length)
-  for (const occasion of OCCASIONS) await expect(tickets.filter({ hasText: occasion.name })).toHaveAttribute('href', `/start?occasion=${occasion.id}`)
+  // The home page is one screen: the pitch, the sample, three steps and one way in. Questions are a link away.
+  await expect(page.locator('main section, main ol')).toHaveCount(2)
+  await expect(page.locator('.one-steps li')).toHaveCount(3)
+  await expect(page.locator('.one-screen .film')).toHaveAttribute('data-world', 'scrapbook')
+  await page.getByRole('link', { name: 'Questions' }).click()
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Questions')
+  await expect(page.locator('.question-list details')).toHaveCount(6)
 
-  // The occasion is written into the draft and leaves the address; the flow doesn't ask for it again.
-  await tickets.filter({ hasText: 'Thank you' }).click()
+  // A link can still carry the occasion: it is written into the draft and leaves the address, and the flow doesn't ask for it again.
+  await open(page, '/start?occasion=thank-you')
   await expect(page).toHaveURL(/\/start$/)
   await expect(page.locator('.start-step')).toHaveText('Step 1 of 6')
   await page.getByRole('button', { name: 'Friend', exact: true }).click()
@@ -638,39 +636,10 @@ test('the short flow writes the film’s own scenes from the sender’s words, p
   expect(errors).toEqual([])
 })
 
-test('on the home page the sample’s song and the film take turns', async ({ page }) => {
-  const errors = trackErrors(page)
-  await open(page, '/')
-  const song = () =>
-    page.evaluate(() => {
-      const audio = document.querySelector<HTMLAudioElement>('.song-player audio')!
-      return { paused: audio.paused, time: audio.currentTime }
-    })
-  // The song plays from a real tap, and its clock moves.
-  await page.getByRole('button', { name: 'Play Zara’s song' }).click()
-  await expect.poll(async () => (await song()).time, { timeout: 15_000 }).toBeGreaterThan(0.3)
-  await expect(page.getByRole('button', { name: 'Pause Zara’s song' })).toBeVisible()
-
-  // Starting the film stops the song.
-  await page.getByRole('button', { name: /Tap to begin/ }).click()
-  await expect.poll(async () => (await song()).paused).toBe(true)
-  await page.waitForFunction(() => window.__ltFilm?.phase() === 'playing', undefined, { timeout: 15_000 })
-  await expect.poll(async () => (await audioState(page))?.running).toBe(true)
-
-  // Playing the song again holds the film and its sound.
-  await page.getByRole('button', { name: 'Play Zara’s song' }).click()
-  await expect(page.locator('.screen .film')).toHaveClass(/is-paused/)
-  await expect.poll(async () => (await audioState(page))?.suspended).toBe(true)
-  await expect.poll(async () => (await song()).paused).toBe(false)
-  expect(errors).toEqual([])
-})
-
 test('the sample plays as a mixtape: a tape to press play on, tracks for scenes, and the song with it', async ({ page }) => {
   test.setTimeout(90_000)
   const errors = trackErrors(page)
-  await open(page, '/')
-  await page.locator('#kinds .kind').filter({ hasText: 'The Mixtape' }).click()
-  await expect(page).toHaveURL(/\/preview\?sample=1&style=mixtape$/)
+  await open(page, '/preview?sample=1&style=mixtape')
   const film = page.locator('.preview-body > .film')
   await expect(film).toHaveAttribute('data-world', 'mixtape')
   // The opening is the tape itself, with their name on its label.
@@ -703,12 +672,7 @@ test('the sample plays as a mixtape: a tape to press play on, tracks for scenes,
 test('the sample plays as a scrapbook, and its scenes can be redesigned, moved, left out and put back', async ({ page }) => {
   test.setTimeout(120_000)
   const errors = trackErrors(page)
-  await open(page, '/')
-  // The home page shows every kind of film and links to the sample in each.
-  const kinds = page.locator('#kinds .kind')
-  await expect(kinds).toHaveCount(3)
-  await kinds.filter({ hasText: 'The Scrapbook' }).click()
-  await expect(page).toHaveURL(/\/preview\?sample=1&style=scrapbook$/)
+  await open(page, '/preview?sample=1&style=scrapbook')
   const film = page.locator('.preview-body > .film')
   await expect(film).toHaveAttribute('data-world', 'scrapbook')
 
