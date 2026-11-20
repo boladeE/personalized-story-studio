@@ -7,7 +7,7 @@ import { NOT_STORED, sortProvider } from './sort'
  * added or tidied here (the director does that when the film is made), and the
  * recording is not kept.
  */
-export async function transcribe(audio: Uint8Array, mimeType: string): Promise<string> {
+export async function transcribe(audio: Uint8Array, mimeType: string, names: string[] = []): Promise<string> {
   if (sortProvider() !== 'gemini') throw new MusicError('Speaking isn’t switched on for this studio yet. Type it for now.', 503)
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), Number(process.env.TRANSCRIBE_TIMEOUT_MS ?? 45_000))
@@ -23,7 +23,7 @@ export async function transcribe(audio: Uint8Array, mimeType: string): Promise<s
           {
             role: 'user',
             parts: [
-              { text: 'Write down exactly what this person says, in the language they speak it, with ordinary punctuation. Keep their own words, slang and names as said. Leave out "um" and "uh". Add nothing, explain nothing, and do not describe sounds. If nothing is said, reply with an empty line.' },
+              { text: 'Write down exactly what this person says, in the language they speak it, with ordinary punctuation. Keep their own words, slang and names as said. Leave out "um" and "uh". Add nothing, explain nothing, and do not describe sounds. If nothing is said, reply with an empty line.' + (names.length ? ` Names they are likely to say, spelled this way: ${names.join(', ')}.` : '') },
               { inlineData: { mimeType, data: Buffer.from(audio).toString('base64') } },
             ],
           },

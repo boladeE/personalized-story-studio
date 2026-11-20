@@ -59,7 +59,7 @@ async function photoPeeks(photos: Photo[]): Promise<Array<{ id: string; jpeg: st
  * Saying it instead of typing it: the sender talks, and what they said is written into the box, where
  * they can read it and change it. The recording is used for that once and not kept.
  */
-function SpeakIt({ onWords }: { onWords: (words: string) => void }) {
+function SpeakIt({ names, onWords }: { names: string[]; onWords: (words: string) => void }) {
   const recorder = useRecorder(120)
   const [state, setState] = useState<'idle' | 'writing'>('idle')
   const [problem, setProblem] = useState('')
@@ -69,7 +69,7 @@ function SpeakIt({ onWords }: { onWords: (words: string) => void }) {
     if (!made) return
     setState('writing')
     try {
-      const response = await fetch('/api/transcribe', { method: 'POST', headers: { 'content-type': made.blob.type || 'audio/webm' }, body: made.blob })
+      const response = await fetch(`/api/transcribe?names=${encodeURIComponent(names.filter(Boolean).join(','))}`, { method: 'POST', headers: { 'content-type': made.blob.type || 'audio/webm' }, body: made.blob })
       const body = (await response.json().catch(() => ({}))) as { text?: string; error?: string }
       if (!response.ok) throw new Error(body.error || 'That couldn’t be written down. Try again, or type it.')
       if (body.text?.trim()) onWords(body.text.trim())
@@ -403,7 +403,7 @@ function Start() {
             <li>Why it’s them</li>
           </ul>
           <textarea className="start-about" rows={7} aria-label={`About ${name}`} maxLength={NOTES_LIMIT} value={about} onChange={(e) => setAbout(e.target.value)} />
-          <SpeakIt onWords={(words) => setAbout(`${about.trim()}${about.trim() ? ' ' : ''}${words}`.slice(0, NOTES_LIMIT))} />
+          <SpeakIt names={[them, me]} onWords={(words) => setAbout(`${about.trim()}${about.trim() ? ' ' : ''}${words}`.slice(0, NOTES_LIMIT))} />
           <p className="fine start-count" aria-live="polite">
             {about.trim().length === 0
               ? 'The more specific, the better the film.'

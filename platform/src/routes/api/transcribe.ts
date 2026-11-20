@@ -18,7 +18,9 @@ export const Route = createFileRoute('/api/transcribe')({
         const type = sniffAudio(bytes)
         if (!bytes.byteLength || bytes.byteLength > MAX_AUDIO || !type) return json({ error: 'That recording couldn’t be read.' }, { status: 415 })
         try {
-          return json({ text: await transcribe(bytes, type) })
+          // The two names, so they are written the way the sender spells them.
+          const names = (new URL(request.url).searchParams.get('names') ?? '').split(',').map((n) => n.replace(/[^\p{L}\p{N} '’.-]/gu, '').trim().slice(0, 60)).filter(Boolean).slice(0, 2)
+          return json({ text: await transcribe(bytes, type, names) })
         } catch (error) {
           if (error instanceof MusicError) return json({ error: error.message }, { status: error.status })
           throw error
