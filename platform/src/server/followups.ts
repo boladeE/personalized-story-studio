@@ -46,7 +46,7 @@ async function askModel(text: string, sender: string, recipient: string): Promis
       headers: { 'x-goog-api-key': process.env.GEMINI_API_KEY ?? '', 'content-type': 'application/json' },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: followupBrief(text, sender, recipient) }] }],
-        generationConfig: { responseMimeType: 'application/json', responseSchema: SCHEMA, temperature: 0.5, thinkingConfig: { thinkingLevel: 'low' } },
+        generationConfig: { responseMimeType: 'application/json', responseSchema: SCHEMA, thinkingConfig: { thinkingLevel: process.env.GEMINI_FOLLOWUP_THINKING ?? 'low' } },
       }),
     })
     if (!response.ok) throw new Error(`Gemini ${response.status}: ${(await response.text().catch(() => '')).slice(0, 200)}`)

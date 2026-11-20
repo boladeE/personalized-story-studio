@@ -82,9 +82,7 @@ export async function writeLyrics(details: SongDetails, tone: LyricTone = 'smoot
         generationConfig: {
           responseMimeType: 'application/json',
           responseSchema: SCHEMA,
-          temperature: 0.9,
-          // Higher levels write no better here and take two minutes.
-          thinkingConfig: { thinkingLevel: 'low' },
+          thinkingConfig: { thinkingLevel: process.env.GEMINI_LYRICS_THINKING ?? 'low' },
         },
       }),
     })
