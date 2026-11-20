@@ -15,6 +15,13 @@ export function allowSort(clientKey: string, now = Date.now()) {
   return true
 }
 
+/**
+ * Sent with every request to Google. Senders write and upload private things, so nothing they give
+ * the studio is kept in its request log (which is otherwise on: checked in AI Studio on 2026-11-20,
+ * with and without this). Google still holds requests for 55 days for abuse monitoring, as its terms say.
+ */
+export const NOT_STORED = { store: false } as const
+
 /** `demo` keeps tests and local work off the network. */
 export const sortProvider = (): 'gemini' | 'local' =>
   process.env.MUSIC_PROVIDER !== 'demo' && process.env.SORT_PROVIDER !== 'local' && process.env.GEMINI_API_KEY ? 'gemini' : 'local'

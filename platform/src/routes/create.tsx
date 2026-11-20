@@ -207,7 +207,7 @@ function Create() {
               ))}
             </div>
           </fieldset>
-          <p className="fine">This draft stays in this browser tab until you send it, and reloading clears it. Your photos are not uploaded before then. When you build the film, your names and words go to the studio’s music service so its song can be written.</p>
+          <p className="fine">This draft stays in this browser tab until you send it, and reloading clears it. When you build the film, your names and words go to the studio’s music service so its song can be written.</p>
         </>
       ),
     },

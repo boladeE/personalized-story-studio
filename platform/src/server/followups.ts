@@ -1,6 +1,6 @@
 import { cleanFollowups, followupsLocally } from '../story/followups'
 import type { Followup } from '../story/followups'
-import { sortProvider } from './sort'
+import { NOT_STORED, sortProvider } from './sort'
 
 /**
  * Follow-up questions for a sender's note. A Google text model reads the note
@@ -49,6 +49,7 @@ async function askModel(text: string, sender: string, recipient: string): Promis
       signal: controller.signal,
       headers: { 'x-goog-api-key': process.env.GEMINI_API_KEY ?? '', 'content-type': 'application/json' },
       body: JSON.stringify({
+        ...NOT_STORED,
         contents: [{ role: 'user', parts: [{ text: followupBrief(text, sender, recipient) }] }],
         generationConfig: { responseMimeType: 'application/json', responseSchema: SCHEMA, thinkingConfig: { thinkingLevel: process.env.GEMINI_FOLLOWUP_THINKING ?? 'low' } },
       }),

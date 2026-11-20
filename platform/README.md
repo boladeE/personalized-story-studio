@@ -66,6 +66,11 @@ On `platform_v2` a film's **scenes are its own**. There is no fixed list of scen
 - **Clips.** A short video can be added wherever photos are (up to 3 a film, 25 MB and 30 seconds each; MP4, MOV or WebM that the sender's browser can play). It is a `Photo` with a `clip` (the video) beside its `src` (its first frame, drawn on the device by `src/components/clip-intake.ts`). In the film it plays silent and looping where the photo would sit (`src/film/Media.tsx`); stills and thumbnails show the first frame. Nothing is converted, so a browser that can't play a clip shows its first frame instead. On send it is uploaded as `clip:<photo id>`, checked by its first bytes (`sniffVideo`), stored as `<photo id>-clip` and served behind the gift's lock with range requests like the song.
 - **A fuller first film.** The outline brief forbids cutting one sentence across two pages. Single-line scenes take a photo each while there are photos no told scene used, so photos sit beside words before any are left for the scene of photos.
 
+## Privacy of what senders give (2026-11-20)
+
+- **Nothing the studio sends to Google is kept in its request log.** Every request (scenes, follow-up questions, photo placing, lyrics, the song) carries `store: false` (`NOT_STORED` in `src/server/sort.ts`). The project's AI Studio request logging is on; with the flag a request does not appear there, without it it does (checked both ways). Google still holds requests for 55 days for abuse monitoring, and on the paid tier does not use them to improve its models (its terms, read the same day).
+- **The director sees the photos.** Small copies (512 px) go with the note when a film is made, and a quick second step puts each scene beside the photo that shows it (`placePhotos` in `src/server/outline.ts`). A scene it leaves out goes without a photo. `DIRECTOR_SEES_PHOTOS=0` turns it off. The photo step says the photos are private; it no longer says they stay on the device.
+
 ## Which model does what
 
 Chosen on 2026-11-20 by running the same three notes through each candidate on the test site. Each is one environment variable away from being changed.

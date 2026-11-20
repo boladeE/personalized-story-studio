@@ -1,3 +1,4 @@
+import { NOT_STORED } from './sort'
 import { occasionOf } from '../story/occasions'
 import { hasRefusedLine, lyricsBrief, tidyLyrics, tidyTitle } from '../story/vibes'
 import type { LyricTone, SongDetails } from '../story/vibes'
@@ -79,6 +80,7 @@ export async function writeLyrics(details: SongDetails, tone: LyricTone = 'smoot
       signal: controller.signal,
       headers: { 'x-goog-api-key': process.env.GEMINI_API_KEY ?? '', 'content-type': 'application/json' },
       body: JSON.stringify({
+        ...NOT_STORED,
         contents: [{ role: 'user', parts: [{ text: fresh ? `${lyricsBrief(details, tone)}\n\n${FRESH_NOTE}` : lyricsBrief(details, tone) }] }],
         generationConfig: {
           responseMimeType: 'application/json',

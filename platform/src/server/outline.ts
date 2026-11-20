@@ -9,7 +9,7 @@ import { DIRECTION_REASONS } from '../story/types'
 import type { Chapter, Occasion, Relationship } from '../story/types'
 import { LIMITS } from '../story/validate'
 import { VIBES } from '../story/vibes'
-import { sortProvider } from './sort'
+import { NOT_STORED, sortProvider } from './sort'
 
 /**
  * Outlining a film. A Google text model reads what the sender wrote and
@@ -37,15 +37,15 @@ export interface OutlineBrief {
   photos: number
   letter: boolean
   /**
-   * The sender's photos, small, in order, with their ids: given only when the studio is set to let the
-   * director see them (`DIRECTOR_SEES_PHOTOS=1`) and the browser sent them. With them each scene is put
+   * The sender's photos, small, in order, with their ids, unless the studio has turned this off
+   * (`DIRECTOR_SEES_PHOTOS=0`). With them each scene is put
    * beside the photo that shows it (`placePhotos`); without them photos are dealt out blind.
    */
   peeks?: Array<{ id: string; jpeg: string }>
 }
 
-/** Whether the director may be shown the sender's photos. Off unless the studio's owner turns it on. */
-export const directorSeesPhotos = () => process.env.DIRECTOR_SEES_PHOTOS === '1'
+/** Whether the director is shown the sender's photos. On (the owner's decision of 2026-11-20) unless the studio turns it off. */
+export const directorSeesPhotos = () => process.env.DIRECTOR_SEES_PHOTOS !== '0'
 
 export interface Outlined {
   outline: Chapter[]
@@ -137,6 +137,7 @@ async function askModel(brief: OutlineBrief, model: string, timeoutMs: number): 
       signal: controller.signal,
       headers: { 'x-goog-api-key': process.env.GEMINI_API_KEY ?? '', 'content-type': 'application/json' },
       body: JSON.stringify({
+        ...NOT_STORED,
         contents: [{ role: 'user', parts: [{ text: outlineBrief(brief) }] }],
         generationConfig: { responseMimeType: 'application/json', responseSchema: SCHEMA, thinkingConfig: { thinkingLevel: process.env.GEMINI_OUTLINE_THINKING ?? 'low' } },
       }),
@@ -227,6 +228,7 @@ async function placePhotos(outline: Chapter[], peeks: NonNullable<OutlineBrief['
       signal: controller.signal,
       headers: { 'x-goog-api-key': process.env.GEMINI_API_KEY ?? '', 'content-type': 'application/json' },
       body: JSON.stringify({
+        ...NOT_STORED,
         contents: [{ role: 'user', parts: [{ text: placeBrief(outline, peeks.length) }, ...peeks.flatMap((peek, i) => [{ text: `Photo ${i + 1}:` }, { inlineData: { mimeType: 'image/jpeg', data: peek.jpeg } }])] }],
         generationConfig: { responseMimeType: 'application/json', responseSchema: PLACE_SCHEMA, thinkingConfig: { thinkingLevel: 'low' } },
       }),

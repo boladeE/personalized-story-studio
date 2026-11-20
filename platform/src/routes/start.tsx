@@ -31,16 +31,10 @@ const ALL: StepId[] = ['who', 'names', 'occasion', 'photos', 'about', 'more', 's
 const ENOUGH = 30
 
 /**
- * Small copies of the photos for the director to place scenes by. They are made, and sent, only in a
- * browser where this has been switched on (`lt-director-sees`), and used only by a studio set to allow
- * it. Everywhere else the photos stay on the device until the film is sent, as the photos step says.
+ * Small copies of the photos, for the director to place each scene beside the one that shows it.
+ * They are sent with the note when the film is made, and not kept in the studio's request log.
  */
 async function photoPeeks(photos: Photo[]): Promise<Array<{ id: string; jpeg: string }>> {
-  try {
-    if (window.localStorage.getItem('lt-director-sees') !== '1') return []
-  } catch {
-    return []
-  }
   const peeks: Array<{ id: string; jpeg: string }> = []
   for (const photo of photos) {
     try {
@@ -285,7 +279,7 @@ function Start() {
     },
     photos: {
       question: `Add a few photos of ${name}.`,
-      hint: 'Three or more is best, and up to three short video clips. They stay on this device until you send the film.',
+      hint: 'Three or more is best, and up to three short video clips. Private: only you and the person you send it to will see them.',
       canNext: true,
       nextLabel: intake.photos.length ? undefined : 'Skip photos',
       body: (

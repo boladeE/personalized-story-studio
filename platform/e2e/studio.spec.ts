@@ -529,8 +529,8 @@ test('the short flow writes the film’s own scenes from the sender’s words, p
   const sent = (await sortRequest).postDataJSON() as Record<string, unknown>
   expect(sent).toMatchObject({ text: NOTE, sender: 'Tobi', recipient: 'Zara', occasion: 'anniversary', relationship: 'girlfriend', letter: false })
   expect(Object.keys(sent).sort()).toEqual(['answers', 'letter', 'occasion', 'peeks', 'photos', 'recipient', 'relationship', 'sender', 'text'])
-  // No copy of a photo goes with it unless this browser has been switched to let the director see them.
-  expect(sent.peeks).toEqual([])
+  // Small copies of the two photos go with it, for placing each scene beside the photo that shows it.
+  expect((sent.peeks as Array<{ id: string; jpeg: string }>).map((p) => typeof p.jpeg)).toEqual(['string', 'string'])
   expect(sent.answers).toEqual([{ quote: 'You always steal the duvet, then ask why I am cold.', question: 'What does Zara say when you bring it up?', answer: '“You run hot anyway.” Every time.' }])
   expect(typeof sent.photos).toBe('number')
   await expect(page).toHaveURL(/\/preview$/)

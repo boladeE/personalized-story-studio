@@ -1,3 +1,4 @@
+import { NOT_STORED } from './sort'
 import { randomBytes } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -138,7 +139,7 @@ async function geminiSong(prompt: string): Promise<{ audio: Uint8Array; lyrics: 
         'api-revision': '2026-05-20',
         'content-type': 'application/json',
       },
-      body: JSON.stringify({ model: process.env.GEMINI_MUSIC_MODEL ?? 'lyria-3.5', input: prompt }),
+      body: JSON.stringify({ model: process.env.GEMINI_MUSIC_MODEL ?? 'lyria-3.5', input: prompt, ...NOT_STORED }),
     })
     if (!response.ok) {
       const detail = (await response.text().catch(() => '')).slice(0, 300)
