@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CreateRouteImport } from './routes/create'
+import { Route as OwnerRouteImport } from './routes/owner'
 import { Route as PreviewRouteImport } from './routes/preview'
 import { Route as SendRouteImport } from './routes/send'
 import { Route as SongRouteImport } from './routes/song'
@@ -19,6 +20,7 @@ import { Route as ApiFollowupsRouteImport } from './routes/api/followups'
 import { Route as ApiGiftsRouteImport } from './routes/api/gifts'
 import { Route as ApiLyricsRouteImport } from './routes/api/lyrics'
 import { Route as ApiMusicRouteImport } from './routes/api/music'
+import { Route as ApiOwnerRouteImport } from './routes/api/owner'
 import { Route as ApiSortRouteImport } from './routes/api/sort'
 import { Route as ApiTranscribeRouteImport } from './routes/api/transcribe'
 import { Route as GSlugRouteImport } from './routes/g.$slug'
@@ -37,6 +39,11 @@ const IndexRoute = IndexRouteImport.update({
 const CreateRoute = CreateRouteImport.update({
   id: '/create',
   path: '/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OwnerRoute = OwnerRouteImport.update({
+  id: '/owner',
+  path: '/owner',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PreviewRoute = PreviewRouteImport.update({
@@ -77,6 +84,11 @@ const ApiLyricsRoute = ApiLyricsRouteImport.update({
 const ApiMusicRoute = ApiMusicRouteImport.update({
   id: '/api/music',
   path: '/api/music',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiOwnerRoute = ApiOwnerRouteImport.update({
+  id: '/api/owner',
+  path: '/api/owner',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSortRoute = ApiSortRouteImport.update({
@@ -128,6 +140,7 @@ const ApiMediaSlugFileRoute = ApiMediaSlugFileRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
+  '/owner': typeof OwnerRoute
   '/preview': typeof PreviewRoute
   '/send': typeof SendRoute
   '/song': typeof SongRoute
@@ -136,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/api/gifts': typeof ApiGiftsRoute
   '/api/lyrics': typeof ApiLyricsRoute
   '/api/music': typeof ApiMusicRoute
+  '/api/owner': typeof ApiOwnerRoute
   '/api/sort': typeof ApiSortRoute
   '/api/transcribe': typeof ApiTranscribeRoute
   '/g/$slug': typeof GSlugRoute
@@ -149,6 +163,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
+  '/owner': typeof OwnerRoute
   '/preview': typeof PreviewRoute
   '/send': typeof SendRoute
   '/song': typeof SongRoute
@@ -157,6 +172,7 @@ export interface FileRoutesByTo {
   '/api/gifts': typeof ApiGiftsRoute
   '/api/lyrics': typeof ApiLyricsRoute
   '/api/music': typeof ApiMusicRoute
+  '/api/owner': typeof ApiOwnerRoute
   '/api/sort': typeof ApiSortRoute
   '/api/transcribe': typeof ApiTranscribeRoute
   '/g/$slug': typeof GSlugRoute
@@ -171,6 +187,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
+  '/owner': typeof OwnerRoute
   '/preview': typeof PreviewRoute
   '/send': typeof SendRoute
   '/song': typeof SongRoute
@@ -179,6 +196,7 @@ export interface FileRoutesById {
   '/api/gifts': typeof ApiGiftsRoute
   '/api/lyrics': typeof ApiLyricsRoute
   '/api/music': typeof ApiMusicRoute
+  '/api/owner': typeof ApiOwnerRoute
   '/api/sort': typeof ApiSortRoute
   '/api/transcribe': typeof ApiTranscribeRoute
   '/g/$slug': typeof GSlugRoute
@@ -194,6 +212,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/create'
+    | '/owner'
     | '/preview'
     | '/send'
     | '/song'
@@ -202,6 +221,7 @@ export interface FileRouteTypes {
     | '/api/gifts'
     | '/api/lyrics'
     | '/api/music'
+    | '/api/owner'
     | '/api/sort'
     | '/api/transcribe'
     | '/g/$slug'
@@ -215,6 +235,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/create'
+    | '/owner'
     | '/preview'
     | '/send'
     | '/song'
@@ -223,6 +244,7 @@ export interface FileRouteTypes {
     | '/api/gifts'
     | '/api/lyrics'
     | '/api/music'
+    | '/api/owner'
     | '/api/sort'
     | '/api/transcribe'
     | '/g/$slug'
@@ -236,6 +258,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/create'
+    | '/owner'
     | '/preview'
     | '/send'
     | '/song'
@@ -244,6 +267,7 @@ export interface FileRouteTypes {
     | '/api/gifts'
     | '/api/lyrics'
     | '/api/music'
+    | '/api/owner'
     | '/api/sort'
     | '/api/transcribe'
     | '/g/$slug'
@@ -258,6 +282,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CreateRoute: typeof CreateRoute
+  OwnerRoute: typeof OwnerRoute
   PreviewRoute: typeof PreviewRoute
   SendRoute: typeof SendRoute
   SongRoute: typeof SongRoute
@@ -266,6 +291,7 @@ export interface RootRouteChildren {
   ApiGiftsRoute: typeof ApiGiftsRoute
   ApiLyricsRoute: typeof ApiLyricsRoute
   ApiMusicRoute: typeof ApiMusicRoute
+  ApiOwnerRoute: typeof ApiOwnerRoute
   ApiSortRoute: typeof ApiSortRoute
   ApiTranscribeRoute: typeof ApiTranscribeRoute
   GSlugRoute: typeof GSlugRoute
@@ -291,6 +317,13 @@ declare module '@tanstack/react-router' {
       path: '/create'
       fullPath: '/create'
       preLoaderRoute: typeof CreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/owner': {
+      id: '/owner'
+      path: '/owner'
+      fullPath: '/owner'
+      preLoaderRoute: typeof OwnerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/preview': {
@@ -347,6 +380,13 @@ declare module '@tanstack/react-router' {
       path: '/api/music'
       fullPath: '/api/music'
       preLoaderRoute: typeof ApiMusicRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/owner': {
+      id: '/api/owner'
+      path: '/api/owner'
+      fullPath: '/api/owner'
+      preLoaderRoute: typeof ApiOwnerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/sort': {
@@ -418,6 +458,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CreateRoute: CreateRoute,
+  OwnerRoute: OwnerRoute,
   PreviewRoute: PreviewRoute,
   SendRoute: SendRoute,
   SongRoute: SongRoute,
@@ -426,6 +467,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiGiftsRoute: ApiGiftsRoute,
   ApiLyricsRoute: ApiLyricsRoute,
   ApiMusicRoute: ApiMusicRoute,
+  ApiOwnerRoute: ApiOwnerRoute,
   ApiSortRoute: ApiSortRoute,
   ApiTranscribeRoute: ApiTranscribeRoute,
   GSlugRoute: GSlugRoute,

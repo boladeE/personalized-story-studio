@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { directorSeesPhotos, outlineByRule, outlineFilm } from '../../server/outline'
+import { record } from '../../server/metrics'
 import { allowSort } from '../../server/sort'
 import { json } from '../../server/store'
 import { cleanAnswers } from '../../story/followups'
@@ -54,7 +55,9 @@ export const Route = createFileRoute('/api/sort')({
         const client = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local'
         const brief = { text, sender, recipient, answered: answers, occasion, ...(occasionName ? { occasionName } : {}), relationship, photos, letter, ...(peeks.length ? { peeks } : {}) }
         // Past the hourly cap the film is still outlined, by rule on this server.
-        return json(allowSort(client) ? await outlineFilm(brief) : outlineByRule(brief))
+        const made = allowSort(client) ? await outlineFilm(brief) : outlineByRule(brief)
+        record('film', made.by)
+        return json(made)
       },
     },
   },

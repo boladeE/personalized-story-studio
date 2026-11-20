@@ -1,3 +1,4 @@
+import { record } from '../../server/metrics'
 import { createFileRoute } from '@tanstack/react-router'
 import { lyricsProvider } from '../../server/lyrics'
 import { allowSong, generateSong, musicProvider, MusicError, REFUSED_WORDS } from '../../server/music'
@@ -43,6 +44,7 @@ export const Route = createFileRoute('/api/music')({
         if (!allowed.allowed) return json({ error: allowed.reason }, { status: 429 })
         try {
           const song = await generateSong(vibe, details, words, occasion, voice)
+          record('song')
           return json(
             {
               id: song.id,

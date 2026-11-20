@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { record } from '../../server/metrics'
 import { MusicError } from '../../server/music'
 import { allowSort } from '../../server/sort'
 import { json, sniffAudio } from '../../server/store'
@@ -20,7 +21,9 @@ export const Route = createFileRoute('/api/transcribe')({
         try {
           // The two names, so they are written the way the sender spells them.
           const names = (new URL(request.url).searchParams.get('names') ?? '').split(',').map((n) => n.replace(/[^\p{L}\p{N} '’.-]/gu, '').trim().slice(0, 60)).filter(Boolean).slice(0, 2)
-          return json({ text: await transcribe(bytes, type, names) })
+          const text = await transcribe(bytes, type, names)
+          record('spoken')
+          return json({ text })
         } catch (error) {
           if (error instanceof MusicError) return json({ error: error.message }, { status: error.status })
           throw error
