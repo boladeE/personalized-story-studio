@@ -419,7 +419,14 @@ export function lyricsBrief(d: SongDetails, tone: LyricTone = 'smooth') {
   const truth = `Everything true you have to work with is below, in ${singer}'s own words.${kin} Do not add places, events, people, nicknames or facts. The details also show what kind of love this is (partner, parent, child, sibling, friend): write for that, and never make it romantic unless the details are. Write in the same kind of English ${singer} uses.`
   const banned = '- No greeting-card words: blessings, journey, treasure, special, shine, celebrate, amazing, wonderful, forever, dreams.'
   const contractions = "- Use contractions the way people speak: you're, I'm, don't, it's."
-  const check = 'Before you answer, say every line aloud in your head. Rewrite any line that nobody would say, that exists only to rhyme, or that states something not in the details'
+  // The film puts the sender's sentences on screen as written. Sung back in the same words, the song is a reading of
+  // the film; it should be the same life, told a second way.
+  const ownWay = [
+    `- ${who} will read ${singer}'s sentences on screen in the film this song plays under, exactly as written. So the song never reads them out. It is about the same things, said a second way.`,
+    `- Take what a detail is about (the thing, the place, what happened, the feeling under it) and say it in new words, at a slant: a glance at it, what it looked like, what came after, what ${singer} did about it. ${who} should think "that's the night the car broke down", not "that's the sentence".`,
+    `- Never sing a sentence from the details, and never more than three of its words in a row. A single striking word or a short name for a thing ("the duvet", "two a.m.") may stay; that is how ${who} knows it is theirs. Only the hook may be lifted straight, and only two to four words of it.`,
+  ]
+  const check = `Before you answer, say every line aloud in your head. Rewrite any line that nobody would say, that exists only to rhyme, that states something not in the details, or that is one of ${singer}'s own sentences set to music`
 
   if (tone === 'smooth') {
     return [
@@ -436,7 +443,7 @@ export function lyricsBrief(d: SongDetails, tone: LyricTone = 'smooth') {
       [
         'How it must be written:',
         '- Short lines, mostly 3 to 7 syllables. Space and repetition are good. A fragment is fine when it is how people talk ("Two a.m., car won\'t start").',
-        `- Keep ${singer}'s own words where they sit well; they are what ${who} will recognise.`,
+        ...ownWay,
         contractions,
         '- No set-up-and-punchline jokes. One light, throwaway wink is enough for the whole song.',
         `- The name "${who}" at most twice in the whole song, never in the hook line.`,
@@ -483,7 +490,7 @@ export function lyricsBrief(d: SongDetails, tone: LyricTone = 'smooth') {
     [
       'How every line must be written:',
       `- A whole, natural sentence or clause that ${singer} could say out loud to ${who}. No telegraphic fragments, no dropped words, no word order twisted to reach a rhyme.`,
-      `- Keep ${singer}'s own words wherever they fit the rhythm. They are what ${who} will recognise.`,
+      ...ownWay,
       contractions,
       '- Every verse line holds something you could photograph: a thing, a place, an action.',
       banned,
