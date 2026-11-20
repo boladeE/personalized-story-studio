@@ -849,3 +849,21 @@
     animation: none;
   }
 }
+
+/* A sentence beside a photo, and the line that leads into a track: big enough to read at a glance. */
+.mx-lede {
+  margin: 0;
+  max-width: 22em;
+  font-size: calc(clamp(18px, min(2.7cqw, 5cqh), 36px) * var(--fit, 1));
+  font-weight: 650;
+  line-height: 1.28;
+  color: var(--f-ink);
+  text-wrap: pretty;
+}
+.mx-card-sub {
+  margin: 0;
+  max-width: 26em;
+  font-size: calc(clamp(16px, min(2.2cqw, 4.2cqh), 30px) * var(--fit, 1));
+  line-height: 1.3;
+  color: var(--f-soft);
+}

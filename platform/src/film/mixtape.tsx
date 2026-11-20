@@ -217,7 +217,7 @@ function TrackCard({ shot }: { shot: Of<'card'> }) {
       </p>
       <Type as="h2" text={shot.title} className={`mx-caps mx-head ${fit(shot.title, [14, 24, 36])}`} by="char" delay={0.2} step={32} />
       {shot.sub && (
-        <p className="mx-mono mx-body mx-in" style={vars({ '--at': `${(0.5 + shot.title.length * 0.032).toFixed(2)}s` })}>
+        <p className="mx-prose mx-card-sub mx-in" style={vars({ '--at': `${(0.5 + shot.title.length * 0.032).toFixed(2)}s` })}>
           {shot.sub}
         </p>
       )}
@@ -264,7 +264,14 @@ function PhotoTrack({ shot }: { shot: Of<'photo'> }) {
             {shot.kicker}
           </p>
         )}
-        <Type as="h2" text={shot.title} className={`mx-caps mx-head ${fit(shot.title, [14, 26, 44, 70])}`} by="char" delay={0.6} step={30} />
+        {/* A whole sentence beside a photo is read, not shouted: set in tall capitals it shrank to nothing. */}
+        {shot.title.length > 48 ? (
+          <p className="mx-prose mx-lede mx-in" style={vars({ '--at': '0.6s' })}>
+            {shot.title}
+          </p>
+        ) : (
+          <Type as="h2" text={shot.title} className={`mx-caps mx-head ${fit(shot.title, [14, 26, 44, 70])}`} by="char" delay={0.6} step={30} />
+        )}
         {shot.body && (
           <p className="mx-prose mx-in" style={vars({ '--at': `${after.toFixed(2)}s` })}>
             {shot.body}
