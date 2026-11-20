@@ -85,6 +85,8 @@ export interface Chapter {
   intro?: string
   /** The sender's own voice, recorded for this scene. It plays over the scene, with the song turned down under it. */
   voice?: VoiceNote
+  /** Which of the voice notes added while the film was being made the director put on this scene. Replaced by `voice` once the film is built. */
+  voiceId?: string
   /** The photo a moment is told beside, if the sender picked one. */
   photoId?: string
 }
@@ -143,6 +145,8 @@ export interface Intake {
    * `spotlight`, `memories`, `habits` and `reasons` above are not used.
    */
   outline?: Chapter[]
+  /** Voice notes the sender added while making the film. The director puts each on a scene, where it becomes that scene's `voice`. */
+  voices?: Array<VoiceNote & { id: string }>
   /** The film's first words under their name, written for this film. Unset, the occasion's stock opening is used. */
   opening?: { title: string; body: string }
 }

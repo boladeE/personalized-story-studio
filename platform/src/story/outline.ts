@@ -99,6 +99,7 @@ export function cleanOutline(raw: unknown, { source, photos = 0, proper = [] }: 
   const names = new Set<string>()
   // A photo sits beside one scene.
   const photoIds = new Set<string>()
+  const voiceIds = new Set<string>()
   const out: Chapter[] = []
   for (const item of Array.isArray(raw) ? raw : []) {
     if (out.length === OUTLINE_LIMITS.scenes) break
@@ -121,7 +122,8 @@ export function cleanOutline(raw: unknown, { source, photos = 0, proper = [] }: 
     ids.add(id)
     const mood = MOODS.find((m) => m === r.mood) ?? 'warm'
     const intro = layout === 'photos' && !oneLine(r.intro, 90) ? '' : oneLine(r.intro, 90)
-    out.push({ id, name, layout, mood, lines, ...(intro ? { intro } : {}), ...(typeof r.photoId === 'string' && /^[a-z0-9-]{1,64}$/i.test(r.photoId) && !photoIds.has(r.photoId) && (photoIds.add(r.photoId), true) ? { photoId: r.photoId } : {}) })
+    const voiceId = layout !== 'photos' && typeof r.voiceId === 'string' && /^[a-z0-9-]{1,32}$/i.test(r.voiceId) && !voiceIds.has(r.voiceId) && (voiceIds.add(r.voiceId), true) ? r.voiceId : ''
+    out.push({ id, name, layout, mood, lines, ...(intro ? { intro } : {}), ...(voiceId ? { voiceId } : {}), ...(typeof r.photoId === 'string' && /^[a-z0-9-]{1,64}$/i.test(r.photoId) && !photoIds.has(r.photoId) && (photoIds.add(r.photoId), true) ? { photoId: r.photoId } : {}) })
   }
   return out
 }
@@ -246,4 +248,26 @@ export const blankChapter = (taken: string[]): Chapter => {
   let id = newSceneId()
   while (taken.includes(id)) id = newSceneId()
   return { id, name: '', layout: 'line', mood: 'warm', lines: [''] }
+}
+
+/**
+ * Put the voice notes added while the film was being made onto its scenes: each where the director
+ * placed it, and any it left out on the scenes of words nearest the end that have none, so nothing
+ * the sender recorded goes unheard.
+ */
+export function withVoices(outline: Chapter[], voices: Array<{ id: string; src: string; seconds: number }>): Chapter[] {
+  const left = [...voices]
+  const placed = outline.map((chapter) => {
+    const { voiceId, ...rest } = chapter
+    const at = left.findIndex((v) => v.id === voiceId)
+    if (at < 0) return rest
+    const [note] = left.splice(at, 1)
+    return { ...rest, voice: { src: note.src, seconds: note.seconds } }
+  })
+  for (let i = placed.length - 1; i >= 0 && left.length; i--) {
+    if (placed[i].layout === 'photos' || placed[i].voice) continue
+    const note = left.pop()!
+    placed[i] = { ...placed[i], voice: { src: note.src, seconds: note.seconds } }
+  }
+  return placed
 }

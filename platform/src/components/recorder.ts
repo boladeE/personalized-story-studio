@@ -62,3 +62,31 @@ export function useRecorder(maxSeconds: number) {
   useEffect(() => () => stop(), [])
   return { state, seconds, start, stop }
 }
+
+/** The longest voice note recorded here. */
+export const VOICE_SECONDS = 45
+/** A recording brought from elsewhere (a voice note from a chat, say) may run a little longer. */
+export const UPLOAD_SECONDS = 60
+export const UPLOAD_BYTES = 4 * 1024 * 1024
+
+/** How long a recording runs, or null when this browser can't play it. */
+export function lengthOf(src: string): Promise<number | null> {
+  return new Promise((resolve) => {
+    const el = new Audio()
+    const done = (value: number | null) => {
+      clearTimeout(timer)
+      el.removeAttribute('src')
+      resolve(value)
+    }
+    const timer = setTimeout(() => done(null), 8000)
+    el.preload = 'metadata'
+    el.onerror = () => done(null)
+    el.onloadedmetadata = () => {
+      if (Number.isFinite(el.duration)) return done(el.duration)
+      // Some recordings only say how long they are once played to the end.
+      el.ondurationchange = () => Number.isFinite(el.duration) && done(el.duration)
+      el.currentTime = 1e7
+    }
+    el.src = src
+  })
+}

@@ -42,6 +42,8 @@ export interface OutlineBrief {
    * beside the photo that shows it (`placePhotos`); without them photos are dealt out blind.
    */
   peeks?: Array<{ id: string; jpeg: string }>
+  /** Voice notes the sender added, by id, with what each says (written down first, so the director can place them). */
+  voices?: Array<{ id: string; said: string }>
 }
 
 /** Whether the director is shown the sender's photos. On (the owner's decision of 2026-11-20) unless the studio turns it off. */
@@ -69,6 +71,7 @@ const SCHEMA = {
           mood: { type: 'string', enum: ['playful', 'tender', 'warm'] },
           lines: { type: 'array', items: { type: 'string' } },
           intro: { type: 'string' },
+          voice: { type: 'integer' },
         },
         required: ['name', 'intro', 'layout', 'mood', 'lines'],
       },
@@ -118,6 +121,16 @@ export function outlineBrief(brief: OutlineBrief) {
       `- ${who} is the one watching. Every line is ${from} speaking to ${who}: "you", "your". If the note talks about ${who} ("she is kind", "${who} is my sister"), turn it to face them ("you are kind", "you are my sister"). Never "he", "she" or "they" for ${who}, and never their name as if they were not there.`,
       '- Never add a fact, a name, a place, a feeling, a joke or a compliment that is not in the note. Never make it more romantic, more formal or more poetic than they wrote it. Every line must be something they said, said more cleanly; never something new.',
     ].join('\n'),
+    ...(brief.voices?.length
+      ? [
+          [
+            `${from} also added ${brief.voices.length === 1 ? 'a voice note' : `${brief.voices.length} voice notes`}, which ${who} will hear in ${from}'s own voice during the film. What ${brief.voices.length === 1 ? 'it says' : 'each says'}:`,
+            ...brief.voices.map((v, i) => `${i + 1}. ${v.said ? `"${v.said}"` : '(could not be made out)'}`),
+            `For each scene, \`voice\` is the number of the voice note that plays over it, or 0. Put each voice note on the scene it is about. One that is about no scene in particular goes on the scene near the end that suits it best. Every voice note is placed, each on one scene only, and no scene has two.`,
+            'A voice note is heard, so do not also write its words as lines of the film. You may let what it says shape a scene around it.',
+          ].join('\n'),
+        ]
+      : []),
     `wish: the film's last line, shown alone after everything else. Always give one. Use the note's closing line, hope or promise if it has one; if it has none, take the most heartfelt sentence in the note ("I love you so much", "I thank God for you"), facing ${who}, and do not also use that sentence in a scene. It is ${from}'s words, tidied; never a line of your own.`,
     [
       'Then choose how the film is made:',
@@ -172,7 +185,13 @@ async function askModel(brief: OutlineBrief, model: string, timeoutMs: number): 
 export function checkOutline(raw: unknown, brief: OutlineBrief): Omit<Outlined, 'by'> | null {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
   const written = withAnswers(brief.text, brief.answered)
-  const outline = cleanOutline(r.scenes, { source: written, photos: brief.photos, proper: [brief.recipient, brief.sender] })
+  // The director names a voice note by its number; the film knows it by its id.
+  const scenes = (Array.isArray(r.scenes) ? r.scenes : []).map((scene) => {
+    const at = scene && typeof scene === 'object' ? Number((scene as { voice?: unknown }).voice) : 0
+    const note = Number.isInteger(at) && at > 0 ? brief.voices?.[at - 1] : undefined
+    return note ? { ...(scene as object), voiceId: note.id } : scene
+  })
+  const outline = cleanOutline(scenes, { source: written, photos: brief.photos, proper: [brief.recipient, brief.sender] })
   if (!outline.some((c) => c.layout !== 'photos')) return null
   const said = typeof r.wish === 'string' ? r.wish.replace(/\s+/g, ' ').trim().slice(0, LIMITS.wish) : ''
   const wish = said && closeToTheirWords(said, written) ? said : ''

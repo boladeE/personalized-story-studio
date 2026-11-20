@@ -703,3 +703,47 @@ body:has(.start-shell)::before {
     transform: none;
   }
 }
+
+/* Voice notes, added beside the photos and videos. */
+.voice-notes {
+  margin-top: clamp(22px, 4vh, 34px);
+  padding-top: clamp(16px, 3vh, 24px);
+  border-top: 1px solid #dcd9cc;
+  display: grid;
+  gap: 10px;
+}
+.voice-notes h2 {
+  margin: 0;
+  font-size: 20px;
+  color: var(--palm);
+}
+.voice-notes p {
+  margin: 0;
+  color: var(--muted);
+}
+.voice-notes ul {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.voice-notes li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.voice-notes audio {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+}
+.voice-notes-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.voice-notes small {
+  color: var(--hibiscus-deep);
+  min-height: 1em;
+}

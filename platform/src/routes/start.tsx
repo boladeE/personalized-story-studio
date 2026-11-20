@@ -5,13 +5,14 @@ import { useDraft } from '../components/draft'
 import { UndoToast } from '../components/UndoToast'
 import { Working } from '../components/Working'
 import { useRecorder } from '../components/recorder'
+import { VoiceNotes } from '../components/VoiceNotes'
 import { usePhotos } from '../components/photos'
 import { cleanDirection, directLocally, DIRECTED_WORLDS } from '../story/direction'
 import type { DirectionPlan } from '../story/direction'
 import { cleanAnswers, cleanFollowups, FOLLOWUP_LIMITS, followupsLocally, withAnswers } from '../story/followups'
 import { canGenerate, LOOKS } from '../story/generate'
 import { closeToTheirWords, NOTES_LIMIT } from '../story/notes'
-import { cleanOutline, notesOf, outlineByWords } from '../story/outline'
+import { cleanOutline, notesOf, outlineByWords, withVoices } from '../story/outline'
 import { OCCASIONS, occasionFor, occasionOf } from '../story/occasions'
 import { RELATIONSHIPS } from '../story/relationships'
 import { newSeed } from '../story/rng'
@@ -206,9 +207,22 @@ function Start() {
       let wish = ''
       let opening: Intake['opening']
       let directed: DirectionPlan | null = null
+      // What each voice note says is written down first, so the director can put it on the scene it is about.
+      const notes = intake.voices ?? []
+      const voices = await Promise.all(
+        notes.map(async (note) => {
+          try {
+            const blob = await (await fetch(note.src)).blob()
+            const heard = await fetch(`/api/transcribe?names=${encodeURIComponent([them, me].filter(Boolean).join(','))}`, { method: 'POST', headers: { 'content-type': blob.type || 'audio/webm' }, body: blob })
+            return { id: note.id, said: heard.ok ? String(((await heard.json()) as { text?: string }).text ?? '') : '' }
+          } catch {
+            return { id: note.id, said: '' }
+          }
+        }),
+      )
       const facts = { occasion: intake.occasion, occasionName: intake.occasionName?.trim() || undefined, relationship: intake.relationship, photos: intake.photos.length, letter: intake.letter.trim().length >= 40 }
       try {
-        const response = await fetch('/api/sort', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text, sender: me, recipient: them, ...facts, answers, peeks: await photoPeeks(intake.photos) }) })
+        const response = await fetch('/api/sort', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text, sender: me, recipient: them, ...facts, answers, peeks: await photoPeeks(intake.photos), voices }) })
         const body = (await response.json()) as { outline?: unknown; wish?: unknown; direction?: unknown; opening?: { title?: unknown; body?: unknown } }
         if (!response.ok) throw new Error('outline failed')
         // Checked again here: the studio may tidy the sender's words, but every line must stay close to what they wrote.
@@ -221,6 +235,8 @@ function Start() {
       } catch {
         outline = outlineByWords(text, answers, them)
       }
+      // Each voice note goes on the scene the director chose for it; any it left out still gets a scene.
+      outline = withVoices(outline, notes)
       directed ??= directLocally({ ...facts, recipient: them, notes: notesOf(outline, wish) })
       // The colours are drawn for each film. Left to the director they came out the same for every film of a kind.
       const look = LOOKS[seed % LOOKS.length].id
@@ -327,7 +343,7 @@ function Start() {
       question: `Add photos and videos of ${name}.`,
       hint: 'Three or more photos is best, and up to three short videos. Private: only you and the person you send it to will see them.',
       canNext: true,
-      nextLabel: intake.photos.length ? undefined : 'Skip this',
+      nextLabel: intake.photos.length || intake.voices?.length ? undefined : 'Skip this',
       body: (
         <>
           <input
@@ -383,6 +399,7 @@ function Start() {
               Photo removed.
             </UndoToast>
           )}
+          <VoiceNotes notes={intake.voices ?? []} onChange={(voices) => setIntake((c) => ({ ...c, voices }))} />
           {photos.error && (
             <p className="field-error" role="alert">
               {photos.error}

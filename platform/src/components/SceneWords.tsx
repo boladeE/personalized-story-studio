@@ -6,7 +6,7 @@ import type { Chapter, Intake, Memory, SceneLayout, VoiceNote } from '../story/t
 import { LIMITS } from '../story/validate'
 import { Cross, Field, GrowingText, ListEditor, oneLine } from './fields'
 import { usePhotos } from './photos'
-import { useRecorder } from './recorder'
+import { lengthOf, UPLOAD_BYTES, UPLOAD_SECONDS, useRecorder, VOICE_SECONDS } from './recorder'
 import { UndoToast } from './UndoToast'
 import { Working } from './Working'
 
@@ -127,32 +127,6 @@ export function SceneWords({
 
 type Setter = <K extends keyof Intake>(key: K, value: Intake[K]) => void
 
-const VOICE_SECONDS = 45
-/** A recording brought from elsewhere (a voice note from a chat, say) may run a little longer. */
-const UPLOAD_SECONDS = 60
-const UPLOAD_BYTES = 4 * 1024 * 1024
-
-/** How long a recording runs, or null when this browser can't play it. */
-function lengthOf(src: string): Promise<number | null> {
-  return new Promise((resolve) => {
-    const el = new Audio()
-    const done = (value: number | null) => {
-      clearTimeout(timer)
-      el.removeAttribute('src')
-      resolve(value)
-    }
-    const timer = setTimeout(() => done(null), 8000)
-    el.preload = 'metadata'
-    el.onerror = () => done(null)
-    el.onloadedmetadata = () => {
-      if (Number.isFinite(el.duration)) return done(el.duration)
-      // Some recordings only say how long they are once played to the end.
-      el.ondurationchange = () => Number.isFinite(el.duration) && done(el.duration)
-      el.currentTime = 1e7
-    }
-    el.src = src
-  })
-}
 
 /** The sender's own voice for a scene: recorded here, heard in the film over that scene with the song turned down. */
 function VoiceField({ voice, onChange }: { voice?: VoiceNote; onChange: (voice: VoiceNote | undefined) => void }) {
