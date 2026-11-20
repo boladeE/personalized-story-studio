@@ -593,18 +593,19 @@
   align-content: center;
   justify-items: start;
   gap: clamp(6px, 1.8cqh, 16px);
-  padding: clamp(30px, 10cqh, 80px) clamp(16px, 4cqw, 52px) clamp(16px, 4.5cqh, 36px) calc(36% + clamp(12px, 3cqw, 44px));
+  padding: clamp(30px, 10cqh, 80px) clamp(16px, 4cqw, 52px) clamp(16px, 4.5cqh, 36px) calc(44% + clamp(12px, 3cqw, 44px));
   transform: rotate(var(--r, 0deg));
 }
 .sb-photo.is-clipped.layout-right .sb-indexcard {
   padding-left: clamp(16px, 4cqw, 52px);
-  padding-right: calc(36% + clamp(12px, 3cqw, 44px));
+  padding-right: calc(44% + clamp(12px, 3cqw, 44px));
 }
 .sb-photo.is-clipped .sb-print {
   position: absolute;
   left: clamp(8px, 2cqw, 28px);
   top: calc(clamp(12px, 4cqh, 34px) * -1);
-  width: 34%;
+  /* The photo is the point of the card, so it is the biggest thing on it. */
+  width: 42%;
   margin: 0;
 }
 .sb-photo.is-clipped.layout-right .sb-print {
@@ -637,6 +638,8 @@
 }
 .sb-card-body {
   max-width: 34em;
+  font-size: clamp(13px, min(1.65cqw, 3.1cqh), 22px);
+  line-height: 1.5;
   text-wrap: pretty;
 }
 .sb-card-caption {
