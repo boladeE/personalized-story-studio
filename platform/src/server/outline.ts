@@ -38,8 +38,8 @@ export interface OutlineBrief {
   letter: boolean
   /**
    * The sender's photos, small, in order, with their ids: given only when the studio is set to let the
-   * director see them (`DIRECTOR_SEES_PHOTOS=1`) and the browser sent them. With them the director puts
-   * each scene beside the photo that shows it; without them photos are dealt out blind.
+   * director see them (`DIRECTOR_SEES_PHOTOS=1`) and the browser sent them. With them each scene is put
+   * beside the photo that shows it (`placePhotos`); without them photos are dealt out blind.
    */
   peeks?: Array<{ id: string; jpeg: string }>
 }
@@ -66,7 +66,6 @@ const SCHEMA = {
           layout: { type: 'string', enum: ['line', 'list', 'moment', 'photos'] },
           mood: { type: 'string', enum: ['playful', 'tender', 'warm'] },
           lines: { type: 'array', items: { type: 'string' } },
-          photo: { type: 'integer' },
         },
         required: ['name', 'layout', 'mood', 'lines'],
       },
@@ -105,16 +104,6 @@ export function outlineBrief(brief: OutlineBrief) {
       `- Keep one way of speaking through the whole film. If the note wanders between talking to ${who} ("you") and about ${who} ("he", "she"), settle on the one the note uses most.`,
       '- Never add a fact, a name, a place, a feeling, a joke or a compliment that is not in the note. Never make it more romantic, more formal or more poetic than they wrote it. Every line must be something they said, said more cleanly; never something new.',
     ].join('\n'),
-    ...(brief.peeks?.length
-      ? [
-          [
-            `The photos: you are shown ${from}'s ${brief.peeks.length} photos, numbered in order. For each scene, \`photo\` is the number of the photo that belongs beside it, or 0 for none.`,
-            '- Match a scene to the photo that shows what it says: the same place, the same moment, the same thing happening. A scene about a feeling can take a photo where they simply look like themselves.',
-            '- Use a photo for one scene only. If nothing fits a scene, give it 0; a wrong photo is worse than none. A `list` and the `photos` scene take 0.',
-            `- The photos only decide placement. Never describe a photo, and never put anything you see in one into the words: the words come only from ${from}'s note.`,
-          ].join('\n'),
-        ]
-      : []),
     `wish: a closing line, hope or promise for ${who}, if the note has one, in ${from}'s words. It is not part of any scene. Otherwise empty.`,
     [
       'Then choose how the film is made:',
@@ -151,12 +140,7 @@ async function askModel(brief: OutlineBrief): Promise<unknown> {
       signal: controller.signal,
       headers: { 'x-goog-api-key': process.env.GEMINI_API_KEY ?? '', 'content-type': 'application/json' },
       body: JSON.stringify({
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: outlineBrief(brief) }, ...(brief.peeks ?? []).flatMap((peek, i) => [{ text: `Photo ${i + 1}:` }, { inlineData: { mimeType: 'image/jpeg', data: peek.jpeg } }])],
-          },
-        ],
+        contents: [{ role: 'user', parts: [{ text: outlineBrief(brief) }] }],
         generationConfig: { responseMimeType: 'application/json', responseSchema: SCHEMA, thinkingConfig: { thinkingLevel: process.env.GEMINI_OUTLINE_THINKING ?? 'low' } },
       }),
     })
@@ -176,13 +160,7 @@ async function askModel(brief: OutlineBrief): Promise<unknown> {
 export function checkOutline(raw: unknown, brief: OutlineBrief): Omit<Outlined, 'by'> | null {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
   const written = withAnswers(brief.text, brief.answered)
-  // The director names a photo by its number; the film knows it by its id.
-  const scenes = (Array.isArray(r.scenes) ? r.scenes : []).map((scene) => {
-    const at = scene && typeof scene === 'object' ? Number((scene as { photo?: unknown }).photo) : 0
-    const peek = Number.isInteger(at) && at > 0 ? brief.peeks?.[at - 1] : undefined
-    return peek && (scene as { layout?: unknown }).layout !== 'list' && (scene as { layout?: unknown }).layout !== 'photos' ? { ...(scene as object), photoId: peek.id } : scene
-  })
-  const outline = cleanOutline(scenes, { source: written, photos: brief.photos })
+  const outline = cleanOutline(r.scenes, { source: written, photos: brief.photos })
   if (!outline.some((c) => c.layout !== 'photos')) return null
   const said = typeof r.wish === 'string' ? r.wish.replace(/\s+/g, ' ').trim().slice(0, LIMITS.wish) : ''
   const wish = said && closeToTheirWords(said, written) ? said : ''
@@ -201,7 +179,82 @@ export function outlineByRule(brief: OutlineBrief): Outlined {
   return { outline, wish: '', direction: { ...direction, designs: {}, order: [] }, by: 'rule' }
 }
 
+const PLACE_SCHEMA = {
+  type: 'object',
+  properties: { placements: { type: 'array', items: { type: 'object', properties: { scene: { type: 'integer' }, photo: { type: 'integer' } }, required: ['scene', 'photo'] } } },
+  required: ['placements'],
+}
+
+/** What the model placing photos is told: the scenes as written, and nothing it may add to them. */
+export function placeBrief(outline: Chapter[], count: number) {
+  return [
+    `Below are the scenes of a short film made as a gift, numbered, and then the sender's ${count} photos, numbered in order. Say which photo belongs beside which scene.`,
+    [
+      'Rules:',
+      '- Match a scene to the photo that shows what it says: the same place, the same moment, the same thing happening. A scene about a feeling can take a photo where the person simply looks like themselves.',
+      '- A photo goes beside one scene only, and a scene takes one photo. Leave a scene out when nothing fits it: a wrong photo is worse than none. Photos left over are shown together elsewhere, so not every photo needs a scene.',
+      '- You only place photos. You write nothing.',
+    ].join('\n'),
+    `The scenes:\n${outline.map((c, i) => `${i + 1}. ${c.name || '(unnamed)'}: ${c.lines.join(' ')}`).join('\n')}`,
+  ].join('\n\n')
+}
+
+/** A model's placements laid over an outline: only scenes of words, real photos, each photo once. */
+export function applyPlacements(outline: Chapter[], peeks: Array<{ id: string }>, raw: unknown): Chapter[] {
+  const used = new Set(outline.map((c) => c.photoId).filter(Boolean))
+  const placed = new Map<number, string>()
+  for (const item of Array.isArray((raw as { placements?: unknown } | null)?.placements) ? (raw as { placements: unknown[] }).placements : []) {
+    const p = (item && typeof item === 'object' ? item : {}) as { scene?: unknown; photo?: unknown }
+    const scene = outline[Number(p.scene) - 1]
+    const photo = peeks[Number(p.photo) - 1]
+    if (!scene || !photo || scene.photoId || placed.has(Number(p.scene) - 1) || used.has(photo.id) || scene.layout === 'list' || scene.layout === 'photos') continue
+    used.add(photo.id)
+    placed.set(Number(p.scene) - 1, photo.id)
+  }
+  return outline.map((c, i) => (placed.has(i) ? { ...c, photoId: placed.get(i) } : c))
+}
+
+/**
+ * Put each scene beside the photo that shows it. A separate, quick look by a fast model once the
+ * scenes are written: shown the photos, the model that writes the scenes took a minute. If this
+ * fails or is slow the photos are dealt out blind, as they are when the director may not see them.
+ */
+async function placePhotos(outline: Chapter[], peeks: NonNullable<OutlineBrief['peeks']>): Promise<Chapter[]> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), Number(process.env.PLACE_TIMEOUT_MS ?? 20_000))
+  try {
+    const model = process.env.GEMINI_PLACE_MODEL ?? 'gemini-3.8-flash'
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: { 'x-goog-api-key': process.env.GEMINI_API_KEY ?? '', 'content-type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: placeBrief(outline, peeks.length) }, ...peeks.flatMap((peek, i) => [{ text: `Photo ${i + 1}:` }, { inlineData: { mimeType: 'image/jpeg', data: peek.jpeg } }])] }],
+        generationConfig: { responseMimeType: 'application/json', responseSchema: PLACE_SCHEMA, thinkingConfig: { thinkingLevel: 'low' } },
+      }),
+    })
+    if (!response.ok) throw new Error(`Gemini ${response.status}: ${(await response.text().catch(() => '')).slice(0, 200)}`)
+    const body = (await response.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string; thought?: boolean }> } }> }
+    const reply = (body.candidates?.[0]?.content?.parts ?? [])
+      .filter((p) => typeof p.text === 'string' && !p.thought)
+      .map((p) => p.text)
+      .join('')
+    return applyPlacements(outline, peeks, JSON.parse(reply))
+  } catch (error) {
+    console.error('[place] photos placed blind', error)
+    return outline
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 export async function outlineFilm(brief: OutlineBrief): Promise<Outlined> {
+  const made = await outlineWords(brief)
+  if (!brief.peeks?.length || sortProvider() !== 'gemini') return made
+  return { ...made, outline: await placePhotos(made.outline, brief.peeks) }
+}
+
+async function outlineWords(brief: OutlineBrief): Promise<Outlined> {
   if (sortProvider() === 'gemini') {
     try {
       const checked = checkOutline(await askModel(brief), brief)
