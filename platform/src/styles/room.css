@@ -1,8 +1,9 @@
 /* ==========================================================================
-   The studio's working pages: the detailed form, the song, sending and
-   managing a gift. Like the home page, each opens on a field of hibiscus (the
-   header and a band beneath it) with the work itself on white cards that hang
-   over the edge of the field onto a bright wall.
+   The studio's working pages: the detailed form, sending and managing a
+   gift. Like the home page, each opens on a pale field of mist (the header
+   and a band beneath it) with the work itself on white cards that hang over
+   the edge of the field onto a bright wall. Hibiscus is kept for what is
+   pressed.
    Loaded after app.css. Colours that differ between the wall, a card and the
    field are custom properties, so components don't need a set of rules each.
    The older names (--room, --on-room…) are kept: they now mean the wall and
@@ -45,7 +46,7 @@ body:has(.gate),
 body:has(.recipient-shell) {
   background: #050304;
 }
-/* The field: a band of hibiscus behind the top of a page whose work sits on a card. */
+/* The field: a band of mist behind the top of a page whose work sits on a card. */
 body:has(.studio-page.send)::before,
 body:has(.studio-page.manage)::before {
   content: '';
@@ -53,7 +54,7 @@ body:has(.studio-page.manage)::before {
   inset: 0 0 auto;
   z-index: -1;
   height: clamp(250px, 36vh, 360px);
-  background: var(--hibiscus);
+  background: var(--mist);
 }
 :focus-visible {
   outline-color: var(--focus);
@@ -73,21 +74,21 @@ body:has(.studio-page.manage)::before {
 
 /* The header is the top of the field. */
 .studio-header {
-  background: var(--hibiscus);
+  background: var(--mist);
   border-bottom: 0;
 }
 .studio-header .wordmark {
-  color: #fff;
+  color: var(--palm);
 }
 .studio-header .wordmark span {
-  color: var(--candle);
+  color: var(--hibiscus);
 }
 .studio-header .studio-tag {
-  color: rgba(255, 255, 255, 0.9);
-  border-color: rgba(255, 255, 255, 0.45);
+  color: var(--muted);
+  border-color: var(--line);
 }
 .studio-header :focus-visible {
-  outline-color: var(--candle);
+  outline-color: var(--hibiscus);
 }
 .studio-title {
   color: var(--title);
@@ -143,32 +144,21 @@ body:has(.studio-page.manage)::before {
   border-color: var(--palm);
   color: var(--chalk);
 }
-/* On the field, outlines and words are white. */
-.studio-header .button.ghost,
-.on-field .button.ghost {
-  border-color: rgba(255, 255, 255, 0.75);
-  color: #fff;
+/* On the field, outlines are green and the button that matters is hibiscus. */
+.studio-header .button.ghost {
+  border-color: var(--palm);
+  color: var(--palm);
 }
-.studio-header .button.ghost:hover,
-.on-field .button.ghost:hover:not(:disabled) {
-  background: #fff;
-  border-color: #fff;
-  color: var(--hibiscus-deep);
+.studio-header .button.ghost:hover {
+  background: var(--palm);
+  border-color: var(--palm);
+  color: var(--chalk);
 }
-/* A hibiscus button would vanish on the field, so there it is white. The preview's header is not on the field. */
 .studio-header .button.primary {
-  background: #fff;
-  color: var(--hibiscus-deep);
-}
-.studio-header .button.primary:hover {
-  background: var(--candle);
-  color: var(--wine-deep);
-}
-.preview-shell .studio-header .button.primary {
   background: var(--hibiscus);
   color: #fff;
 }
-.preview-shell .studio-header .button.primary:hover {
+.studio-header .button.primary:hover {
   background: var(--hibiscus-deep);
   color: #fff;
 }
@@ -301,34 +291,6 @@ select {
 }
 .share-box {
   background: #f6f3ea;
-}
-/* ---------- Preview ---------- */
-
-/* The header is a light bar above the film, like the home page around its screen. */
-.preview-shell .studio-header {
-  background: var(--mist);
-  border-bottom-color: var(--line);
-}
-.preview-shell .studio-header .wordmark {
-  color: var(--palm);
-}
-.preview-shell .studio-header .wordmark span {
-  color: var(--hibiscus);
-}
-.preview-shell .studio-header .studio-tag {
-  color: var(--muted);
-  border-color: var(--line);
-}
-.preview-shell .studio-header .button.ghost {
-  border-color: var(--palm);
-  color: var(--palm);
-}
-.preview-shell .studio-header .button.ghost:hover {
-  background: var(--palm);
-  color: var(--chalk);
-}
-.preview-shell .studio-header :focus-visible {
-  outline-color: var(--hibiscus);
 }
 @media (max-width: 960px) {
   .home-hero {

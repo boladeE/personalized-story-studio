@@ -22,8 +22,8 @@
   grid-area: 1 / 1 / 2 / -1;
   z-index: -1;
   margin-bottom: calc(-1 * clamp(40px, 6vw, 84px));
-  background: var(--hibiscus);
-  box-shadow: 0 0 0 100vmax var(--hibiscus);
+  background: var(--mist);
+  box-shadow: 0 0 0 100vmax var(--mist);
   clip-path: inset(0 -100vmax);
 }
 .writer > .reel {
@@ -47,10 +47,10 @@
   scrollbar-width: none;
   border-radius: 5px;
   background:
-    radial-gradient(circle, var(--hibiscus) 0 2.6px, transparent 3.1px) 2px 3px / 16px 9px repeat-x,
-    radial-gradient(circle, var(--hibiscus) 0 2.6px, transparent 3.1px) 2px calc(100% - 3px) / 16px 9px repeat-x,
-    var(--wine-deep);
-  box-shadow: 0 10px 26px rgba(58, 18, 32, 0.35);
+    radial-gradient(circle, var(--mist) 0 2.6px, transparent 3.1px) 2px 3px / 16px 9px repeat-x,
+    radial-gradient(circle, var(--mist) 0 2.6px, transparent 3.1px) 2px calc(100% - 3px) / 16px 9px repeat-x,
+    var(--palm-deep);
+  box-shadow: 0 10px 26px rgba(11, 40, 31, 0.22);
 }
 .reel ol::-webkit-scrollbar {
   display: none;
@@ -125,17 +125,17 @@
 .reel-count {
   font-size: 14.5px;
   font-weight: 620;
-  color: #fff;
+  color: var(--ink);
   white-space: nowrap;
 }
 .reel-end .button.ghost {
-  border-color: rgba(255, 255, 255, 0.8);
-  color: #fff;
+  border-color: var(--palm);
+  color: var(--palm);
 }
 .reel-end .button.ghost:hover:not(:disabled) {
-  background: #fff;
-  border-color: #fff;
-  color: var(--hibiscus-deep);
+  background: var(--palm);
+  border-color: var(--palm);
+  color: var(--chalk);
 }
 .reel-end .button.ghost:disabled {
   opacity: 0.45;
@@ -143,8 +143,8 @@
 }
 .reel-end .button.ghost:disabled:hover {
   background: transparent;
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.8);
+  color: var(--palm);
+  border-color: var(--palm);
 }
 
 /* ---------- Page and screen, side by side ---------- */
