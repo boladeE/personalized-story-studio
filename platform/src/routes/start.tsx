@@ -324,10 +324,10 @@ function Start() {
       ),
     },
     photos: {
-      question: `Add a few photos of ${name}.`,
-      hint: 'Three or more is best, and up to three short video clips. Private: only you and the person you send it to will see them.',
+      question: `Add photos and videos of ${name}.`,
+      hint: 'Three or more photos is best, and up to three short videos. Private: only you and the person you send it to will see them.',
       canNext: true,
-      nextLabel: intake.photos.length ? undefined : 'Skip photos',
+      nextLabel: intake.photos.length ? undefined : 'Skip this',
       body: (
         <>
           <input
@@ -371,7 +371,7 @@ function Start() {
                     void photos.add(Array.from(e.dataTransfer.files))
                   }}
                 >
-                  <b>{intake.photos.length ? 'Add more' : 'Add photos'}</b>
+                  <b>{intake.photos.length ? 'Add more' : 'Add photos or videos'}</b>
                   <span>{intake.photos.length ? `${photos.room} more fit` : 'Choose them, or drop them here'}</span>
                 </button>
               </li>
