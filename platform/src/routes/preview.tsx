@@ -113,6 +113,9 @@ function Preview() {
     setLine(undefined)
     setSide('scene')
     if (!editing) return setPicked(undefined)
+    // A film that has played to its end is over: opening the editor from its credits stops its song,
+    // where a film still playing carries on beside the editor.
+    if (at.phase === 'ended') film.current?.rewind()
     setPicked((was) => was ?? (at.phase === 'playing' && rows.some((r) => r.type === at.scene) ? at.scene : (rows.find((r) => r.state === 'in' && !r.fixed) ?? rows[0])?.type))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editing])
