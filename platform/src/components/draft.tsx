@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import type { Answered } from '../story/followups'
 import { emptyIntake } from '../story/sample'
 import type { Intake } from '../story/types'
-import { songDetails, surpriseVibe, VIBES } from '../story/vibes'
+import { songDetails, surpriseVibe, surpriseVoice, VIBES } from '../story/vibes'
 import type { VibeId, Voice } from '../story/vibes'
 
 /**
@@ -143,6 +143,7 @@ export function DraftProvider({ children }: { children: ReactNode }) {
     void (async () => {
       try {
         const vibe = forPlan.vibe === 'surprise' ? surpriseVibe(forIntake) : forPlan.vibe
+        const voice = forPlan.voice === 'surprise' ? surpriseVoice(forIntake) : forPlan.voice
         let lyrics = ''
         let made: Record<string, unknown> | undefined
         // The music model refuses words that come too close to an existing song (a 422). The sender did
@@ -155,7 +156,7 @@ export function DraftProvider({ children }: { children: ReactNode }) {
           setWords({ title, lyrics })
           setJob({ state: 'singing' })
           try {
-            made = await post('/api/music', { vibe, details, lyrics, title, voice: forPlan.voice })
+            made = await post('/api/music', { vibe, details, lyrics, title, voice })
           } catch (error) {
             if (!current()) return
             if ((error as { status?: number }).status !== 422 || attempt >= SONG_ATTEMPTS) throw error

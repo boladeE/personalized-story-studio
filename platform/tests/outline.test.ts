@@ -5,7 +5,8 @@ import { blankChapter, chapterName, cleanOutline, notesOf, outlineByWords, outli
 import { emptyIntake, SAMPLE_FIXED, SAMPLE_INTAKE } from '../src/story/sample'
 import type { Chapter, Intake } from '../src/story/types'
 import { parseIntake } from '../src/story/validate'
-import { songDetails, surpriseVibe, VIBES } from '../src/story/vibes'
+import { cleanDirection, songChoiceLine } from '../src/story/direction'
+import { songDetails, surpriseVibe, surpriseVoice, VIBES } from '../src/story/vibes'
 import { WORLDS } from '../src/story/worlds'
 
 process.env.MUSIC_PROVIDER = 'demo'
@@ -251,5 +252,36 @@ describe('“Surprise me” for the song', () => {
     const undirected = new Set(['Zara', 'Kemi', 'Maya', 'Rin', 'Ada', 'Tobi', 'Leo', 'Sam'].map((recipient) => surpriseVibe({ sender: 'Tola', recipient })))
     expect(undirected.size).toBeGreaterThan(1)
     for (const id of undirected) expect(VIBES.map((v) => v.id)).toContain(id)
+  })
+
+  it('takes the director’s tune and voice when a model directed the film, and only ones the studio has', () => {
+    const checked = checkOutline({ ...ANSWER, tune: 'piano', voice: 'woman' }, BRIEF)!
+    expect(checked.direction).toMatchObject({ world: 'mixtape', tune: 'piano', voice: 'woman' })
+    const film = maya({ direction: { ...checked.direction, seed: 3 } })
+    expect(surpriseVibe(film)).toBe('piano')
+    expect(surpriseVoice(film)).toBe('woman')
+    // The song it chose stands even when the kind of film it named is not one the studio directs.
+    expect(checkOutline({ ...ANSWER, world: 'screening', tune: 'highlife', voice: 'man' }, BRIEF)!.direction).toMatchObject({ tune: 'highlife', voice: 'man' })
+    // Anything else is dropped, and the studio draws the style and leaves the voice to the singer.
+    const loose = cleanDirection({ world: 'mixtape', tune: 'polka', voice: 'choir' })!
+    expect(loose.tune).toBeUndefined()
+    expect(loose.voice).toBeUndefined()
+    expect(surpriseVoice(maya({ direction: { ...loose, seed: 3 } }))).toBe('surprise')
+    expect(VIBES.map((v) => v.id)).toContain(surpriseVibe(maya({ direction: { ...loose, seed: 3 } })))
+    // It travels with the gift.
+    const kept = parseIntake(film)
+    expect(kept.ok && kept.intake.direction).toMatchObject({ tune: 'piano', voice: 'woman' })
+    // The model is asked for both, and told not to guess a voice from a name.
+    expect(outlineBrief(BRIEF)).toContain('`piano` (Soft piano: piano and strings, slow and tender)')
+    expect(outlineBrief(BRIEF)).toContain('do not guess from a name')
+  })
+
+  it('says what it chose for the song, only for the parts the sender left to it', () => {
+    const chosen = { tune: 'highlife', voice: 'man' as const }
+    expect(songChoiceLine(chosen, { tune: true, voice: true })).toBe('For the song it chose Highlife guitar, in a man’s voice.')
+    expect(songChoiceLine(chosen, { tune: true, voice: false })).toBe('For the song it chose Highlife guitar.')
+    expect(songChoiceLine(chosen, { tune: false, voice: true })).toBe('For the song it chose a man’s voice.')
+    expect(songChoiceLine(chosen, { tune: false, voice: false })).toBe('')
+    expect(songChoiceLine({}, { tune: true, voice: true })).toBe('')
   })
 })

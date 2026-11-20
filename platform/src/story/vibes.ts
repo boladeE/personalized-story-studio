@@ -151,11 +151,15 @@ export function parseSongDetails(raw: unknown): SongDetails | null {
 }
 
 /**
- * The studio's own pick of style, for "Surprise me": one that suits how the film was directed, and a
- * different one from film to film. It is drawn from the film's version, so trying the same song again
- * keeps its style, and a film that was never directed draws from its two names.
+ * The studio's own pick of style, for "Surprise me". The director chooses it with the film when a
+ * model directed it. Otherwise it is one that suits how the film was directed by rule, different from
+ * film to film: drawn from the film's version, so trying the same song again keeps its style, and a
+ * film that was never directed draws from its two names.
  */
 export function surpriseVibe(intake: Pick<Intake, 'direction' | 'sender' | 'recipient'>): VibeId {
+  // The director's own choice for this film, when it made one.
+  const directed = VIBES.find((v) => v.id === intake.direction?.tune)
+  if (directed) return directed.id
   const lively: VibeId[] = ['afrobeats', 'highlife', 'lofi-rnb']
   const gentle: VibeId[] = ['afro-soul', 'piano', 'lofi-rnb']
   const because = intake.direction?.because
@@ -165,6 +169,9 @@ export function surpriseVibe(intake: Pick<Intake, 'direction' | 'sender' | 'reci
   // Stirred first, so the style doesn't march in step with the colours, which are drawn from the same version.
   return pool[(Math.imul(draw ^ 0x9e3779b9, 0x85ebca6b) >>> 13) % pool.length]
 }
+
+/** Who sings, for "Surprise me": the director's choice when it made one, otherwise left to the music model. */
+export const surpriseVoice = (intake: Pick<Intake, 'direction'>): Voice => intake.direction?.voice ?? 'surprise'
 
 /** The parts of an intake a song is written from. */
 export function songDetails(intake: Intake): SongDetails | null {

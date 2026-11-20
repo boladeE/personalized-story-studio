@@ -13,7 +13,7 @@ import { Still } from '../film/Still'
 import { scenePosters } from '../film/previews'
 import { buildFilm } from '../film/timeline'
 import type { Shot } from '../film/timeline'
-import { directionLine } from '../story/direction'
+import { songChoiceLine, directionLine } from '../story/direction'
 import { canGenerate, generateStory, sceneBoard } from '../story/generate'
 import { blankChapter, outlineOf } from '../story/outline'
 import { newSeed } from '../story/rng'
@@ -277,7 +277,11 @@ function Preview() {
       </StudioHeader>
       <div className="preview-notes">
         {status && <SongStatus job={job} name={story.recipient} kept={Boolean(song)} onPlay={playJobSong} onRetry={() => startSong(intake, plan, true)} onDismiss={dismissJob} />}
-        {direction && making && !editing && <p className="direction-note">{direction}</p>}
+        {direction && making && !editing && (
+          <p className="direction-note">
+            {direction} {intake.direction && songChoiceLine(intake.direction, { tune: plan.vibe === 'surprise', voice: plan.voice === 'surprise' })}
+          </p>
+        )}
       </div>
       <div className="preview-body">
         <Film

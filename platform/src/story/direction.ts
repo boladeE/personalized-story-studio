@@ -1,3 +1,4 @@
+import { VIBES } from './vibes'
 import type { SortedNotes } from './notes'
 import { DIRECTION_REASONS } from './types'
 import type { Direction, DirectionReason, LookId, Occasion, Relationship, WorldId } from './types'
@@ -44,6 +45,16 @@ export function directionLine(plan: Pick<Direction, 'world' | 'because'>, them: 
   return `The studio made it ${kind}, ${why[plan.because]}.`
 }
 
+/** What the studio says about the song it chose, for the parts the sender left to it. */
+export function songChoiceLine(direction: Pick<Direction, 'tune' | 'voice'>, left: { tune: boolean; voice: boolean }): string {
+  const tune = left.tune ? VIBES.find((v) => v.id === direction.tune)?.name : undefined
+  const voice = left.voice && direction.voice ? (direction.voice === 'woman' ? 'a woman’s voice' : 'a man’s voice') : undefined
+  if (tune && voice) return `For the song it chose ${tune}, in ${voice}.`
+  if (tune) return `For the song it chose ${tune}.`
+  if (voice) return `For the song it chose ${voice}.`
+  return ''
+}
+
 /** A direction by rule: steady, explainable choices from how much of each thing there is. */
 export function directLocally(brief: DirectionBrief): DirectionPlan {
   const { notes } = brief
@@ -88,7 +99,9 @@ export function cleanDirection(raw: unknown, among: WorldId[] = ['screening', 's
   }
   const order = (Array.isArray(r.order) ? r.order : []).filter((t, i, all): t is string => typeof t === 'string' && MIDDLE_SCENES.includes(t) && all.indexOf(t) === i)
   const because = DIRECTION_REASONS.find((id) => id === r.because) ?? 'tender'
-  return { world, look, designs, order, because }
+  const tune = VIBES.find((v) => v.id === r.tune)?.id
+  const voice = r.voice === 'woman' || r.voice === 'man' ? r.voice : undefined
+  return { world, look, designs, order, because, ...(tune ? { tune } : {}), ...(voice ? { voice } : {}) }
 }
 
 /** A stored direction, with the seed it was made for. */

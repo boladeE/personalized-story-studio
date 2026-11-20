@@ -92,6 +92,9 @@ export interface Direction {
   /** The scenes between the opening and the ending, in playing order. */
   order: string[]
   because: DirectionReason
+  /** The song the director would have for this film: its style and who sings it. Used when the sender left either to the studio. */
+  tune?: string
+  voice?: 'woman' | 'man'
 }
 
 /** Everything the sender tells us. All strings come from the sender. */

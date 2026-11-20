@@ -8,6 +8,7 @@ import { cleanOutline, notesOf, outlineByWords, OUTLINE_LIMITS } from '../story/
 import { DIRECTION_REASONS } from '../story/types'
 import type { Chapter, Occasion, Relationship } from '../story/types'
 import { LIMITS } from '../story/validate'
+import { VIBES } from '../story/vibes'
 import { sortProvider } from './sort'
 
 /**
@@ -60,8 +61,10 @@ const SCHEMA = {
     world: { type: 'string', enum: DIRECTED_WORLDS },
     look: { type: 'string', enum: ['screening', 'garden', 'paper'] },
     because: { type: 'string', enum: [...DIRECTION_REASONS] },
+    tune: { type: 'string', enum: VIBES.map((v) => v.id) },
+    voice: { type: 'string', enum: ['woman', 'man'] },
   },
-  required: ['scenes', 'wish', 'world', 'look', 'because'],
+  required: ['scenes', 'wish', 'world', 'look', 'because', 'tune', 'voice'],
 }
 
 export function outlineBrief(brief: OutlineBrief) {
@@ -91,6 +94,11 @@ export function outlineBrief(brief: OutlineBrief) {
       '- world: `scrapbook` is a handmade album (taped photos, sticky notes, handwriting): warm, nostalgic, unhurried; best when the note is told in moments, or is tender. `mixtape` is a tape made for one person (tall capitals on flat colour, cuts on the beat): loud, playful, confident; best when the note teases, is funny, or is short.',
       '- look: its colours. `screening` is the dark one, `garden` the warm one, `paper` the light one.',
       '- because: the main reason for the world you chose: teasing (the note is mostly habits and jokes), memories (it is told in moments), photos (many photos and few words), tender (it is mostly sincere), short (there is very little to go on).',
+    ].join('\n'),
+    [
+      `And the song. One song is written and sung for this film, in ${from}'s words to ${who}. Choose what it should sound like, for this note in particular: two notes that differ should not get the same song by habit.`,
+      `- tune: ${VIBES.map((v) => `\`${v.id}\` (${v.name}: ${v.feel.charAt(0).toLowerCase()}${v.feel.slice(1)})`).join('; ')}. Go by how the note feels and moves: how fast it talks, whether it jokes or aches, whether it is a late-night thought or a celebration.`,
+      `- voice: \`woman\` or \`man\`, the voice singing as ${from}. If the note itself makes clear who is speaking, match that. If it does not, choose the voice that suits the tune and the feeling; do not guess from a name.`,
     ].join('\n'),
     `The note:\n${brief.text}`,
     ...(brief.answered.length
@@ -141,8 +149,11 @@ export function checkOutline(raw: unknown, brief: OutlineBrief): Omit<Outlined, 
   const said = typeof r.wish === 'string' ? r.wish.replace(/\s+/g, ' ').trim().slice(0, LIMITS.wish) : ''
   const wish = said && isTheirWords(said, written) ? said : ''
   const facts = { occasion: brief.occasion, relationship: brief.relationship, recipient: brief.recipient, photos: brief.photos, letter: brief.letter }
-  const chosen = cleanDirection({ world: r.world, look: r.look, because: r.because }, DIRECTED_WORLDS)
-  return { outline, wish, direction: chosen ?? { ...directLocally({ ...facts, notes: notesOf(outline, wish) }), designs: {}, order: [] } }
+  const chosen = cleanDirection({ world: r.world, look: r.look, because: r.because, tune: r.tune, voice: r.voice }, DIRECTED_WORLDS)
+  // The song the model chose stands even when its kind of film is not one the studio directs.
+  const song = cleanDirection({ world: 'mixtape', tune: r.tune, voice: r.voice })
+  const sung = { ...(song?.tune ? { tune: song.tune } : {}), ...(song?.voice ? { voice: song.voice } : {}) }
+  return { outline, wish, direction: chosen ?? { ...directLocally({ ...facts, notes: notesOf(outline, wish) }), designs: {}, order: [], ...sung } }
 }
 
 /** The outline by rule: the note read a sentence at a time, each moment a scene. */

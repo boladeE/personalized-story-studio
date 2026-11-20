@@ -56,7 +56,7 @@ On `platform_v2` a film's **scenes are its own**. There is no fixed list of scen
 - **In the editor** a scene of the film's own shows its name, how it is shown (one line, a list, a moment) and its words, all changeable beside the still, with Undo. "Add a scene" adds one of the sender's own; a scene that is left out or empty can be removed. Moving, leaving out and "Another design" work as before, by the scene's id.
 - **The song** is written from the outline (`notesOf`), leaving out scenes the sender left out.
 - **The detailed form** (`/create`) still tells a film in the older fixed scenes when a film is started there; for a film that has an outline it keeps only the steps every film has (names, photos, letter, last line, look). Gifts stored before outlines play as they did.
-- The studio still says why it chose the kind of film (`Intake.direction`, `directionLine`); for an outlined film the direction carries only the kind of film, the colours and the reason.
+- The studio still says why it chose the kind of film (`Intake.direction`, `directionLine`); for an outlined film the direction carries the kind of film, the colours, the reason, and **the song the director chose**: a tune and a voice (`Direction.tune`, `Direction.voice`). They are used when the sender picked "Surprise me" for the style or the voice (`surpriseVibe`, `surpriseVoice`), and the studio says what it chose while the song is made. The director is told not to guess a voice from a name. Without a model's direction the style is drawn by rule and the voice is left to the music model.
 
 ## Which model does what
 
