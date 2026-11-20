@@ -128,13 +128,10 @@ export function outlineBrief(brief: OutlineBrief) {
   ].join('\n\n')
 }
 
-async function askModel(brief: OutlineBrief): Promise<unknown> {
+async function askModel(brief: OutlineBrief, model: string, timeoutMs: number): Promise<unknown> {
   const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), Number(process.env.SORT_TIMEOUT_MS ?? 60_000))
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
   try {
-    // Neon keeps to the brief best of the models tried on 2026-11-20 (it alone kept the closing line out of the scenes
-    // every time), at 12 to 26 seconds a note. Flash answers in 5 and Hydrogen in 10, with looser outlines.
-    const model = process.env.GEMINI_OUTLINE_MODEL ?? 'gemini-4-neon'
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST',
       signal: controller.signal,
@@ -254,10 +251,29 @@ export async function outlineFilm(brief: OutlineBrief): Promise<Outlined> {
   return { ...made, outline: await placePhotos(made.outline, brief.peeks) }
 }
 
+/**
+ * Two models outline the film at once. Neon keeps to the brief best of the models tried on 2026-11-20
+ * (it alone kept the closing line out of the scenes every time), but answers in anything from 12
+ * seconds to over a minute. Flash answers in about 5, a little more loosely. The sender gets Neon's
+ * outline if it arrives within `OUTLINE_WAIT_MS`, and Flash's if not: never a minute's wait, and never
+ * the rule's plain outline just because one model was slow.
+ */
 async function outlineWords(brief: OutlineBrief): Promise<Outlined> {
   if (sortProvider() === 'gemini') {
+    const wait = Number(process.env.OUTLINE_WAIT_MS ?? 25_000)
+    const backup = askModel(brief, process.env.GEMINI_OUTLINE_BACKUP_MODEL ?? 'gemini-3.8-flash', wait + 10_000).then(
+      (raw) => checkOutline(raw, brief),
+      (error) => (console.error('[outline] backup model failed', error), null),
+    )
     try {
-      const checked = checkOutline(await askModel(brief), brief)
+      const checked = checkOutline(await askModel(brief, process.env.GEMINI_OUTLINE_MODEL ?? 'gemini-4-neon', wait), brief)
+      if (checked) return { ...checked, by: 'model' }
+      console.error('[outline] the first model returned no scene made of the sender’s words; using the backup')
+    } catch (error) {
+      console.error('[outline] first model failed or was slow; using the backup', error)
+    }
+    try {
+      const checked = await backup
       if (checked) return { ...checked, by: 'model' }
       console.error('[outline] the model returned no scene made of the sender’s words; outlining by rule')
     } catch (error) {

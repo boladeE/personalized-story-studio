@@ -130,11 +130,18 @@ const CARRIES_ON = /^(then|and|but|so|after|later|until|by the|when|it|that|she|
  */
 export function outlineByWords(text: string, answered: Answered[], them: string): Chapter[] {
   const who = them.trim() || 'them'
+  // The rule changes no words, but it does write them as sentences: a capital to start, "I" for "i", a stop to end.
+  const tidy = (s: string) => {
+    const said = s.trim().replace(/\bi\b(?=['’ ]|$)/g, 'I')
+    const capital = said.charAt(0).toUpperCase() + said.slice(1)
+    return /[.!?…"”’')]$/.test(capital) ? capital : `${capital}.`
+  }
   const sentences = text
     .replace(/\s+/g, ' ')
     .split(/(?<=[.!?])\s+/)
     .map((s) => s.trim())
     .filter(Boolean)
+    .map(tidy)
   type Kind = 'told' | 'does' | 'loved'
   const kindOf = (s: string): Kind => (HABIT.test(s) ? 'does' : REASON.test(s) ? 'loved' : TOLD.test(s) ? 'told' : 'does')
   const groups: Array<{ kind: Kind; lines: string[]; name: string }> = []
@@ -151,8 +158,8 @@ export function outlineByWords(text: string, answered: Answered[], them: string)
   })
   // Each answer is read in the same breath as what it was about.
   for (const { quote, answer } of answered) {
-    const said = answer.trim()
-    if (!said) continue
+    if (!answer.trim()) continue
+    const said = tidy(answer)
     const home = groups
       .flatMap((group) => group.lines.map((line, at) => ({ group, at, match: overlap(quote, line) })))
       .sort((a, b) => b.match - a.match)[0]
