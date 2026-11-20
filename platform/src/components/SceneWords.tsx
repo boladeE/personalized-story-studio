@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { OCCASIONS, occasionOf } from '../story/occasions'
-import { OUTLINE_LIMITS, outlineOf, withChapter } from '../story/outline'
+import { NO_PHOTO, OUTLINE_LIMITS, outlineOf, withChapter } from '../story/outline'
 import { endingOf } from '../story/types'
 import type { Chapter, Intake, Memory, SceneLayout } from '../story/types'
 import { LIMITS } from '../story/validate'
@@ -229,6 +229,10 @@ export function ChapterWords({
                 <label className="pick pick-auto">
                   <input type="radio" name={`scene-photo-${chapter.id}`} checked={!chapter.photoId} onChange={() => change({ photoId: undefined })} />
                   <span>Let the studio choose</span>
+                </label>
+                <label className="pick pick-auto">
+                  <input type="radio" name={`scene-photo-${chapter.id}`} checked={chapter.photoId === NO_PHOTO} onChange={() => change({ photoId: NO_PHOTO })} />
+                  <span>No photo</span>
                 </label>
                 {intake.photos.map((p, n) => (
                   <label key={p.id} className="pick">

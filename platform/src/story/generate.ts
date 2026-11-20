@@ -1,6 +1,6 @@
 import { sceneLabel, SCENES, SKELETONS } from './library'
 import type { BuildContext } from './library'
-import { chapterLines, chapterMissing, chapterName, outlineOf, pagesOf } from './outline'
+import { chapterLines, chapterMissing, chapterName, NO_PHOTO, outlineOf, pagesOf } from './outline'
 import { createRng } from './rng'
 import type { Chapter, Cut, Frame, Intake, LookId, Photo, PhotoLayout, Scene, SceneLayout, Story, WorldId } from './types'
 import { designKey, designsFor, WORLDS } from './worlds'
@@ -74,7 +74,7 @@ function chapterFrames(chapter: Chapter, ctx: BuildContext, loud: boolean): Fram
       const [text] = lines
       if (!text) return []
       // With a photo to spare, the line is said beside it: a face says more than a page of type.
-      const photo = (chapter.photoId && ctx.photoById(chapter.photoId)) || (ctx.unusedPhotos().length ? ctx.takePhoto() : undefined)
+      const photo = chapter.photoId === NO_PHOTO ? undefined : (chapter.photoId && ctx.photoById(chapter.photoId)) || (ctx.unusedPhotos().length ? ctx.takePhoto() : undefined)
       if (photo) {
         const own = !chapter.name.trim() || sameStart(name, text)
         return [{ kind: 'photo', photo, layout: ctx.rng.pick<PhotoLayout>(['left', 'right']), kicker: '', ...(own && text.length <= 90 ? { title: text } : { title: name, body: text }) }]
@@ -90,7 +90,7 @@ function chapterFrames(chapter: Chapter, ctx: BuildContext, loud: boolean): Fram
       const [body, ...more] = pagesOf(chapter)
       if (!body) return []
       const turned = more.map<Frame>((page) => (page.length <= 150 ? { kind: 'title', kicker: name, title: page } : { kind: 'title', kicker: '', title: name, body: page }))
-      const photo = (chapter.photoId && ctx.photoById(chapter.photoId)) || ctx.takePhoto()
+      const photo = chapter.photoId === NO_PHOTO ? undefined : (chapter.photoId && ctx.photoById(chapter.photoId)) || ctx.takePhoto()
       // A telling with no name of its own, or one that opens with its name, is titled by its first sentence, said once.
       const [opening, ...after] = body.split(/(?<=[.!?])\s+/)
       const words = (!chapter.name.trim() || sameStart(name, body)) && opening.length <= 90 ? { kicker: '', title: opening, ...(after.length ? { body: after.join(' ') } : {}) } : { kicker: '', title: name, body }

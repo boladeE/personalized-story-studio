@@ -4,7 +4,7 @@ import { withAnswers } from '../story/followups'
 import type { Answered } from '../story/followups'
 import { closeToTheirWords } from '../story/notes'
 import { occasionOf } from '../story/occasions'
-import { cleanOutline, notesOf, outlineByWords, OUTLINE_LIMITS } from '../story/outline'
+import { cleanOutline, notesOf, NO_PHOTO, outlineByWords, OUTLINE_LIMITS } from '../story/outline'
 import { DIRECTION_REASONS } from '../story/types'
 import type { Chapter, Occasion, Relationship } from '../story/types'
 import { LIMITS } from '../story/validate'
@@ -157,7 +157,7 @@ async function askModel(brief: OutlineBrief, model: string, timeoutMs: number): 
 export function checkOutline(raw: unknown, brief: OutlineBrief): Omit<Outlined, 'by'> | null {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
   const written = withAnswers(brief.text, brief.answered)
-  const outline = cleanOutline(r.scenes, { source: written, photos: brief.photos })
+  const outline = cleanOutline(r.scenes, { source: written, photos: brief.photos, proper: [brief.recipient, brief.sender] })
   if (!outline.some((c) => c.layout !== 'photos')) return null
   const said = typeof r.wish === 'string' ? r.wish.replace(/\s+/g, ' ').trim().slice(0, LIMITS.wish) : ''
   const wish = said && closeToTheirWords(said, written) ? said : ''
@@ -189,7 +189,7 @@ export function placeBrief(outline: Chapter[], count: number) {
     [
       'Rules:',
       '- Match a scene to the photo that shows what it says: the same place, the same moment, the same thing happening. A scene about a feeling can take a photo where the person simply looks like themselves.',
-      '- A photo goes beside one scene only, and a scene takes one photo. Leave a scene out when nothing fits it: a wrong photo is worse than none. Photos left over are shown together elsewhere, so not every photo needs a scene.',
+      '- A photo goes beside one scene only, and a scene takes one photo. Place every photo that has a scene it fits: a photo of a car journey belongs with the road trip, a photo of a kitchen with the cooking. Leave a scene out only when no photo has anything to do with it: a wrong photo is worse than none. Photos left over are shown together elsewhere.',
       '- You only place photos. You write nothing.',
     ].join('\n'),
     `The scenes:\n${outline.map((c, i) => `${i + 1}. ${c.name || '(unnamed)'}: ${c.lines.join(' ')}`).join('\n')}`,
@@ -208,7 +208,8 @@ export function applyPlacements(outline: Chapter[], peeks: Array<{ id: string }>
     used.add(photo.id)
     placed.set(Number(p.scene) - 1, photo.id)
   }
-  return outline.map((c, i) => (placed.has(i) ? { ...c, photoId: placed.get(i) } : c))
+  // A scene of words that was given no photo goes without one: dealt out blind, it could get the wrong one.
+  return outline.map((c, i) => (placed.has(i) ? { ...c, photoId: placed.get(i) } : c.photoId || c.layout === 'list' || c.layout === 'photos' ? c : { ...c, photoId: NO_PHOTO }))
 }
 
 /**

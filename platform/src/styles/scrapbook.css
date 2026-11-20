@@ -1061,6 +1061,15 @@
   animation: sb-slap 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
   animation-delay: calc(0.6s + var(--i) * 0.45s);
 }
+/* One or two prints left over have the page to themselves, so they are shown large. */
+.sb-pile[data-count='1'] {
+  --pw: clamp(140px, min(46cqw, 64cqh), 640px);
+  --ph: min(38cqw, 56cqh);
+}
+.sb-pile[data-count='2'] {
+  --pw: clamp(120px, min(34cqw, 54cqh), 470px);
+  --ph: min(28cqw, 48cqh);
+}
 .sb-pile[data-count='4'] {
   --pw: clamp(90px, min(20cqw, 40cqh), 262px);
   --ph: min(17cqw, 34cqh);

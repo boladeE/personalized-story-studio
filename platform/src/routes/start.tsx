@@ -173,7 +173,7 @@ function Start() {
         const body = (await response.json()) as { outline?: unknown; wish?: unknown; direction?: unknown }
         if (!response.ok) throw new Error('outline failed')
         // Checked again here: the studio may tidy the sender's words, but every line must stay close to what they wrote.
-        outline = cleanOutline(body.outline, { source: written, photos: intake.photos.length })
+        outline = cleanOutline(body.outline, { source: written, photos: intake.photos.length, proper: [them, me] })
         if (!outline.some((c) => c.layout !== 'photos')) throw new Error('no scenes')
         wish = typeof body.wish === 'string' && closeToTheirWords(body.wish, written) ? body.wish.trim().slice(0, LIMITS.wish) : ''
         // And the direction can only name a kind of film and colours the studio has.

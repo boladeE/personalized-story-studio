@@ -32,6 +32,9 @@ export const OUTLINE_LIMITS = {
 const MOODS: Mood[] = ['warm', 'playful', 'tender']
 const ID_RE = /^[a-z][a-z0-9-]{0,31}$/i
 
+/** In place of a photo's id: this scene is shown without one. */
+export const NO_PHOTO = 'none'
+
 export const newSceneId = () => `s${Math.random().toString(36).slice(2, 9)}`
 
 const oneLine = (value: unknown, max: number) => (typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, max).trim() : '')
@@ -82,7 +85,15 @@ function shape(layout: SceneLayout, lines: string[]): { layout: SceneLayout; lin
  * invent them), and each line is used once. `photos` is how many photos the sender gave: with none, a scene of
  * photos is dropped.
  */
-export function cleanOutline(raw: unknown, { source, photos = 0 }: { source?: string; photos?: number } = {}): Chapter[] {
+export function cleanOutline(raw: unknown, { source, photos = 0, proper = [] }: { source?: string; photos?: number; /** Names that keep their capitals in a scene's name. */ proper?: string[] } = {}): Chapter[] {
+  // A name is written as a sentence is: "On that sofa", not "On That Sofa". A word keeps its capital when the
+  // sender wrote it with one, or it is one of the two names.
+  const kept = new Set([...(source?.match(/\b[A-Z][\p{L}\p{N}'’]*/gu) ?? []), ...proper.flatMap((p) => p.split(/\s+/))].filter(Boolean))
+  const sentenceCase = (name: string) =>
+    name
+      .split(' ')
+      .map((w, i) => (source && i > 0 && /^[A-Z][a-z'’]+$/.test(w) && !kept.has(w) ? w.toLowerCase() : w))
+      .join(' ')
   const seen = new Set<string>()
   const ids = new Set<string>()
   const names = new Set<string>()
@@ -100,7 +111,7 @@ export function cleanOutline(raw: unknown, { source, photos = 0 }: { source?: st
       .filter((l) => (seen.has(l.toLowerCase()) ? false : (seen.add(l.toLowerCase()), true)))
     const { layout, lines } = shape(wanted, kept)
     if (layout !== 'photos' && !lines.length) continue
-    let name = oneLine(r.name, OUTLINE_LIMITS.name).replace(/[.:;,]+$/, '')
+    let name = sentenceCase(oneLine(r.name, OUTLINE_LIMITS.name).replace(/[.:;,]+$/, ''))
     // A stock label is the studio's old habit, not this film's scene. So is a name another scene already has.
     if ((STOCK_NAMES.test(name) && !(source && isTheirWords(name, source))) || names.has(name.toLowerCase())) name = ''
     if (name) names.add(name.toLowerCase())
