@@ -65,7 +65,7 @@ describe('film timeline', () => {
     expect(credits.text).not.toContain('fictional')
     const sample = buildFilm({ ...generateStory(screening, 7), note: SAMPLE_NOTE }).shots.at(-1)!
     expect(sample.kind).toBe('credits')
-    expect(sample.text).toContain('Zara and Tobi are fictional')
+    expect(sample.text).toContain('are fictional')
     expect(SAMPLE_NOTE).not.toMatch(/\bAI\b/)
   })
 

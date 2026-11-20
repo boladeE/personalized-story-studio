@@ -239,9 +239,12 @@ describe('a film with its own scenes', () => {
 describe('the sample', () => {
   it('is told in scenes of its own, in every kind of film', () => {
     const story = generateStory(SAMPLE_INTAKE, 3)
-    expect(story.scenes.map((s) => s.name)).toEqual(['The invitation', 'Before we begin', 'Your whole face', 'One word', 'Things you say', 'Games night', 'The rain can wait', 'One more minute', 'The small things', 'Caught on camera', 'A letter', 'Make a wish'])
+    expect(story.scenes.map((s) => s.name)).toEqual(['The invitation', 'Before we begin', 'Just like you', 'The three-hour walk', 'My mother’s soup', 'Just us', 'That day in March', 'One last thing'])
+    // It opens and closes in its own words.
+    expect(said(SAMPLE_INTAKE, 3)).toContain('This life, with you')
+    expect(said(SAMPLE_INTAKE, 3)).toContain('I don’t want a bigger life. I want this one, with you.')
     for (const world of WORLDS) expect(said({ ...SAMPLE_INTAKE, world: world.id }, 3)).not.toMatch(/red flag|reason \d|memory lane|main character/i)
-    // Every photo is seen once: four beside their moments, the rest in the last scene.
+    // Every photo is seen once: three beside their scenes, the rest in the scene of photos.
     const shown = story.scenes.flatMap((s) => s.frames).flatMap((f) => (f.kind === 'photo' ? [f.photo.id] : f.kind === 'montage' ? f.photos.map((p) => p.id) : []))
     expect([...shown].sort()).toEqual(SAMPLE_INTAKE.photos.map((p) => p.id).sort())
   })

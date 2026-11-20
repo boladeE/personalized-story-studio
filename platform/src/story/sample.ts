@@ -1,8 +1,5 @@
 import type { Intake, Soundtrack } from './types'
 
-/** What the sample film says under its end credits, so nobody takes its people for real customers. */
-export const SAMPLE_NOTE = 'Zara and Tobi are fictional. Their photos and song were made for this sample.'
-
 /**
  * The fictional sample (Zara and Tobi, generated photos, reused from the v2 demo), told in the
  * studio's older fixed scenes. The detailed form fills itself in from this, and it stands for the
@@ -61,81 +58,113 @@ export const SAMPLE_FIXED: Intake = {
 }
 
 /**
- * The sample as the studio makes films now: the same words and photos, in scenes that exist
- * because of what Tobi wrote about Zara. No other film has these scenes.
+ * The sample as the studio makes films now: Sarah and Michael, an invented couple. It is a real
+ * output of the studio, kept as it came: Michael's note was put through the short flow on
+ * 2026-11-20 with six generated photos, and these are the scenes, opening, lead-ins and last line
+ * the director wrote, the photos where it placed them (one added by hand, for March), and the song
+ * made for it. Nothing in it is a real person's.
  */
 export const SAMPLE_INTAKE: Intake = {
-  ...SAMPLE_FIXED,
+  occasion: 'anniversary',
+  relationship: 'partner',
+  sender: 'Michael',
+  recipient: 'Sarah',
+  photos: [
+    { id: 'p-book', src: '/sample/sarah-book.jpg', caption: '' },
+    { id: 'p-walk', src: '/sample/sarah-walk.jpg', caption: '' },
+    { id: 'p-soup', src: '/sample/sarah-soup.jpg', caption: '' },
+    { id: 'p-balcony', src: '/sample/sarah-balcony.jpg', caption: '' },
+    { id: 'p-platform', src: '/sample/sarah-platform.jpg', caption: '' },
+    { id: 'p-desk', src: '/sample/sarah-desk.jpg', caption: '' },
+  ],
+  spotlight: '',
+  memories: [],
+  habits: [],
+  reasons: [],
+  letter: '',
+  wish: 'I don’t want a bigger life. I want this one, with you.',
+  look: 'surprise',
+  opening: { title: 'This life, with you', body: 'From the last page of every book to the days you just stayed.' },
   outline: [
-    { id: 'face', name: 'Your whole face', layout: 'moment', mood: 'warm', lines: ['You laugh with your whole face when you forget I’m taking a picture.'], photoId: 'p-laughing' },
-    { id: 'hey', name: 'One word', layout: 'line', mood: 'warm', lines: ['You can spot my mood from one “hey.”'] },
-    { id: 'says', name: 'Things you say', layout: 'list', mood: 'playful', lines: [...SAMPLE_FIXED.habits] },
     {
-      id: 'games',
-      name: 'Games night',
-      layout: 'moment',
+      id: 'you',
+      name: 'Just like you',
+      layout: 'list',
       mood: 'playful',
-      lines: ['You called me a cheat. You said nobody could be that lucky, then made me shuffle again while you watched my hands.'],
-      photoId: 'p-selfie',
+      intro: 'First, the things that are completely you.',
+      lines: ['You read the last page of every book first and then act surprised at the ending.', 'You leave me voice notes when I’m in the next room.', 'You hum when you’re concentrating and you don’t know you do it.'],
     },
     {
-      id: 'rain',
-      name: 'The rain can wait',
+      id: 'walk',
+      name: 'The three-hour walk',
+      layout: 'moment',
+      mood: 'warm',
+      intro: 'Then there is the night we walked.',
+      lines: ['The night we missed the last train, you bought us two terrible coffees and we walked home for three hours.', 'I remember hoping the walk wouldn’t end.'],
+      photoId: 'p-walk',
+    },
+    { id: 'soup', name: 'My mother’s soup', layout: 'line', mood: 'warm', intro: 'And then you got it right.', lines: ['You learned my mother’s soup from one phone call and got it right the second time.'], photoId: 'p-soup' },
+    { id: 'us', name: 'Just us', layout: 'photos', mood: 'warm', intro: 'A few moments from along the way.', lines: [] },
+    {
+      id: 'march',
+      name: 'That day in March',
       layout: 'moment',
       mood: 'tender',
-      lines: ['We were meant to stay for one drink. Then the rain started, and you moved your chair closer so I could hear your gist.'],
-      photoId: 'p-cafe',
+      intro: 'Then there was March.',
+      lines: ['When I got the bad news in March, you didn’t try to fix it. You just took the day off and stayed.'],
+      photoId: 'p-balcony',
     },
-    { id: 'water', name: 'One more minute', layout: 'moment', mood: 'tender', lines: ['That evening by the water, our shoes were full of sand. You kept saying “one more minute” every time the sky changed.'], photoId: 'p-beach' },
-    { id: 'small', name: 'The small things', layout: 'list', mood: 'tender', lines: [...SAMPLE_FIXED.reasons] },
-    { id: 'roll', name: 'Caught on camera', layout: 'photos', mood: 'warm', lines: [] },
   ],
 }
 
+/** What the sample film says under its end credits, so nobody takes its people for real customers. */
+export const SAMPLE_NOTE = 'Sarah and Michael are fictional. Their photos and song were made for this sample.'
+
 /**
- * The sample's song: a real song the studio made for the fictional Zara from
- * the details above (Lyria 3.5, Afrobeats, sung). The lyrics are the words the
- * studio's writer produced and the music model was given to sing. `v` changes
- * when the file does, so returning visitors don't hear a cached older song.
+ * The sample's song: a real song the studio made for the fictional Sarah from Michael's note
+ * (Lyria 3.5, lo-fi R&B, a man's voice, both chosen by the director). The lyrics are the words the
+ * studio's writer produced and the music model was given to sing. `v` changes when the file does,
+ * so returning visitors don't hear a cached older song.
  */
-export const SAMPLE_SOUNDTRACK: Soundtrack = { kind: 'song', src: '/sample/zara-song.mp3?v=2', label: 'Zara’s song' }
+export const SAMPLE_SOUNDTRACK: Soundtrack = { kind: 'song', src: '/sample/sarah-song.mp3?v=1', label: 'This One, With You' }
 
-export const SAMPLE_LYRICS = `Meant to stay for one
-Then the weather turned
-You moved your chair close
-Just to share the gist
+export const SAMPLE_LYRICS = `The last train pulled away
+Two bad cups in our hands
+Three hours back on foot
+I kept slowing down
 
-Ordinary days get good
-When you're around
+Don't need anything more
+Not when you're here
 
-The rain can wait
-Let it fall outside
-The rain can wait
-I'm in no rush
+This one, with you
+Right where we are
+This one, with you
+It's all I'm asking for
 
-You steal the duvet
-Ask why I'm cold
-You remember the small things
-I mention once
+Back in March, you stayed home
+Just sat with me all day
+Now my phone lights up
+Voice note from one room over
 
-Ordinary days get good
-When you're around
+Don't need anything more
+Not when you're here
 
-The rain can wait
-Let it fall outside
-The rain can wait
-I'm in no rush
+This one, with you
+Right where we are
+This one, with you
+It's all I'm asking for
 
-More afternoons running late
-More of your hand in mine
-Happy birthday, Zara
+Keep the bigger life
+I'm good right here
+Happy anniversary, Sarah
+You're all I need
 
-The rain can wait
-Let it fall outside
-The rain can wait
-I'm in no rush
+This one, with you
+Right where we are
+This one, with you
+It's all I'm asking for
 
-The rain can wait (happy birthday, Zara)`
+This one, with you (happy anniversary, Sarah)`
 
 export const emptyIntake = (): Intake => ({
   occasion: 'birthday',
