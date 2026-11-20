@@ -13,20 +13,20 @@ import { applyNotes, keepTheirWords, NOTES_LIMIT } from '../story/notes'
 import { occasionOf, OCCASIONS } from '../story/occasions'
 import { RELATIONSHIPS } from '../story/relationships'
 import { newSeed } from '../story/rng'
-import { isOccasion } from '../story/types'
-import type { Occasion } from '../story/types'
+import { endingOf, isOccasion } from '../story/types'
+import type { EndingChoice, Occasion } from '../story/types'
 import { LIMITS } from '../story/validate'
 import { vibeById, VIBES, VOICES } from '../story/vibes'
 
 /**
- * The short way to make a film: three taps, two names, some photos and one
- * box of the sender's own words. The studio reads the words and asks up to
+ * The short way to make a film: three taps, two names, how it should end, some
+ * photos and one box of the sender's own words. The studio reads the words and asks up to
  * three short questions about them, sorts everything into scenes, directs the
  * film and plays it at the end; everything else can be added from the preview.
  */
 
-type StepId = 'who' | 'names' | 'occasion' | 'photos' | 'about' | 'more' | 'song'
-const ALL: StepId[] = ['who', 'names', 'occasion', 'photos', 'about', 'more', 'song']
+type StepId = 'who' | 'names' | 'occasion' | 'ending' | 'photos' | 'about' | 'more' | 'song'
+const ALL: StepId[] = ['who', 'names', 'occasion', 'ending', 'photos', 'about', 'more', 'song']
 const ENOUGH = 30
 
 export const Route = createFileRoute('/start')({
@@ -118,6 +118,13 @@ function Start() {
   }, [stepId, noteText, followups?.about])
   const questions = followups?.about === noteText ? followups.asked : []
   const answer = (index: number, value: string) => followups && setFollowups({ ...followups, asked: followups.asked.map((q, i) => (i === index ? { ...q, answer: value } : q)) })
+
+  /** Change one part of an invitation. */
+  const setEnding = (part: { invite?: string; first?: string; second?: string }) =>
+    setIntake((c) => {
+      const was: Extract<EndingChoice, { kind: 'invitation' }> = c.ending?.kind === 'invitation' ? c.ending : { kind: 'invitation', invite: '', choices: ['', ''] }
+      return { ...c, ending: { kind: 'invitation', invite: part.invite ?? was.invite, choices: [part.first ?? was.choices[0], part.second ?? was.choices[1]] } }
+    })
 
   /** Sort the sender's words into scenes, have the film directed from them, build it, and start the song behind it. */
   const finish = async () => {
@@ -222,6 +229,70 @@ function Start() {
             </button>
           ))}
         </div>
+      ),
+    },
+    ending: {
+      question: `How should ${name}’s film end?`,
+      hint: 'The whole film builds to this. Pick one.',
+      // An ending the sender started must be finished, or left for the occasion's own.
+      canNext: !intake.ending || Boolean(endingOf(intake)),
+      body: (
+        <>
+          <div className="start-endings" role="radiogroup" aria-label="How the film ends">
+            <label className="start-ending">
+              <input type="radio" name="ending" checked={!intake.ending} onChange={() => setIntake((c) => ({ ...c, ending: undefined }))} />
+              <span>
+                <b>{occasionOf(intake.occasion).ending.prop === 'candle' ? 'With a wish' : 'With a sealed note'}</b>
+                <small>{occasionOf(intake.occasion).ending.description}</small>
+              </span>
+            </label>
+            <label className="start-ending">
+              <input type="radio" name="ending" checked={intake.ending?.kind === 'question'} onChange={() => setIntake((c) => ({ ...c, ending: { kind: 'question', ask: c.ending?.kind === 'question' ? c.ending.ask : '' } }))} />
+              <span>
+                <b>With a question</b>
+                <small>You ask. {name === 'them' ? 'They answer' : `${name} answers`}, then your last line appears.</small>
+              </span>
+            </label>
+            <label className="start-ending">
+              <input
+                type="radio"
+                name="ending"
+                checked={intake.ending?.kind === 'invitation'}
+                onChange={() => setIntake((c) => ({ ...c, ending: c.ending?.kind === 'invitation' ? c.ending : { kind: 'invitation', invite: '', choices: ['', ''] } }))}
+              />
+              <span>
+                <b>With an invitation</b>
+                <small>A plan for the two of you, with two things to pick from. Then your last line appears.</small>
+              </span>
+            </label>
+          </div>
+          {intake.ending?.kind === 'question' && (
+            <div className="start-fields start-ending-fields">
+              <label>
+                <span>Your question</span>
+                <input value={intake.ending.ask} maxLength={LIMITS.ask} onChange={(e) => setIntake((c) => ({ ...c, ending: { kind: 'question', ask: e.target.value } }))} />
+              </label>
+            </div>
+          )}
+          {intake.ending?.kind === 'invitation' && (
+            <div className="start-fields start-ending-fields">
+              <label>
+                <span>What are you inviting {name} to?</span>
+                <input value={intake.ending.invite} maxLength={LIMITS.ask} onChange={(e) => setEnding({ invite: e.target.value })} />
+              </label>
+              <div className="start-pair">
+                <label>
+                  <span>One thing to pick</span>
+                  <input value={intake.ending.choices[0]} maxLength={LIMITS.choice} onChange={(e) => setEnding({ first: e.target.value })} />
+                </label>
+                <label>
+                  <span>The other</span>
+                  <input value={intake.ending.choices[1]} maxLength={LIMITS.choice} onChange={(e) => setEnding({ second: e.target.value })} />
+                </label>
+              </div>
+            </div>
+          )}
+        </>
       ),
     },
     photos: {

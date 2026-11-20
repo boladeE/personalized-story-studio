@@ -83,6 +83,8 @@ export function Film({
   const [idle, setIdle] = useState(false)
   const [nowPlaying, setNowPlaying] = useState<{ title: string; by: string; key: number } | null>(null)
   const [flash, setFlash] = useState(0)
+  /** What the viewer picked at an ending with a choice. */
+  const [picked, setPicked] = useState('')
 
   const root = useRef<HTMLDivElement>(null)
   const hazeCanvas = useRef<HTMLCanvasElement>(null)
@@ -412,11 +414,12 @@ export function Film({
   }, [handle, playFrom])
 
   const blow = useCallback(
-    (flame: DOMRect | null) => {
+    (flame: DOMRect | null, choice?: string) => {
       const c = clock.current
       const wish = film.shots[wishIndex]
       if (!wish || c.wishDone) return
       c.wishDone = true
+      setPicked(choice ?? '')
       c.t = wish.start + wish.duration
       setWaiting(false)
       const box = dustCanvas.current?.getBoundingClientRect()
@@ -542,7 +545,7 @@ export function Film({
     '--f-soft': palette.soft,
     '--f-accent': palette.accent,
   } as CSSProperties
-  const actions = { onBlow: blow, onReplay: () => jump(0), waiting, ended: phase === 'ended', ending }
+  const actions = { onBlow: blow, onReplay: () => jump(0), waiting, ended: phase === 'ended', ending, picked }
   const glow = started && shot.kind === 'photo' ? shot.photo.src : null
 
   return (

@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
-import { audioState, chooseStyle, closeEditor, filmState, open, openEditor, pickScene, sceneTile, startFilm, trackErrors, undoButton, walk } from './helpers'
+import { audioState, chooseStyle, closeEditor, filmState, keepEnding, open, openEditor, pickScene, sceneTile, startFilm, trackErrors, undoButton, walk } from './helpers'
 import { OCCASIONS } from '../src/story/occasions'
 
 // Tiny valid PNG (1x1) for upload tests.
@@ -243,7 +243,7 @@ for (const [width, height] of [[360, 740], [768, 900], [1360, 800]]) {
     test.setTimeout(260_000)
     await page.setViewportSize({ width, height })
     // Every screen of the short flow.
-    for (const step of ['who', 'names', 'occasion', 'photos', 'about', 'song']) {
+    for (const step of ['who', 'names', 'occasion', 'ending', 'photos', 'about', 'song']) {
       await open(page, `/start?step=${step}`)
       await expect(page.locator('.start-page h1')).toBeVisible()
       expect(await page.evaluate(() => document.documentElement.scrollWidth), `the ${step} screen of the short flow is wider than the screen`).toBeLessThanOrEqual(width)
@@ -376,11 +376,14 @@ test('the home page offers every occasion, and a ticket starts a short flow that
   // The occasion is written into the draft and leaves the address; the flow doesn't ask for it again.
   await tickets.filter({ hasText: 'Thank you' }).click()
   await expect(page).toHaveURL(/\/start$/)
-  await expect(page.locator('.start-step')).toHaveText('Step 1 of 6')
+  await expect(page.locator('.start-step')).toHaveText('Step 1 of 7')
   await page.getByRole('button', { name: 'Friend', exact: true }).click()
   await page.getByLabel('Their name').fill('Kemi')
   await page.getByLabel('Your name').fill('Ada')
   await page.getByRole('button', { name: 'Next' }).click()
+  // How it ends is asked next, with the occasion's own ending already chosen: a thank-you ends on a sealed note.
+  await expect(page.getByRole('radio', { name: /^With a sealed note/ })).toBeChecked()
+  await keepEnding(page)
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Add a few photos of Kemi.')
   await page.getByRole('button', { name: 'Skip photos' }).click()
   await page.getByLabel('About Kemi').fill(NOTE)
@@ -432,10 +435,10 @@ test('the short flow sorts the sender’s words, plays the film at once and brin
   const errors = trackErrors(page)
   await open(page, '/')
   await page.getByRole('link', { name: 'Start a film' }).first().click()
-  await expect(page.locator('.start-step')).toHaveText('Step 1 of 7')
+  await expect(page.locator('.start-step')).toHaveText('Step 1 of 8')
   await expect(page.getByRole('button', { name: 'Next' })).toBeDisabled()
 
-  // Three of the seven steps are answered by a tap that moves straight on.
+  // Three of the eight steps are answered by a tap that moves straight on.
   await page.getByRole('button', { name: 'Girlfriend' }).click()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('What do you call each other?')
   await page.getByLabel('Their name').fill('Zara')
@@ -443,7 +446,18 @@ test('the short flow sorts the sender’s words, plays the film at once and brin
   await page.getByLabel('Your name').fill('Tobi')
   await page.getByLabel('Your name').press('Enter')
   await page.getByRole('button', { name: 'Anniversary' }).click()
-  await expect(page.locator('.start-step')).toHaveText('Step 4 of 7')
+
+  // How the film ends: the occasion's own ending is chosen already, and the sender can make it a question of their own.
+  await expect(page.locator('.start-step')).toHaveText('Step 4 of 8')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('How should Zara’s film end?')
+  await expect(page.getByRole('radio', { name: /^With a sealed note/ })).toBeChecked()
+  await page.getByRole('radio', { name: /^With an invitation/ }).check()
+  await expect(page.getByRole('button', { name: 'Next' })).toBeDisabled()
+  await page.getByRole('radio', { name: /^With a question/ }).check()
+  await expect(page.getByRole('button', { name: 'Next' })).toBeDisabled()
+  await page.getByLabel('Your question').fill('Same again next year?')
+  await page.getByRole('button', { name: 'Next' }).click()
+  await expect(page.locator('.start-step')).toHaveText('Step 5 of 8')
   await page.locator('input[type=file]').setInputFiles(['one', 'two', 'three'].map((name) => ({ name: `${name}.png`, mimeType: 'image/png', buffer: PNG })))
   await expect(page.locator('.start-photos img')).toHaveCount(3)
   // Removing a photo happens at once and can be taken back.
@@ -517,7 +531,18 @@ test('the short flow sorts the sender’s words, plays the film at once and brin
   expect(said).toContain('You never finish your tea.')
   expect(said).toContain('“You run hot anyway.” Every time.')
   expect(said).not.toContain('bring it up')
-  await expect(page.getByRole('button', { name: 'Open the note' })).toBeVisible()
+  // It ends on the sender's question, and waits for an answer.
+  expect(said).toContain('Same again next year?')
+  await expect(page.getByRole('button', { name: 'Open the note' })).toHaveCount(0)
+  await expect(page.locator('.shot.is-current .choices').getByRole('button')).toHaveText(['Yes', 'Obviously'])
+  // The film holds on the question for as long as it takes: well past the shot's own length, it is still there.
+  await page.waitForTimeout(6500)
+  expect((await filmState(page)).kind).toBe('wish')
+  await page.getByRole('button', { name: 'Obviously' }).click()
+  // Then their last line, and the credits.
+  await expect.poll(async () => (await filmState(page)).kind).toBe('reveal')
+  await page.getByRole('slider', { name: 'Film position' }).fill('0')
+  await walk(page, (shot) => shot.kind === 'wish')
 
   // The editor says why the studio made it this kind of film, for as long as that choice stands.
   await openEditor(page, 'Look')
@@ -753,6 +778,7 @@ for (const [width, height] of [[1360, 800], [360, 740]]) {
     await page.getByLabel('Your name').fill('Ada')
     await page.getByLabel('Your name').press('Enter')
     await page.getByRole('button', { name: 'Anniversary' }).click()
+    await keepEnding(page)
     await page.getByRole('button', { name: 'Skip photos' }).click()
     await page.getByLabel('About Kemi').fill(NOTE)
     await page.getByRole('button', { name: 'Next' }).click()
@@ -846,6 +872,7 @@ test('a song that fails leaves the film silent, never with other music, and can 
   await page.getByLabel('Your name').fill('Ada')
   await page.getByLabel('Your name').press('Enter')
   await page.getByRole('button', { name: 'Thank you' }).click()
+  await keepEnding(page)
   await page.getByRole('button', { name: 'Skip photos' }).click()
   await page.getByLabel('About Kemi').fill(NOTE)
   await page.getByRole('button', { name: 'Next' }).click()
@@ -897,6 +924,7 @@ test('words the music model refuses are written again and sung, without troublin
   await page.getByLabel('Your name').fill('Ada')
   await page.getByLabel('Your name').press('Enter')
   await page.getByRole('button', { name: 'Thank you' }).click()
+  await keepEnding(page)
   await page.getByRole('button', { name: 'Skip photos' }).click()
   await page.getByLabel('About Kemi').fill(NOTE)
   await page.getByRole('button', { name: 'Next' }).click()
@@ -937,6 +965,7 @@ test('an iPhone photo (HEIC) is converted on the device, and files that are not 
   await page.getByLabel('Your name').fill('Ada')
   await page.getByLabel('Your name').press('Enter')
   await page.getByRole('button', { name: 'Just because' }).click()
+  await keepEnding(page)
   // The picker offers HEIC files, which have no "image" type on most computers.
   await expect(page.locator('input[type=file]')).toHaveAttribute('accept', 'image/*,.heic,.heif')
 

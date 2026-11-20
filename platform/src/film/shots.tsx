@@ -73,7 +73,10 @@ export function Type({
 export const seconds = (text: string | undefined, perWord = 0.07) => (text ? text.split(/\s+/).length * perWord : 0)
 
 export interface ShotActions {
-  onBlow: (flame: DOMRect | null) => void
+  /** The viewer did what the ending asks: blew out the candle, opened the note, or (with `choice`) answered. */
+  onBlow: (flame: DOMRect | null, choice?: string) => void
+  /** What the viewer picked at an ending with a choice. */
+  picked?: string
   onReplay: () => void
   waiting: boolean
   ended: boolean
@@ -95,6 +98,11 @@ export function ShotView({ shot, state, loud, actions, world = 'screening' }: { 
       data-text={shot.text}
       style={style}
     >
+      {shot.kind === 'reveal' && shot.names && actions.picked && (
+        <p className="reveal-pick" aria-hidden="true">
+          {actions.picked} it is.
+        </p>
+      )}
       {world === 'scrapbook' ? (
         <PageBody shot={shot} actions={actions} leaving={state === 'leaving'} />
       ) : world === 'mixtape' ? (
@@ -193,6 +201,7 @@ function ShotBody({ shot, actions, leaving }: { shot: Shot; actions: ShotActions
     case 'letter':
       return <Letter shot={shot} />
     case 'wish':
+      if (shot.choices) return <Choice shot={shot} actions={actions} leaving={leaving} head="headline" sub="sub" />
       return (
         <div className={`wish${leaving ? ' is-blown' : ''}`}>
           {shot.prop === 'seal' ? (
@@ -341,6 +350,30 @@ function Roll({ shot }: { shot: Extract<Shot, { kind: 'flag' | 'reason' }> }) {
         <p className="roll-count">
           {shot.n} of {shot.total}
         </p>
+      )}
+    </div>
+  )
+}
+
+/**
+ * An ending the viewer answers: the sender's question or invitation in the film's own type, and the
+ * answers to pick from. Each world passes the classes its headings and small print use.
+ */
+export function Choice({ shot, actions, leaving, head, sub }: { shot: Extract<Shot, { kind: 'wish' }>; actions: ShotActions; leaving: boolean; head: string; sub: string }) {
+  return (
+    <div className={`wish is-choice${leaving ? ' is-blown' : ''}`} data-prop={shot.prop}>
+      <div className="words center" aria-hidden="true">
+        <Type as="h2" text={shot.title} className={`${head}${shot.title.length > 44 ? ' is-long' : ''}`} by="word" delay={0.5} step={110} />
+        {shot.body && <p className={`${sub} choice-sub`}>{shot.body}</p>}
+      </div>
+      {!leaving && (
+        <div className="choices">
+          {(shot.choices ?? [shot.action]).map((choice) => (
+            <button key={choice} type="button" className="blow" onClick={(e) => actions.onBlow(e.currentTarget.getBoundingClientRect(), choice)}>
+              {choice}
+            </button>
+          ))}
+        </div>
       )}
     </div>
   )

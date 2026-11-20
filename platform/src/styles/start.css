@@ -451,6 +451,63 @@ body:has(.start-shell)::before {
   line-height: 1.5;
   resize: vertical;
 }
+/* How the film ends: three ways, and the words for the one chosen. */
+.start-endings {
+  display: grid;
+  gap: 10px;
+  margin: clamp(20px, 3vh, 28px) 0 0;
+}
+.start-ending {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 13px 16px 14px;
+  border: 2px solid #dcd9cc;
+  border-radius: 14px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.1s ease-out;
+}
+.start-ending:active {
+  transform: scale(0.99);
+}
+.start-ending:has(input:checked) {
+  border-color: var(--palm);
+  box-shadow: inset 0 0 0 1px var(--palm);
+}
+.start-ending:has(input:focus-visible) {
+  outline: 3px solid var(--hibiscus);
+  outline-offset: 2px;
+}
+.start-ending input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 3px 0 0;
+  accent-color: var(--hibiscus);
+}
+.start-ending span {
+  display: grid;
+  gap: 2px;
+}
+.start-ending b {
+  font-size: 19px;
+  line-height: 1.25;
+}
+.start-ending small {
+  font-size: 15.5px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.start-ending-fields {
+  margin-top: 16px;
+}
+.start-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 12px;
+}
+
 /* The studio's questions about what was written: each quotes the sender, asks one thing, and takes a line. */
 .start-more {
   list-style: none;

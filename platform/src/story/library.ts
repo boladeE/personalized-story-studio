@@ -1,4 +1,4 @@
-import { OCCASION_IDS } from './types'
+import { endingOf, OCCASION_IDS } from './types'
 import type { Frame, Intake, Memory, Mood, Occasion, Photo, PhotoLayout } from './types'
 import type { Rng } from './rng'
 import { FAMILY_VERDICTS, occasionOf } from './occasions'
@@ -229,18 +229,26 @@ const wish: SceneDef = {
   description: 'A candle to blow out, and your last line.',
   // A birthday ends on a candle; every other occasion ends on a sealed note.
   label: (i) => {
+    const chosen = endingOf(i)
+    if (chosen?.kind === 'question') return { name: 'The question', description: 'Your question, their answer, and your last line.' }
+    if (chosen?.kind === 'invitation') return { name: 'One more thing', description: 'Your invitation, their pick, and your last line.' }
     const { scene, description } = occasionOf(i.occasion).ending
     return { name: scene, description }
   },
   missing: (i) => (i.sender.trim() && i.recipient.trim() ? null : 'Add both names'),
   build: (ctx) => {
     const ending = occasionOf(ctx.intake.occasion).ending
+    const reveal = ctx.intake.wish.trim() || fill(ending.fallback, ctx.intake)
+    // An ending the sender chose: the film waits for the viewer's answer, in the sender's own words, not the studio's.
+    const chosen = endingOf(ctx.intake)
+    if (chosen?.kind === 'question') return [{ kind: 'wish', title: chosen.ask, body: '', reveal, prop: 'question', action: 'Yes', choices: ['Yes', 'Obviously'] }]
+    if (chosen?.kind === 'invitation') return [{ kind: 'wish', title: chosen.invite, body: 'Pick one.', reveal, prop: 'invitation', action: chosen.choices[0], choices: [...chosen.choices] }]
     return [
       {
         kind: 'wish',
         title: say(ctx, ending.titles),
         body: say(ctx, ending.bodies),
-        reveal: ctx.intake.wish.trim() || fill(ending.fallback, ctx.intake),
+        reveal,
         prop: ending.prop,
         action: ending.action,
       },

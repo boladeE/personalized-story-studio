@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 import type { Photo } from '../story/types'
-import { FlagIcon, Letter, Type, vars } from './shots'
+import { Choice, FlagIcon, Letter, Type, vars } from './shots'
 import type { ShotActions } from './shots'
 import type { Shot } from './timeline'
 
@@ -125,6 +125,7 @@ export function PageBody({ shot, actions, leaving }: { shot: Shot; actions: Shot
         </div>
       )
     case 'wish':
+      if (shot.choices) return <Choice shot={shot} actions={actions} leaving={leaving} head="sb-hand sb-head" sub="sb-typed sb-aside" />
       return (
         <div className={`wish sb-wish${leaving ? ' is-blown' : ''}`}>
           {shot.prop === 'seal' ? (

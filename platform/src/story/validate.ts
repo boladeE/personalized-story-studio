@@ -1,6 +1,6 @@
 import { cleanStoredDirection } from './direction'
 import { isOccasion, isRelationship, isWorld } from './types'
-import type { Cut, Intake, LookId } from './types'
+import type { Cut, EndingChoice, Intake, LookId } from './types'
 
 /**
  * Server-side check of a sender's intake. Everything arrives from the browser,
@@ -20,6 +20,9 @@ export const LIMITS = {
   letter: 6000,
   wish: 400,
   photos: 12,
+  /** The sender's own ending: their question or invitation, and each thing to pick from. */
+  ask: 140,
+  choice: 40,
   question: 160,
   answer: 80,
 } as const
@@ -71,6 +74,19 @@ function parseCut(raw: unknown): Cut | undefined {
   return cut
 }
 
+/** The sender's own ending, if they chose one: a question, or an invitation with two things to pick from. */
+function parseEnding(raw: unknown): EndingChoice | null {
+  if (raw === undefined || raw === null) return null
+  const r = (typeof raw === 'object' ? raw : {}) as Record<string, unknown>
+  if (r.kind === 'question') return { kind: 'question', ask: text(r.ask, LIMITS.ask, 'Your question') }
+  if (r.kind === 'invitation') {
+    const choices = Array.isArray(r.choices) ? r.choices : []
+    if (choices.length !== 2) throw new IntakeError('An invitation needs two things to pick from')
+    return { kind: 'invitation', invite: text(r.invite, LIMITS.ask, 'Your invitation'), choices: [text(choices[0], LIMITS.choice, 'The first choice'), text(choices[1], LIMITS.choice, 'The second choice')] }
+  }
+  throw new IntakeError('Unknown ending')
+}
+
 export function parseIntake(raw: unknown): { ok: true; intake: Intake } | { ok: false; error: string } {
   try {
     if (!raw || typeof raw !== 'object') throw new IntakeError('Missing story details')
@@ -109,6 +125,7 @@ export function parseIntake(raw: unknown): { ok: true; intake: Intake } | { ok: 
     if (r.world !== undefined && r.world !== 'surprise' && !isWorld(r.world)) throw new IntakeError('Unknown kind of film')
     const cut = parseCut(r.cut)
     const direction = r.direction === undefined ? null : cleanStoredDirection(r.direction)
+    const ending = parseEnding(r.ending)
 
     const intake: Intake = {
       occasion: r.occasion,
@@ -127,6 +144,7 @@ export function parseIntake(raw: unknown): { ok: true; intake: Intake } | { ok: 
       ...(cut ? { cut } : {}),
       // The studio's own choices travel with the gift; anything in them it doesn't recognise is dropped.
       ...(direction ? { direction } : {}),
+      ...(ending ? { ending } : {}),
     }
     if (!intake.sender.trim() || !intake.recipient.trim()) throw new IntakeError('Both names are needed')
     return { ok: true, intake }

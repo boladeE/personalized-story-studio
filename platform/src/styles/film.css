@@ -1037,6 +1037,43 @@
   outline-offset: 3px;
 }
 
+/* An ending the viewer answers: the sender's question or invitation, and the answers to pick from. */
+.wish.is-choice {
+  gap: clamp(18px, 5cqh, 44px);
+  width: 100%;
+}
+.choice-sub {
+  margin: 0;
+  animation: w-in 0.8s 1.2s both;
+}
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  max-width: 100%;
+}
+.choices .blow {
+  max-width: 100%;
+  animation: w-in 0.8s 1.6s both, breathe 2.4s 2.6s ease-in-out infinite;
+}
+.choices .blow:nth-child(2) {
+  animation-delay: 1.8s, 3.8s;
+}
+/* The reveal says what was picked, above the sender's last line. */
+.reveal-pick {
+  position: absolute;
+  inset: clamp(10px, 9cqh, 70px) 0 auto;
+  z-index: 2;
+  margin: 0;
+  font: 700 clamp(13px, min(2cqw, 3.6cqh), 22px) / 1.2 var(--sans);
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--f-accent);
+  animation: w-in 0.8s 0.3s both;
+}
+
 /* The wish itself */
 .reveal {
   font: italic 500 clamp(32px, min(6.6cqw, 13cqh), 104px) / 1.06 var(--serif);

@@ -72,3 +72,9 @@ export function trackErrors(page: Page) {
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()))
   return errors
 }
+
+/** The short flow asks how the film should end. The occasion's own ending is already chosen; this takes it. */
+export async function keepEnding(page: Page) {
+  await page.getByRole('heading', { level: 1, name: /^How should .+ film end\?$/ }).waitFor()
+  await page.getByRole('button', { name: 'Next' }).click()
+}

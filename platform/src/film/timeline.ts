@@ -42,8 +42,10 @@ export type Shot = ShotBase &
     | { kind: 'reason'; text: string; n: number; total: number; all: string[] }
     | { kind: 'montage'; kicker: string; title: string; photos: Photo[] }
     | { kind: 'letter'; greeting: string; paragraphs: string[]; signoff: string }
-    | { kind: 'wish'; title: string; body: string; prop: EndingProp; action: string }
-    | { kind: 'reveal'; words: string }
+    /** `choices`: the answers the viewer picks from, when the ending is the sender's question or invitation. */
+    | { kind: 'wish'; title: string; body: string; prop: EndingProp; action: string; choices?: string[] }
+    /** `names`: the reveal says what the viewer picked, because it was one of two things. */
+    | { kind: 'reveal'; words: string; names?: boolean }
     | { kind: 'credits'; lines: Array<{ role: string; name: string }>; last: string; note?: string }
   )
 
@@ -193,8 +195,8 @@ export function buildFilm(story: Story): Film {
           break
         case 'wish':
           // Gifts stored before occasions existed are birthdays, and carry no prop of their own.
-          drafts.push({ kind: 'wish', title: frame.title, body: frame.body, prop: frame.prop ?? 'candle', action: frame.action ?? 'Blow out the candle', seconds: 5, hold: true, enter: 'type', exit: 'fade' })
-          drafts.push({ kind: 'reveal', words: frame.reveal, seconds: read(words(frame.reveal)) + 3, enter: 'assemble', exit: 'fade' })
+          drafts.push({ kind: 'wish', title: frame.title, body: frame.body, prop: frame.prop ?? 'candle', action: frame.action ?? 'Blow out the candle', ...(frame.choices ? { choices: frame.choices } : {}), seconds: 5, hold: true, enter: 'type', exit: 'fade' })
+          drafts.push({ kind: 'reveal', words: frame.reveal, ...(frame.prop === 'invitation' ? { names: true } : {}), seconds: read(words(frame.reveal)) + 3, enter: 'assemble', exit: 'fade' })
           break
       }
     })

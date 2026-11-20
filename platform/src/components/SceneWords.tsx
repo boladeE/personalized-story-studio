@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import { occasionOf } from '../story/occasions'
+import { endingOf } from '../story/types'
 import type { Intake, Memory } from '../story/types'
 import { LIMITS } from '../story/validate'
 import { Cross, Field, GrowingText, ListEditor, oneLine } from './fields'
@@ -44,8 +45,10 @@ export function sceneAsk(type: WordScene, intake: Intake): string {
       return `Up to ${LIMITS.photos} photos. Three or more gives the film its camera roll.`
     case 'letter':
       return 'A few sentences is plenty. Leave a blank line between paragraphs.'
-    case 'wish':
-      return `Your last line, shown once ${occasion.ending.shown}.`
+    case 'wish': {
+      const chosen = endingOf(intake)
+      return `Your last line, shown once ${chosen?.kind === 'question' ? `${them} has answered` : chosen?.kind === 'invitation' ? `${them} has picked` : occasion.ending.shown}.`
+    }
   }
 }
 
@@ -92,12 +95,31 @@ export function SceneWords({
         </Field>
       )
 
-    case 'wish':
+    case 'wish': {
+      const ending = intake.ending
       return (
-        <Field label="Your last line">
-          {(id) => <textarea id={id} rows={2} maxLength={LIMITS.wish} value={intake.wish} onChange={(e) => set('wish', e.target.value)} />}
-        </Field>
+        <>
+          {/* An ending the sender chose is theirs to reword here. Choosing a different kind of ending is done where the film is started. */}
+          {ending?.kind === 'question' && (
+            <Field label="Your question">{(id) => <input id={id} maxLength={LIMITS.ask} value={ending.ask} onChange={(e) => set('ending', { kind: 'question', ask: e.target.value })} />}</Field>
+          )}
+          {ending?.kind === 'invitation' && (
+            <>
+              <Field label="Your invitation">{(id) => <input id={id} maxLength={LIMITS.ask} value={ending.invite} onChange={(e) => set('ending', { ...ending, invite: e.target.value })} />}</Field>
+              <Field label="One thing to pick">
+                {(id) => <input id={id} maxLength={LIMITS.choice} value={ending.choices[0]} onChange={(e) => set('ending', { ...ending, choices: [e.target.value, ending.choices[1]] })} />}
+              </Field>
+              <Field label="The other">
+                {(id) => <input id={id} maxLength={LIMITS.choice} value={ending.choices[1]} onChange={(e) => set('ending', { ...ending, choices: [ending.choices[0], e.target.value] })} />}
+              </Field>
+            </>
+          )}
+          <Field label="Your last line">
+            {(id) => <textarea id={id} rows={2} maxLength={LIMITS.wish} value={intake.wish} onChange={(e) => set('wish', e.target.value)} />}
+          </Field>
+        </>
       )
+    }
   }
 }
 

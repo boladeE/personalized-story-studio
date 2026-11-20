@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildFilm, DEFAULT_BPM, shotAt } from '../src/film/timeline'
 import { generateStory } from '../src/story/generate'
 import { emptyIntake, SAMPLE_INTAKE, SAMPLE_NOTE } from '../src/story/sample'
+import { parseIntake } from '../src/story/validate'
 
 const screening = { ...SAMPLE_INTAKE, world: 'screening' as const }
 const story = generateStory(screening, 7)
@@ -180,5 +181,43 @@ describe('the same story as a mixtape', () => {
       expect(Math.abs(beats - Math.round(beats))).toBeLessThan(1e-6)
     }
     expect(tape.shots.map((s) => s.kind).slice(-3)).toEqual(['wish', 'reveal', 'credits'])
+  })
+})
+
+describe('an ending the sender chose', () => {
+  const asked = { ...SAMPLE_INTAKE, world: 'mixtape' as const, ending: { kind: 'question' as const, ask: 'Same again next year?' } }
+  const invited = { ...SAMPLE_INTAKE, world: 'scrapbook' as const, ending: { kind: 'invitation' as const, invite: 'Dinner, on me. This Saturday.', choices: ['The rooftop', 'Mama’s kitchen'] as [string, string] } }
+
+  it('ends on the sender’s question, waits for an answer, then shows their last line', () => {
+    const film = buildFilm(generateStory(asked, 5))
+    const [wish, reveal, credits] = film.shots.slice(-3)
+    expect(wish).toMatchObject({ kind: 'wish', prop: 'question', title: 'Same again next year?', choices: ['Yes', 'Obviously'], hold: true })
+    expect(reveal).toMatchObject({ kind: 'reveal', words: SAMPLE_INTAKE.wish })
+    expect(reveal.kind === 'reveal' && reveal.names).toBeUndefined()
+    expect(credits.kind).toBe('credits')
+    expect(generateStory(asked, 5).scenes.at(-1)?.name).toBe('The question')
+  })
+
+  it('ends on an invitation with two things to pick from, and the reveal names the pick', () => {
+    const film = buildFilm(generateStory(invited, 5))
+    const [wish, reveal] = film.shots.slice(-3)
+    expect(wish).toMatchObject({ kind: 'wish', prop: 'invitation', title: 'Dinner, on me. This Saturday.', choices: ['The rooftop', 'Mama’s kitchen'] })
+    expect(reveal).toMatchObject({ kind: 'reveal', names: true })
+    expect(generateStory(invited, 5).scenes.at(-1)?.name).toBe('One more thing')
+  })
+
+  it('falls back to the occasion’s own ending while the sender’s is unfinished', () => {
+    const half = buildFilm(generateStory({ ...SAMPLE_INTAKE, ending: { kind: 'invitation', invite: 'Dinner', choices: ['The rooftop', ''] } }, 5))
+    expect(half.shots.find((s) => s.kind === 'wish')).toMatchObject({ prop: 'candle' })
+    const blank = buildFilm(generateStory({ ...SAMPLE_INTAKE, ending: { kind: 'question', ask: '  ' } }, 5))
+    expect(blank.shots.find((s) => s.kind === 'wish')).toMatchObject({ prop: 'candle' })
+  })
+
+  it('travels with the gift, within its limits', () => {
+    const kept = parseIntake({ ...SAMPLE_INTAKE, ending: invited.ending })
+    expect(kept.ok && kept.intake.ending).toEqual(invited.ending)
+    expect(parseIntake({ ...SAMPLE_INTAKE, ending: { kind: 'question', ask: 'x'.repeat(400) } }).ok).toBe(false)
+    expect(parseIntake({ ...SAMPLE_INTAKE, ending: { kind: 'invitation', invite: 'Dinner', choices: ['One'] } }).ok).toBe(false)
+    expect(parseIntake({ ...SAMPLE_INTAKE, ending: { kind: 'fireworks' } }).ok).toBe(false)
   })
 })

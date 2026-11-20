@@ -541,6 +541,15 @@
 .mx-wish .mx-head {
   font-size: clamp(28px, min(7cqw, 12cqh), 100px);
 }
+/* The sender's question or invitation sits where every other track's words do: hard left. */
+.film.mx .wish.is-choice,
+.film.mx .wish.is-choice .words.center {
+  justify-items: start;
+  text-align: left;
+}
+.film.mx .wish.is-choice .choices {
+  justify-content: flex-start;
+}
 .film.mx .blow,
 .film.mx .again {
   border-radius: 6px;

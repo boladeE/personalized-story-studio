@@ -88,9 +88,29 @@ export interface Intake {
   cut?: Cut
   /** The studio's own choices for the first version of the film. See Direction. */
   direction?: Direction
+  /** How the sender wants the film to end. Unset, it ends the way its occasion does (a candle or a sealed note). */
+  ending?: EndingChoice
 }
 
-export type EndingProp = 'candle' | 'seal'
+/**
+ * An ending the viewer answers: the sender asks a question, or invites them to
+ * something with two things to pick from. Either way the film waits for the
+ * answer, then shows the sender's last line.
+ */
+export type EndingChoice = { kind: 'question'; ask: string } | { kind: 'invitation'; invite: string; choices: [string, string] }
+
+/** The sender's ending, if it is complete enough to play. */
+export function endingOf(intake: { ending?: EndingChoice }): EndingChoice | null {
+  const e = intake.ending
+  if (e?.kind === 'question') return e.ask.trim() ? { kind: 'question', ask: e.ask.trim() } : null
+  if (e?.kind === 'invitation') {
+    const [a, b] = [e.choices[0].trim(), e.choices[1].trim()]
+    return e.invite.trim() && a && b ? { kind: 'invitation', invite: e.invite.trim(), choices: [a, b] } : null
+  }
+  return null
+}
+
+export type EndingProp = 'candle' | 'seal' | 'question' | 'invitation'
 
 export type PhotoLayout = 'left' | 'right' | 'wide'
 
@@ -102,7 +122,7 @@ export type Frame =
   | { kind: 'montage'; kicker: string; title: string; photos: Photo[] }
   | { kind: 'letter'; title: string; paragraphs: string[]; signoff: string }
   /** The film's last beat: something to do (blow out a candle, open a note), then the sender's last line. */
-  | { kind: 'wish'; title: string; body: string; reveal: string; prop?: EndingProp; action?: string }
+  | { kind: 'wish'; title: string; body: string; reveal: string; prop?: EndingProp; action?: string; choices?: string[] }
 
 export type Mood = 'warm' | 'playful' | 'tender' | 'glow'
 

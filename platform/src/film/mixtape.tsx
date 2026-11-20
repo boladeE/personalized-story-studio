@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef } from 'react'
 import type { Photo } from '../story/types'
 import { fit } from './scrapbook'
-import { FlagIcon, Letter, Type, vars } from './shots'
+import { Choice, FlagIcon, Letter, Type, vars } from './shots'
 import type { ShotActions } from './shots'
 import type { Shot } from './timeline'
 
@@ -107,6 +107,7 @@ export function MixBody({ shot, actions, leaving }: { shot: Shot; actions: ShotA
         </div>
       )
     case 'wish':
+      if (shot.choices) return <Choice shot={shot} actions={actions} leaving={leaving} head="mx-caps mx-head fit-1" sub="mx-mono mx-body" />
       return (
         <div className={`wish mx-wish${leaving ? ' is-blown' : ''}`}>
           {shot.prop === 'seal' ? (
