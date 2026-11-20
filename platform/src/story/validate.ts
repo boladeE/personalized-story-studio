@@ -112,6 +112,7 @@ function parseOutline(raw: unknown): Chapter[] | undefined {
       layout,
       mood,
       lines: lines.map((l) => text(l, layout === 'moment' ? LIMITS.memoryStory : LIMITS.listItem, `Scene ${i + 1}`)),
+      ...(typeof r.intro === 'string' && r.intro.trim() ? { intro: text(r.intro, 120, `Scene ${i + 1}’s intro`) } : {}),
       ...(r.photoId ? { photoId: id(r.photoId, `Scene ${i + 1}’s photo`) } : {}),
     }
   })
@@ -179,6 +180,9 @@ export function parseIntake(raw: unknown): { ok: true; intake: Intake } | { ok: 
       ...(direction ? { direction } : {}),
       ...(ending ? { ending } : {}),
       ...(outline ? { outline } : {}),
+      ...(r.opening && typeof r.opening === 'object' && typeof (r.opening as { title?: unknown }).title === 'string'
+        ? { opening: { title: text((r.opening as { title: string }).title, 80, 'The opening line'), body: text((r.opening as { body?: unknown }).body, 180, 'The opening') } }
+        : {}),
     }
     if (!intake.sender.trim() || !intake.recipient.trim()) throw new IntakeError('Both names are needed')
     return { ok: true, intake }

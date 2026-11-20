@@ -611,7 +611,7 @@ test('the short flow writes the film’s own scenes from the sender’s words, p
   // Where the still will be says what the scene still needs.
   await expect(page.locator('.stage-still-empty')).toContainText('Add its words.')
   await page.getByLabel('What it says').fill('Two sips, then it goes cold.')
-  await expect(still).toHaveAttribute('data-text', 'Her tea. Two sips, then it goes cold.')
+  await expect(still).toHaveAttribute('data-text', 'Two sips, then it goes cold.')
   await expect(sceneTile(page, 'Her tea')).toHaveClass(/is-in/)
   await page.getByRole('radio', { name: 'A list' }).check()
   await page.getByRole('textbox', { name: 'Line 1' }).press('Enter')
@@ -651,7 +651,8 @@ test('the sample plays as a mixtape: a tape to press play on, tracks for scenes,
   const shots = await walk(page, (shot) => shot.kind === 'wish')
   const said = shots.map((s) => s.text).join(' ')
   for (const line of ['You called me a cheat.', 'Sends an eleven-minute voice note called “quick gist”', 'You remember the small things I mention once, in passing']) expect(said).toContain(line)
-  expect(shots.filter((s) => s.kind === 'card').map((s) => s.text)).toEqual(['Scene one: Things you say', 'Scene two: The small things', 'Scene three: A letter'])
+  // Every scene is introduced by a card with its own name.
+  expect(shots.filter((s) => s.kind === 'card').map((s) => s.text)).toEqual(['Your whole face', 'One word', 'Things you say', 'Games night', 'The rain can wait', 'One more minute', 'The small things', 'Caught on camera', 'A letter'].map((name, i) => `Scene ${['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'][i]}: ${name}`))
   expect(said).not.toMatch(/red flag|memory lane|main character/i)
   await expect(film.locator('.shot.is-current .mx-wish')).toBeVisible()
   // Its colours have their own names, and switching them changes nothing else.

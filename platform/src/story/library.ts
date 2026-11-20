@@ -65,8 +65,9 @@ const hello: SceneDef = {
     {
       kind: 'title',
       kicker: fill('For {r}. From {s}.', ctx.intake),
-      title: say(ctx, occasionOf(ctx.intake.occasion).opening),
-      body: say(ctx, [
+      // Written for this film when the director wrote one; the occasion's stock line is the last resort.
+      title: ctx.intake.opening?.title.trim() || say(ctx, occasionOf(ctx.intake.occasion).opening),
+      body: ctx.intake.opening?.title.trim() ? ctx.intake.opening.body.trim() : say(ctx, [
         'A few things I have been meaning to say properly.',
         'Sit back. This one plays by itself.',
         'Some of my favourite little things, all in one place.',

@@ -75,6 +75,8 @@ export interface Chapter {
   layout: SceneLayout
   mood: Mood
   lines: string[]
+  /** A short line on the scene's title card that leads the viewer into it. */
+  intro?: string
   /** The photo a moment is told beside, if the sender picked one. */
   photoId?: string
 }
@@ -133,6 +135,8 @@ export interface Intake {
    * `spotlight`, `memories`, `habits` and `reasons` above are not used.
    */
   outline?: Chapter[]
+  /** The film's first words under their name, written for this film. Unset, the occasion's stock opening is used. */
+  opening?: { title: string; body: string }
 }
 
 /**
@@ -178,6 +182,8 @@ export interface Scene {
   mood: Mood
   /** Set on a scene that came from the film's outline. */
   layout?: SceneLayout
+  /** The line under the scene's name on its title card. */
+  intro?: string
   /** Which of the world's designs this scene is drawn in. Gifts stored before designs existed carry none. */
   design?: string
   frames: Frame[]

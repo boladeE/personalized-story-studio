@@ -143,6 +143,7 @@ function ShotBody({ shot, actions, leaving }: { shot: Shot; actions: ShotActions
           <Type text={shot.number} className="card-number" by="char" step={40} />
           <Type as="h2" text={shot.title} className="card-title" by="char" delay={0.45} step={38} />
           <span className="card-rule" />
+          {shot.sub && <Type text={shot.sub} className="sub card-sub" by="word" delay={0.9 + shot.title.length * 0.038} step={60} />}
         </div>
       )
     case 'photo':

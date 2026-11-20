@@ -145,11 +145,15 @@ describe('a film with its own scenes', () => {
     }
   })
 
-  it('shows a line under its scene’s name, announces only its lists, and labels a list with its own name', () => {
+  it('introduces every scene with a card of its own name and lead-in, and labels a list with its own name', () => {
     const film = buildFilm(generateStory(maya({ world: 'mixtape' }), 5))
     const wink = film.shots.find((s) => s.text.includes('She winks at me.'))!
-    expect(wink).toMatchObject({ kind: 'line', kicker: 'The wink', title: 'She winks at me.', sceneName: 'The wink' })
-    expect(film.shots.filter((s) => s.kind === 'card').map((s) => s.kind === 'card' && s.title)).toEqual(['Kitchen concerts'])
+    expect(wink).toMatchObject({ kind: 'line', title: 'She winks at me.', sceneName: 'The wink' })
+    expect(film.shots.filter((s) => s.kind === 'card').map((s) => s.kind === 'card' && s.title)).toEqual(OUTLINE.map((c) => c.name))
+    // The card carries the line that leads into the scene, and the scene then starts on its words, not its name again.
+    const led = buildFilm(generateStory(maya({ outline: [{ ...OUTLINE[0], intro: 'Then there is this.' }] }), 5)).shots
+    expect(led.find((s) => s.kind === 'card')).toMatchObject({ title: 'The wink', sub: 'Then there is this.', text: 'Scene one: The wink. Then there is this.' })
+    expect(led[led.findIndex((s) => s.kind === 'card') + 1]).toMatchObject({ kind: 'line', title: 'She winks at me.' })
     const hums = film.shots.filter((s) => s.sceneName === 'Kitchen concerts' && s.kind === 'flag')
     expect(hums.map((s) => s.kind === 'flag' && [s.label, s.n, s.total])).toEqual([
       ['Kitchen concerts', 1, 2],
@@ -165,12 +169,12 @@ describe('a film with its own scenes', () => {
     const story = generateStory(maya({ photos, outline: [{ ...OUTLINE[2], photoId: photos[1].id }, OUTLINE[3], OUTLINE[0]] }), 5)
     const frames = story.scenes.flatMap((s) => s.frames)
     const told = frames.filter((f) => f.kind === 'photo')
-    // A telling that opens with its scene's name is the title itself, said once.
+    // The scene's name is on its card, so the page beside the photo opens on the words themselves.
     expect(told.map((f) => f.kind === 'photo' && [f.title, f.body])).toEqual([
-      ['The coffee queue', 'We met in a coffee queue and she let me go first.'],
+      ['We met in a coffee queue and she let me go first.', undefined],
       ['The night the power went out we played cards till two.', undefined],
       // With a photo to spare, a single line is said beside one too.
-      ['The wink', 'She winks at me.'],
+      ['She winks at me.', undefined],
     ])
     expect(told[0].kind === 'photo' && told[0].photo.id).toBe(photos[1].id)
     const rest = frames.find((f) => f.kind === 'montage')!
@@ -213,7 +217,7 @@ describe('a film with its own scenes', () => {
     expect(rows.find((r) => r.type === 'letter')).toMatchObject({ state: 'missing' })
     // Written, it plays.
     const written: Chapter = { ...fresh, name: 'Her tea', lines: ['She never finishes her tea.'] }
-    expect(said(maya({ outline: [...OUTLINE, written] }))).toContain('Her tea. She never finishes her tea.')
+    expect(said(maya({ outline: [...OUTLINE, written] }))).toContain('Scene six: Her tea | She never finishes her tea.')
   })
 
   it('travels with the gift, and is what its song is written from', () => {
@@ -308,8 +312,8 @@ describe('the director tidies what was written, and a told scene runs over pages
     const told: Chapter = { id: 'who', name: 'Half bread', layout: 'moment', mood: 'playful', lines: ['Warri is the funniest person I know.', 'He cracks jokes and the whole room gets lively.', 'He used to say “half bread is better than chim chim”.'] }
     const film = buildFilm(generateStory(maya({ outline: [told], photos: SAMPLE_FIXED.photos.slice(0, 1) }), 5))
     const mine = film.shots.filter((s) => s.sceneName === 'Half bread')
-    expect(mine.map((s) => s.kind)).toEqual(['photo', 'line', 'line'])
-    expect(mine[1]).toMatchObject({ kicker: 'Half bread', title: 'He cracks jokes and the whole room gets lively.' })
+    expect(mine.map((s) => s.kind)).toEqual(['card', 'photo', 'line', 'line'])
+    expect(mine[2]).toMatchObject({ kicker: 'Half bread', title: 'He cracks jokes and the whole room gets lively.' })
     // One long paragraph is turned over at a sentence's end, so nothing is crowded onto one screen.
     const long = 'Warri is the funniest person I know and he has been since the day we met in school. He cracks jokes and the whole room gets lively, even on the worst days. He used to say that half bread is better than chim chim, and he said it like it was scripture. I still say it to myself when things go wrong.'
     const pages = pagesOf({ ...told, lines: [long] })

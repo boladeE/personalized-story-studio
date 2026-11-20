@@ -76,8 +76,7 @@ function chapterFrames(chapter: Chapter, ctx: BuildContext, loud: boolean): Fram
       // With a photo to spare, the line is said beside it: a face says more than a page of type.
       const photo = chapter.photoId === NO_PHOTO ? undefined : (chapter.photoId && ctx.photoById(chapter.photoId)) || (ctx.unusedPhotos().length ? ctx.takePhoto() : undefined)
       if (photo) {
-        const own = !chapter.name.trim() || sameStart(name, text)
-        return [{ kind: 'photo', photo, layout: ctx.rng.pick<PhotoLayout>(['left', 'right']), kicker: '', ...(own && text.length <= 90 ? { title: text } : { title: name, body: text }) }]
+        return [{ kind: 'photo', photo, layout: ctx.rng.pick<PhotoLayout>(['left', 'right']), kicker: '', ...(text.length <= 90 ? { title: text } : { title: name, body: text }) }]
       }
       // A line short enough to shout fills the screen under the scene's name; a longer one is read under it.
       if (text.length > 90) return [{ kind: 'title', kicker: '', title: name, body: text }]
@@ -93,7 +92,7 @@ function chapterFrames(chapter: Chapter, ctx: BuildContext, loud: boolean): Fram
       const photo = chapter.photoId === NO_PHOTO ? undefined : (chapter.photoId && ctx.photoById(chapter.photoId)) || ctx.takePhoto()
       // A telling with no name of its own, or one that opens with its name, is titled by its first sentence, said once.
       const [opening, ...after] = body.split(/(?<=[.!?])\s+/)
-      const words = (!chapter.name.trim() || sameStart(name, body)) && opening.length <= 90 ? { kicker: '', title: opening, ...(after.length ? { body: after.join(' ') } : {}) } : { kicker: '', title: name, body }
+      const words = opening.length <= 90 ? { kicker: '', title: opening, ...(after.length ? { body: after.join(' ') } : {}) } : { kicker: '', title: name, body }
       return [photo ? { kind: 'photo', photo, layout: ctx.rng.pick<PhotoLayout>(['left', 'right']), ...words } : { kind: 'title', ...words }, ...turned]
     }
     case 'photos': {
@@ -201,7 +200,7 @@ export function generateStory(intake: Intake, seed: number): Story {
       const made = frames.get(chapter.id) ?? []
       if (!made.length) continue
       order.push(chapter.id)
-      built.set(chapter.id, { type: chapter.id, name: chapterName(chapter), mood: chapter.mood, layout: chapter.layout, ...(drawn.has(chapter.id) ? { design: drawn.get(chapter.id) } : {}), frames: made })
+      built.set(chapter.id, { type: chapter.id, name: chapterName(chapter), mood: chapter.mood, layout: chapter.layout, ...(chapter.intro?.trim() ? { intro: chapter.intro.trim() } : {}), ...(drawn.has(chapter.id) ? { design: drawn.get(chapter.id) } : {}), frames: made })
     }
     fixed('letter')
     fixed('wish')

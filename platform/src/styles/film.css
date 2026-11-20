@@ -1922,3 +1922,9 @@
     opacity: 0.25;
   }
 }
+
+/* The line under a scene's name on its title card. */
+.card-sub {
+  margin-top: clamp(8px, 2.4cqh, 20px);
+  max-width: 26em;
+}

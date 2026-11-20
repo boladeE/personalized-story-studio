@@ -15,7 +15,7 @@ import { OCCASIONS, occasionFor, occasionOf } from '../story/occasions'
 import { RELATIONSHIPS } from '../story/relationships'
 import { newSeed } from '../story/rng'
 import { isOccasion } from '../story/types'
-import type { Chapter, Occasion, Photo } from '../story/types'
+import type { Chapter, Intake, Occasion, Photo } from '../story/types'
 import { LIMITS } from '../story/validate'
 import { vibeById, VIBES, VOICES } from '../story/vibes'
 
@@ -160,16 +160,18 @@ function Start() {
       setBusy(`Writing ${name}’s scenes from your words…`)
       let outline: Chapter[] = []
       let wish = ''
+      let opening: Intake['opening']
       let directed: DirectionPlan | null = null
       const facts = { occasion: intake.occasion, occasionName: intake.occasionName?.trim() || undefined, relationship: intake.relationship, photos: intake.photos.length, letter: intake.letter.trim().length >= 40 }
       try {
         const response = await fetch('/api/sort', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text, sender: me, recipient: them, ...facts, answers, peeks: await photoPeeks(intake.photos) }) })
-        const body = (await response.json()) as { outline?: unknown; wish?: unknown; direction?: unknown }
+        const body = (await response.json()) as { outline?: unknown; wish?: unknown; direction?: unknown; opening?: { title?: unknown; body?: unknown } }
         if (!response.ok) throw new Error('outline failed')
         // Checked again here: the studio may tidy the sender's words, but every line must stay close to what they wrote.
         outline = cleanOutline(body.outline, { source: written, photos: intake.photos.length, proper: [them, me] })
         if (!outline.some((c) => c.layout !== 'photos')) throw new Error('no scenes')
         wish = typeof body.wish === 'string' && closeToTheirWords(body.wish, written) ? body.wish.trim().slice(0, LIMITS.wish) : ''
+        if (typeof body.opening?.title === 'string' && body.opening.title.trim()) opening = { title: body.opening.title.trim().slice(0, 60), body: typeof body.opening.body === 'string' ? body.opening.body.trim().slice(0, 140) : '' }
         // And the direction can only name a kind of film and colours the studio has.
         directed = cleanDirection(body.direction, DIRECTED_WORLDS)
       } catch {
@@ -179,7 +181,7 @@ function Start() {
       // The colours are drawn for each film. Left to the director they came out the same for every film of a kind.
       const look = LOOKS[seed % LOOKS.length].id
       // New scenes: any cut the sender made of the last ones no longer applies.
-      draft = { ...intake, outline, wish: wish || intake.wish, cut: undefined, direction: { ...directed, look, designs: {}, order: [], seed } }
+      draft = { ...intake, outline, opening, wish: wish || intake.wish, cut: undefined, direction: { ...directed, look, designs: {}, order: [], seed } }
       setIntake(() => draft)
       setSortedFrom(written)
     } else if (intake.direction) {

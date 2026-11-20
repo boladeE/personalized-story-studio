@@ -1689,3 +1689,13 @@
 .film.sb.still .sb-book {
   animation: none;
 }
+
+/* The line under a scene's name on its divider page. */
+.sb-divider-sub {
+  margin: clamp(10px, 3cqh, 26px) auto 0;
+  max-width: 24em;
+  padding: 0 6cqw;
+  text-align: center;
+  font-size: clamp(17px, min(2.6cqw, 5cqh), 34px);
+  line-height: 1.25;
+}

@@ -231,6 +231,9 @@ function Preview() {
   // The still is the part of the scene being written.
   const stageShot = (() => {
     if (!shown) return undefined
+    // While a scene's name or lead-in is being written, the still is its title card.
+    const card = line && line.type === shown.type && line.at === -1 ? shots.find((s) => s.sceneType === shown.type && s.kind === 'card') : undefined
+    if (card) return card
     const needle = line && line.type === shown.type ? writingNow(built, line.type, line.at) : ''
     return (needle.length > 2 ? shots.find((s) => s.sceneType === shown.type && s.kind !== 'card' && s.text.includes(needle)) : undefined) ?? posters.get(shown.type)
   })()
@@ -516,7 +519,7 @@ function SongStatus({ job, name, kept, onPlay, onRetry, onDismiss }: { job: Song
  * scenes, the names and the occasion.
  */
 const fieldsOf = (row: { type: string; layout?: string }, outlined: boolean): Array<keyof Intake> =>
-  hasWords(row.type) ? [SCENE_FIELDS[row.type]] : row.layout === 'photos' ? ['photos'] : row.layout ? ['outline'] : outlined && row.type === 'hello' ? ['recipient', 'sender', 'occasion', 'occasionName'] : []
+  hasWords(row.type) ? [SCENE_FIELDS[row.type]] : row.layout === 'photos' ? ['photos'] : row.layout ? ['outline'] : outlined && row.type === 'hello' ? ['recipient', 'sender', 'occasion', 'occasionName', 'opening'] : []
 
 /** The words on the line being written, to find the shot of the scene that shows them. */
 function writingNow(intake: Intake, type: string, at: number): string {

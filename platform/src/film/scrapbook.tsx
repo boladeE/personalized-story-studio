@@ -99,6 +99,11 @@ export function PageBody({ shot, actions, leaving }: { shot: Shot; actions: Shot
           <div className="sb-band">
             <Type as="h2" text={shot.title} className="sb-hand" by="char" delay={0.55} step={48} />
           </div>
+          {shot.sub && (
+            <p className="sb-hand sb-divider-sub sb-in" style={vars({ '--at': `${(0.9 + shot.title.length * 0.048).toFixed(2)}s` })}>
+              {shot.sub}
+            </p>
+          )}
         </div>
       )
     case 'line':

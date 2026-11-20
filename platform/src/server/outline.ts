@@ -50,6 +50,8 @@ export const directorSeesPhotos = () => process.env.DIRECTOR_SEES_PHOTOS !== '0'
 export interface Outlined {
   outline: Chapter[]
   wish: string
+  /** The film's first words, written for it. Absent when the film was outlined by rule. */
+  opening?: { title: string; body: string }
   direction: DirectionPlan
   by: 'model' | 'rule'
 }
@@ -66,18 +68,22 @@ const SCHEMA = {
           layout: { type: 'string', enum: ['line', 'list', 'moment', 'photos'] },
           mood: { type: 'string', enum: ['playful', 'tender', 'warm'] },
           lines: { type: 'array', items: { type: 'string' } },
+          intro: { type: 'string' },
         },
-        required: ['name', 'layout', 'mood', 'lines'],
+        required: ['name', 'intro', 'layout', 'mood', 'lines'],
       },
     },
     wish: { type: 'string' },
+    about: { type: 'string' },
+    opening_line: { type: 'string' },
+    opening_sub: { type: 'string' },
     world: { type: 'string', enum: DIRECTED_WORLDS },
     look: { type: 'string', enum: ['screening', 'garden', 'paper'] },
     because: { type: 'string', enum: [...DIRECTION_REASONS] },
     tune: { type: 'string', enum: VIBES.map((v) => v.id) },
     voice: { type: 'string', enum: ['woman', 'man'] },
   },
-  required: ['scenes', 'wish', 'world', 'look', 'because', 'tune', 'voice'],
+  required: ['about', 'opening_line', 'opening_sub', 'scenes', 'wish', 'world', 'look', 'because', 'tune', 'voice'],
 }
 
 export function outlineBrief(brief: OutlineBrief) {
@@ -87,9 +93,16 @@ export function outlineBrief(brief: OutlineBrief) {
     `${from} is making a short film as a gift for ${who}, and wrote the note below. Outline the film: decide what its scenes are. The scenes come from this note and from nothing else. There is no standard set of scenes to fill; a different note would give a different film.`,
     `The occasion: ${brief.occasionName?.trim() || occasionOf(brief.occasion).name}.${brief.relationship ? ` ${who} is ${from}'s ${brief.relationship}.` : ''} Photos given: ${brief.photos}. The film already has its own opening and ending${brief.letter ? ', and a letter' : ''}; do not outline those.`,
     [
+      'Direct it as one film, not a list of extracts:',
+      `- about: first decide, in one plain sentence, what this film is saying to ${who}. Everything else serves that sentence. If a part of the note does not serve it, leave it out.`,
+      `- opening_line and opening_sub: the film's first words, shown under ${who}'s name. \`opening_line\` is two to six words; \`opening_sub\` is one sentence of at most fourteen words. They are in ${from}'s voice, they say what this film is, and they are made from this note alone. Never a stock opener such as "Get comfortable", "Sit back", "This one is for you" or "A few things I have been meaning to say".`,
+      '- The scenes then follow one another like a film: each leads to the next, and the order builds to the scene that matters most.',
+    ].join('\n'),
+    [
       'The scenes:',
       '- A scene is one thing: one moment that happened, one habit or saying that deserves a screen to itself, or a run of things that are alike. Group what belongs together and keep apart what does not.',
-      `- name: what this scene is called, in one to four words. Take it from the scene's own words, or say plainly what they are about ("The coffee queue", "Voice notes", "Sunday calls"). It is a title, never a sentence, and never says what the scene will say. Never use a stock label such as "Memories", "Memory lane", "Reasons", "Reasons I love you", "Red flags", "Habits", "Quirks", "Little things" or "Highlights" unless the note itself uses those words. Never put a name, a place or a fact in a title that is not in the note. No two scenes share a name. A name never just repeats its scene's own sentence: for a scene of one short sentence, name its subject in two or three words.`,
+      `- name: what this scene is called, in one to four words. Take it from the scene's own words, or say plainly what they are about ("The coffee queue", "Voice notes", "Sunday calls"). It is a title, never a sentence, and never says what the scene will say. Never use a stock label such as "Memories", "Memory lane", "Reasons", "Reasons I love you", "Red flags", "Habits", "Quirks", "Little things" or "Highlights" unless the note itself uses those words. Never put a name, a place or a fact in a title that is not in the note. No two scenes share a name. A name never just repeats its scene's own sentence. Name the point of the scene, what it shows about them, not a detail that happens to be in it: a scene about how she quietly looks after everyone is not called "Washing dishes" because dishes are mentioned.`,
+      `- intro: one short line, at most ten words, shown with the name on the scene's title card before the scene plays. In ${from}'s voice, it leads the viewer in and joins this scene to the film ("Then there is the way you laugh."). It never repeats the scene's own lines and never adds a fact.`,
       '- layout: `line` is a single sentence on a screen of its own (`lines` has exactly one item, at most 140 characters). `list` is two to seven short lines that are alike, shown one after another (one per item). `moment` is something told: a thing that happened, or a longer thought about who they are. \`lines\` holds its pages, one to five, each one or two whole sentences (about 130 characters at most) that read well alone. A page is never a piece of a sentence: do not cut one sentence across two pages, and if the telling is a single sentence it is a single page; the first is shown beside a photo when there is one, and each page after it has a screen to itself. Several paragraphs about one thing are one scene of several pages, not several scenes and not one crowded page.' +
         (brief.photos ? ` \`photos\` is a scene of ${from}'s photos, at most one, with a name and no lines; include it when there are more photos than moments.` : ' Do not use `photos`: there are none.'),
       `- mood: playful when the scene teases ${who} or is funny, tender when it is sincere or loving, warm otherwise.`,
@@ -167,7 +180,9 @@ export function checkOutline(raw: unknown, brief: OutlineBrief): Omit<Outlined, 
   // The song the model chose stands even when its kind of film is not one the studio directs.
   const song = cleanDirection({ world: 'mixtape', tune: r.tune, voice: r.voice })
   const sung = { ...(song?.tune ? { tune: song.tune } : {}), ...(song?.voice ? { voice: song.voice } : {}) }
-  return { outline, wish, direction: chosen ?? { ...directLocally({ ...facts, notes: notesOf(outline, wish) }), designs: {}, order: [], ...sung } }
+  const short = (value: unknown, max: number) => (typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, max).trim() : '')
+  const opening = short(r.opening_line, 60) ? { title: short(r.opening_line, 60), body: short(r.opening_sub, 140) } : undefined
+  return { outline, wish, ...(opening ? { opening } : {}), direction: chosen ?? { ...directLocally({ ...facts, notes: notesOf(outline, wish) }), designs: {}, order: [], ...sung } }
 }
 
 /** The outline by rule: the note read a sentence at a time, each moment a scene. */

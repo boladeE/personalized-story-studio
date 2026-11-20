@@ -35,7 +35,8 @@ export type Shot = ShotBase &
     | { kind: 'line'; kicker?: string; title: string; body?: string; items?: string[] }
     /** `kicker` and `body`: the dedication and opening line, when a world puts the whole opening on one page. */
     | { kind: 'name'; name: string; sub: string; kicker?: string; body?: string }
-    | { kind: 'card'; number: string; title: string }
+    /** `sub`: the line that leads into the scene. */
+    | { kind: 'card'; number: string; title: string; sub?: string }
     | { kind: 'photo'; photo: Photo; kicker: string; title: string; body?: string; layout: PhotoLayout }
     /** `all`: every item in the scene, for designs that build a list up one at a time. */
     | { kind: 'flag'; label: string; text: string; n: number; total: number; all: string[] }
@@ -96,11 +97,11 @@ export function buildFilm(story: Story): Film {
     const builds = album || ['docket', 'ledger', 'tracklist', 'liner'].includes(scene.design ?? '')
     let itemsSeen = 0
 
-    // Scenes between the opening and the ending get a numbered title card. An outlined scene that is
-    // a single screen carries its own name, so only its lists are announced.
-    const isChapter = scene.type !== 'hello' && scene.type !== 'wish' && (!scene.layout || scene.layout === 'list')
+    // Every scene between the opening and the ending is introduced by a title card: its name, and a
+    // line that leads into it. No scene starts cold on its words.
+    const isChapter = scene.type !== 'hello' && scene.type !== 'wish'
     if (isChapter) {
-      drafts.push({ kind: 'card', number: `Scene ${ORDINALS[numbered] ?? numbered + 1}`, title: scene.name, seconds: 3, enter: 'type', exit: 'fade' })
+      drafts.push({ kind: 'card', number: `Scene ${ORDINALS[numbered] ?? numbered + 1}`, title: scene.name, ...(scene.intro ? { sub: scene.intro } : {}), seconds: scene.intro ? read(words(scene.intro)) + 1.6 : 3, enter: 'type', exit: 'fade' })
       numbered++
     }
 
@@ -249,7 +250,7 @@ function spoken(shot: Record<string, unknown>): string {
     case 'name':
       return pick('kicker', 'name', 'sub', 'body').join('. ')
     case 'card':
-      return pick('number', 'title').join(': ')
+      return [pick('number', 'title').join(': '), ...pick('sub')].join('. ')
     case 'flag':
       return `${shot.label} ${shot.n} of ${shot.total}. ${shot.text}`
     case 'reason':

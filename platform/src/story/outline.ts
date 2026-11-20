@@ -120,7 +120,8 @@ export function cleanOutline(raw: unknown, { source, photos = 0, proper = [] }: 
     for (let n = out.length + 1; !id; n++) if (!ids.has(`s${n}`)) id = `s${n}`
     ids.add(id)
     const mood = MOODS.find((m) => m === r.mood) ?? 'warm'
-    out.push({ id, name, layout, mood, lines, ...(typeof r.photoId === 'string' && /^[a-z0-9-]{1,64}$/i.test(r.photoId) && !photoIds.has(r.photoId) && (photoIds.add(r.photoId), true) ? { photoId: r.photoId } : {}) })
+    const intro = layout === 'photos' && !oneLine(r.intro, 90) ? '' : oneLine(r.intro, 90)
+    out.push({ id, name, layout, mood, lines, ...(intro ? { intro } : {}), ...(typeof r.photoId === 'string' && /^[a-z0-9-]{1,64}$/i.test(r.photoId) && !photoIds.has(r.photoId) && (photoIds.add(r.photoId), true) ? { photoId: r.photoId } : {}) })
   }
   return out
 }

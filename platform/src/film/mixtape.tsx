@@ -216,6 +216,11 @@ function TrackCard({ shot }: { shot: Of<'card'> }) {
         Track {trackNo(shot.number)}
       </p>
       <Type as="h2" text={shot.title} className={`mx-caps mx-head ${fit(shot.title, [14, 24, 36])}`} by="char" delay={0.2} step={32} />
+      {shot.sub && (
+        <p className="mx-mono mx-body mx-in" style={vars({ '--at': `${(0.5 + shot.title.length * 0.032).toFixed(2)}s` })}>
+          {shot.sub}
+        </p>
+      )}
       <Meter />
     </div>
   )

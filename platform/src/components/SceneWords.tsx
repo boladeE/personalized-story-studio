@@ -193,6 +193,12 @@ export function OpeningWords({ intake, setIntake }: { intake: Intake; setIntake:
           </select>
         )}
       </Field>
+      <Field label="Opening line">
+        {(id) => <input id={id} maxLength={60} value={intake.opening?.title ?? ''} onChange={(e) => set('opening', { title: e.target.value, body: intake.opening?.body ?? '' })} />}
+      </Field>
+      <Field label="And under it">
+        {(id) => <input id={id} maxLength={140} value={intake.opening?.body ?? ''} onChange={(e) => set('opening', { title: intake.opening?.title ?? '', body: e.target.value })} />}
+      </Field>
       {own && <Field label="What it’s for">{(id) => <input id={id} maxLength={LIMITS.occasionName} value={intake.occasionName ?? ''} onChange={(e) => set('occasionName', e.target.value)} />}</Field>}
     </>
   )
@@ -251,7 +257,8 @@ export function ChapterWords({
   )
   return (
     <>
-      <Field label="Scene name">{(id) => <input id={id} maxLength={OUTLINE_LIMITS.name} value={chapter.name} onChange={(e) => change({ name: oneLine(e.target.value) })} />}</Field>
+      <Field label="Scene name">{(id) => <input id={id} maxLength={OUTLINE_LIMITS.name} value={chapter.name} onFocus={() => onWriting(-1)} onChange={(e) => change({ name: oneLine(e.target.value) })} />}</Field>
+      <Field label="Line that leads into it">{(id) => <input id={id} maxLength={90} value={chapter.intro ?? ''} onFocus={() => onWriting(-1)} onChange={(e) => change({ intro: oneLine(e.target.value) })} />}</Field>
       {chapter.layout !== 'photos' && (
         <fieldset className="scene-shape">
           <legend>Shown as</legend>
