@@ -376,7 +376,7 @@ test('the home page offers every occasion, and a ticket starts a short flow that
   // The occasion is written into the draft and leaves the address; the flow doesn't ask for it again.
   await tickets.filter({ hasText: 'Thank you' }).click()
   await expect(page).toHaveURL(/\/start$/)
-  await expect(page.locator('.start-step')).toHaveText('Step 1 of 5')
+  await expect(page.locator('.start-step')).toHaveText('Step 1 of 6')
   await page.getByRole('button', { name: 'Friend', exact: true }).click()
   await page.getByLabel('Their name').fill('Kemi')
   await page.getByLabel('Your name').fill('Ada')
@@ -385,6 +385,9 @@ test('the home page offers every occasion, and a ticket starts a short flow that
   await page.getByRole('button', { name: 'Skip photos' }).click()
   await page.getByLabel('About Kemi').fill(NOTE)
   await page.getByRole('button', { name: 'Next' }).click()
+  // The studio's questions about the note can all be skipped.
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('A little more about Kemi?')
+  await page.getByRole('button', { name: 'Skip these' }).click()
   // There is no way to make a film without its song: the only way on is to make it.
   await expect(page.getByText(/studio’s own music|Skip the song/)).toHaveCount(0)
   await page.getByRole('button', { name: 'Make the film' }).click()
@@ -429,10 +432,10 @@ test('the short flow sorts the sender’s words, plays the film at once and brin
   const errors = trackErrors(page)
   await open(page, '/')
   await page.getByRole('link', { name: 'Start a film' }).first().click()
-  await expect(page.locator('.start-step')).toHaveText('Step 1 of 6')
+  await expect(page.locator('.start-step')).toHaveText('Step 1 of 7')
   await expect(page.getByRole('button', { name: 'Next' })).toBeDisabled()
 
-  // Three of the six steps are answered by a tap that moves straight on.
+  // Three of the seven steps are answered by a tap that moves straight on.
   await page.getByRole('button', { name: 'Girlfriend' }).click()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('What do you call each other?')
   await page.getByLabel('Their name').fill('Zara')
@@ -440,7 +443,7 @@ test('the short flow sorts the sender’s words, plays the film at once and brin
   await page.getByLabel('Your name').fill('Tobi')
   await page.getByLabel('Your name').press('Enter')
   await page.getByRole('button', { name: 'Anniversary' }).click()
-  await expect(page.locator('.start-step')).toHaveText('Step 4 of 6')
+  await expect(page.locator('.start-step')).toHaveText('Step 4 of 7')
   await page.locator('input[type=file]').setInputFiles(['one', 'two', 'three'].map((name) => ({ name: `${name}.png`, mimeType: 'image/png', buffer: PNG })))
   await expect(page.locator('.start-photos img')).toHaveCount(3)
   // Removing a photo happens at once and can be taken back.
@@ -461,6 +464,22 @@ test('the short flow sorts the sender’s words, plays the film at once and brin
   await page.getByLabel('About Zara').fill('She is great.')
   await expect(page.getByRole('button', { name: 'Next' })).toBeDisabled()
   await page.getByLabel('About Zara').fill(NOTE)
+  const askRequest = page.waitForRequest((r) => r.url().endsWith('/api/followups'))
+  await page.getByRole('button', { name: 'Next' }).click()
+
+  // The studio reads the note and asks up to three short questions, each quoting what was written. Nothing else is sent.
+  expect((await askRequest).postDataJSON()).toEqual({ text: NOTE, sender: 'Tobi', recipient: 'Zara' })
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('A little more about Zara?')
+  const questions = page.locator('.start-more li')
+  await expect(questions).toHaveCount(3)
+  await expect(questions.nth(1).locator('.more-quote')).toContainText('“You always steal the duvet, then ask why I am cold.”')
+  // They can all be skipped; answering one adds the sender's own words to that part of the film.
+  await expect(page.getByRole('button', { name: 'Skip these' })).toBeEnabled()
+  await page.getByLabel('What does Zara say when you bring it up?').fill('“You run hot anyway.” Every time.')
+  // The questions fit a phone.
+  await page.setViewportSize({ width: 360, height: 740 })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360)
+  await page.setViewportSize({ width: 1280, height: 720 })
   await page.getByRole('button', { name: 'Next' }).click()
   await expect(page.getByRole('button', { name: 'Surprise me' })).toHaveCount(2)
   await page.getByRole('button', { name: 'A woman’s voice' }).click()
@@ -473,14 +492,16 @@ test('the short flow sorts the sender’s words, plays the film at once and brin
   await page.getByRole('button', { name: 'Make the film' }).click()
   const sent = (await sortRequest).postDataJSON() as Record<string, unknown>
   expect(sent).toMatchObject({ text: NOTE, sender: 'Tobi', recipient: 'Zara', occasion: 'anniversary', relationship: 'girlfriend', letter: false })
-  expect(Object.keys(sent).sort()).toEqual(['letter', 'occasion', 'photos', 'recipient', 'relationship', 'sender', 'text'])
+  expect(Object.keys(sent).sort()).toEqual(['answers', 'letter', 'occasion', 'photos', 'recipient', 'relationship', 'sender', 'text'])
+  expect(sent.answers).toEqual([{ quote: 'You always steal the duvet, then ask why I am cold.', question: 'What does Zara say when you bring it up?', answer: '“You run hot anyway.” Every time.' }])
   expect(typeof sent.photos).toBe('number')
   await expect(page).toHaveURL(/\/preview$/)
   // The studio directed the film from the words: this note teases, so it is a mixtape.
   await expect(page.locator('.preview-body > .film')).toHaveAttribute('data-world', 'mixtape')
   const brief = (await lyricsRequest).postDataJSON() as { details: Record<string, unknown> }
   expect(brief.details).toMatchObject({ occasion: 'anniversary', relationship: 'girlfriend', recipient: 'Zara', sender: 'Tobi' })
-  expect(brief.details.habits).toEqual(['You always steal the duvet, then ask why I am cold.', 'You never finish your tea.'])
+  // The answer sits with the habit it was about, in the song's brief (which drops quote marks) and in the film.
+  expect(brief.details.habits).toEqual(['You always steal the duvet, then ask why I am cold. You run hot anyway. Every time.', 'You never finish your tea.'])
   const asked = (await songRequest).postDataJSON() as Record<string, unknown>
   expect(asked).toMatchObject({ vibe: 'afrobeats', voice: 'woman' })
   expect(String(asked.lyrics)).toContain('Zara')
@@ -494,6 +515,8 @@ test('the short flow sorts the sender’s words, plays the film at once and brin
   const said = (await walk(page, (shot) => shot.kind === 'wish')).map((s) => s.text).join(' ')
   expect(said).toContain('you carried the sofa up five floors')
   expect(said).toContain('You never finish your tea.')
+  expect(said).toContain('“You run hot anyway.” Every time.')
+  expect(said).not.toContain('bring it up')
   await expect(page.getByRole('button', { name: 'Open the note' })).toBeVisible()
 
   // The editor says why the studio made it this kind of film, for as long as that choice stands.
@@ -733,6 +756,7 @@ for (const [width, height] of [[1360, 800], [360, 740]]) {
     await page.getByRole('button', { name: 'Skip photos' }).click()
     await page.getByLabel('About Kemi').fill(NOTE)
     await page.getByRole('button', { name: 'Next' }).click()
+    await page.getByRole('button', { name: 'Skip these' }).click()
     await page.getByRole('button', { name: 'Make the film' }).click()
     await expect(page).toHaveURL(/\/preview$/)
 
@@ -825,6 +849,7 @@ test('a song that fails leaves the film silent, never with other music, and can 
   await page.getByRole('button', { name: 'Skip photos' }).click()
   await page.getByLabel('About Kemi').fill(NOTE)
   await page.getByRole('button', { name: 'Next' }).click()
+  await page.getByRole('button', { name: 'Skip these' }).click()
   await page.getByRole('button', { name: 'Make the film' }).click()
   await expect(page).toHaveURL(/\/preview$/)
   const status = page.locator('.song-status')
@@ -875,6 +900,7 @@ test('words the music model refuses are written again and sung, without troublin
   await page.getByRole('button', { name: 'Skip photos' }).click()
   await page.getByLabel('About Kemi').fill(NOTE)
   await page.getByRole('button', { name: 'Next' }).click()
+  await page.getByRole('button', { name: 'Skip these' }).click()
   await page.getByRole('button', { name: 'Make the film' }).click()
   await expect(page).toHaveURL(/\/preview$/)
   // It never reaches the sender as a failure: the notice stays on "being made" until the song is there.
@@ -940,6 +966,7 @@ test('an iPhone photo (HEIC) is converted on the device, and files that are not 
   await page.getByRole('button', { name: 'Next' }).click()
   await page.getByLabel('About Kemi').fill(NOTE)
   await page.getByRole('button', { name: 'Next' }).click()
+  await page.getByRole('button', { name: 'Skip these' }).click()
   await page.getByRole('button', { name: 'Make the film' }).click()
   await expect(page).toHaveURL(/\/preview$/)
   await startFilm(page)

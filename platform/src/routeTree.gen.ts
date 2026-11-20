@@ -15,6 +15,7 @@ import { Route as PreviewRouteImport } from './routes/preview'
 import { Route as SendRouteImport } from './routes/send'
 import { Route as SongRouteImport } from './routes/song'
 import { Route as StartRouteImport } from './routes/start'
+import { Route as ApiFollowupsRouteImport } from './routes/api/followups'
 import { Route as ApiGiftsRouteImport } from './routes/api/gifts'
 import { Route as ApiLyricsRouteImport } from './routes/api/lyrics'
 import { Route as ApiMusicRouteImport } from './routes/api/music'
@@ -55,6 +56,11 @@ const SongRoute = SongRouteImport.update({
 const StartRoute = StartRouteImport.update({
   id: '/start',
   path: '/start',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFollowupsRoute = ApiFollowupsRouteImport.update({
+  id: '/api/followups',
+  path: '/api/followups',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiGiftsRoute = ApiGiftsRouteImport.update({
@@ -120,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/send': typeof SendRoute
   '/song': typeof SongRoute
   '/start': typeof StartRoute
+  '/api/followups': typeof ApiFollowupsRoute
   '/api/gifts': typeof ApiGiftsRoute
   '/api/lyrics': typeof ApiLyricsRoute
   '/api/music': typeof ApiMusicRoute
@@ -139,6 +146,7 @@ export interface FileRoutesByTo {
   '/send': typeof SendRoute
   '/song': typeof SongRoute
   '/start': typeof StartRoute
+  '/api/followups': typeof ApiFollowupsRoute
   '/api/gifts': typeof ApiGiftsRoute
   '/api/lyrics': typeof ApiLyricsRoute
   '/api/music': typeof ApiMusicRoute
@@ -159,6 +167,7 @@ export interface FileRoutesById {
   '/send': typeof SendRoute
   '/song': typeof SongRoute
   '/start': typeof StartRoute
+  '/api/followups': typeof ApiFollowupsRoute
   '/api/gifts': typeof ApiGiftsRoute
   '/api/lyrics': typeof ApiLyricsRoute
   '/api/music': typeof ApiMusicRoute
@@ -180,6 +189,7 @@ export interface FileRouteTypes {
     | '/send'
     | '/song'
     | '/start'
+    | '/api/followups'
     | '/api/gifts'
     | '/api/lyrics'
     | '/api/music'
@@ -199,6 +209,7 @@ export interface FileRouteTypes {
     | '/send'
     | '/song'
     | '/start'
+    | '/api/followups'
     | '/api/gifts'
     | '/api/lyrics'
     | '/api/music'
@@ -218,6 +229,7 @@ export interface FileRouteTypes {
     | '/send'
     | '/song'
     | '/start'
+    | '/api/followups'
     | '/api/gifts'
     | '/api/lyrics'
     | '/api/music'
@@ -238,6 +250,7 @@ export interface RootRouteChildren {
   SendRoute: typeof SendRoute
   SongRoute: typeof SongRoute
   StartRoute: typeof StartRoute
+  ApiFollowupsRoute: typeof ApiFollowupsRoute
   ApiGiftsRoute: typeof ApiGiftsRoute
   ApiLyricsRoute: typeof ApiLyricsRoute
   ApiMusicRoute: typeof ApiMusicRoute
@@ -293,6 +306,13 @@ declare module '@tanstack/react-router' {
       path: '/start'
       fullPath: '/start'
       preLoaderRoute: typeof StartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/followups': {
+      id: '/api/followups'
+      path: '/api/followups'
+      fullPath: '/api/followups'
+      preLoaderRoute: typeof ApiFollowupsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/gifts': {
@@ -382,6 +402,7 @@ const rootRouteChildren: RootRouteChildren = {
   SendRoute: SendRoute,
   SongRoute: SongRoute,
   StartRoute: StartRoute,
+  ApiFollowupsRoute: ApiFollowupsRoute,
   ApiGiftsRoute: ApiGiftsRoute,
   ApiLyricsRoute: ApiLyricsRoute,
   ApiMusicRoute: ApiMusicRoute,

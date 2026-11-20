@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
+import type { Answered } from '../story/followups'
 import { emptyIntake } from '../story/sample'
 import type { Intake } from '../story/types'
 import { songDetails, VIBES } from '../story/vibes'
@@ -73,6 +74,9 @@ interface DraftValue {
   setAbout: (about: string) => void
   sortedFrom: string
   setSortedFrom: (text: string) => void
+  /** The studio's follow-up questions for what the sender wrote, their answers, and the text they were asked about. Null until asked. */
+  followups: { about: string; asked: Answered[] } | null
+  setFollowups: (followups: { about: string; asked: Answered[] } | null) => void
   /** True once an occasion was chosen on the home page, so the short flow doesn't ask again. */
   occasionGiven: boolean
   setOccasionGiven: (given: boolean) => void
@@ -101,6 +105,7 @@ export function DraftProvider({ children }: { children: ReactNode }) {
   const [words, setWords] = useState<DraftWords | null>(null)
   const [about, setAbout] = useState('')
   const [sortedFrom, setSortedFrom] = useState('')
+  const [followups, setFollowups] = useState<{ about: string; asked: Answered[] } | null>(null)
   const [occasionGiven, setOccasionGiven] = useState(false)
   const [plan, setPlan] = useState<SongPlan>({ vibe: 'surprise', voice: 'surprise' })
   const [job, setJob] = useState<SongJob>({ state: 'idle' })
@@ -213,6 +218,8 @@ export function DraftProvider({ children }: { children: ReactNode }) {
       setAbout,
       sortedFrom,
       setSortedFrom,
+      followups,
+      setFollowups,
       occasionGiven,
       setOccasionGiven,
       plan,
@@ -230,7 +237,7 @@ export function DraftProvider({ children }: { children: ReactNode }) {
         if (job.state === 'failed') setJob({ state: 'idle' })
       },
     }),
-    [intake, seed, song, takes, words, about, sortedFrom, occasionGiven, plan, job, songs, startSong, remakeSong],
+    [intake, seed, song, takes, words, about, sortedFrom, followups, occasionGiven, plan, job, songs, startSong, remakeSong],
   )
   return <DraftContext.Provider value={value}>{children}</DraftContext.Provider>
 }

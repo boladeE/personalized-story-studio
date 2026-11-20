@@ -1,4 +1,6 @@
-import { keepTheirWords, notesCount, sortLocally } from '../story/notes'
+import { sortLocallyWithAnswers, withAnswers } from '../story/followups'
+import type { Answered } from '../story/followups'
+import { keepTheirWords, notesCount } from '../story/notes'
 import type { SortedNotes } from '../story/notes'
 
 /**
@@ -36,7 +38,7 @@ const SCHEMA = {
   required: ['memories', 'habits', 'reasons', 'spotlight', 'wish'],
 }
 
-export function sortBrief(text: string, sender: string, recipient: string) {
+export function sortBrief(text: string, sender: string, recipient: string, answered: Answered[] = []) {
   const who = recipient || 'the person'
   const from = sender || 'the sender'
   return [
@@ -56,10 +58,18 @@ export function sortBrief(text: string, sender: string, recipient: string) {
       `- wish: a closing line, hope or promise for ${who}, if the note has one. Otherwise empty.`,
     ].join('\n'),
     `The note:\n${text}`,
+    ...(answered.length
+      ? [
+          [
+            `${from} was then asked about parts of the note, and answered. The answers are ${from}'s own words too: sort them like the rest of the note, and keep each answer with the part it is about (the same habit, reason or memory, straight after it). The questions are not ${from}'s words and must never appear.`,
+            ...answered.map((a) => `- About "${a.quote}", asked "${a.question}", ${from} answered: ${a.answer}`),
+          ].join('\n'),
+        ]
+      : []),
   ].join('\n\n')
 }
 
-async function askModel(text: string, sender: string, recipient: string): Promise<unknown> {
+async function askModel(text: string, sender: string, recipient: string, answered: Answered[]): Promise<unknown> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), Number(process.env.SORT_TIMEOUT_MS ?? 25_000))
   try {
@@ -69,7 +79,7 @@ async function askModel(text: string, sender: string, recipient: string): Promis
       signal: controller.signal,
       headers: { 'x-goog-api-key': process.env.GEMINI_API_KEY ?? '', 'content-type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: sortBrief(text, sender, recipient) }] }],
+        contents: [{ role: 'user', parts: [{ text: sortBrief(text, sender, recipient, answered) }] }],
         generationConfig: { responseMimeType: 'application/json', responseSchema: SCHEMA, temperature: 0.1, thinkingConfig: { thinkingLevel: 'low' } },
       }),
     })
@@ -85,15 +95,15 @@ async function askModel(text: string, sender: string, recipient: string): Promis
   }
 }
 
-export async function sortNotes(text: string, sender: string, recipient: string): Promise<{ notes: SortedNotes; by: 'model' | 'rule' }> {
+export async function sortNotes(text: string, sender: string, recipient: string, answered: Answered[] = []): Promise<{ notes: SortedNotes; by: 'model' | 'rule' }> {
   if (sortProvider() === 'gemini') {
     try {
-      const notes = keepTheirWords(await askModel(text, sender, recipient), text)
+      const notes = keepTheirWords(await askModel(text, sender, recipient, answered), withAnswers(text, answered))
       if (notesCount(notes) > 0) return { notes, by: 'model' }
       console.error('[sort] the model returned nothing made of the sender’s words; sorting by rule')
     } catch (error) {
       console.error('[sort] model failed; sorting by rule', error)
     }
   }
-  return { notes: sortLocally(text), by: 'rule' }
+  return { notes: sortLocallyWithAnswers(text, answered), by: 'rule' }
 }

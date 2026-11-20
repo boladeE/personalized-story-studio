@@ -7,8 +7,9 @@ import { Working } from '../components/Working'
 import { usePhotos } from '../components/photos'
 import { cleanDirection, directLocally, DIRECTED_WORLDS } from '../story/direction'
 import type { DirectionPlan } from '../story/direction'
+import { cleanAnswers, cleanFollowups, FOLLOWUP_LIMITS, followupsLocally, sortLocallyWithAnswers, withAnswers } from '../story/followups'
 import { canGenerate } from '../story/generate'
-import { applyNotes, keepTheirWords, NOTES_LIMIT, sortLocally } from '../story/notes'
+import { applyNotes, keepTheirWords, NOTES_LIMIT } from '../story/notes'
 import { occasionOf, OCCASIONS } from '../story/occasions'
 import { RELATIONSHIPS } from '../story/relationships'
 import { newSeed } from '../story/rng'
@@ -19,12 +20,13 @@ import { vibeById, VIBES, VOICES } from '../story/vibes'
 
 /**
  * The short way to make a film: three taps, two names, some photos and one
- * box of the sender's own words. The studio sorts the words into scenes and
- * the film plays at the end; everything else can be added from the preview.
+ * box of the sender's own words. The studio reads the words and asks up to
+ * three short questions about them, sorts everything into scenes, directs the
+ * film and plays it at the end; everything else can be added from the preview.
  */
 
-type StepId = 'who' | 'names' | 'occasion' | 'photos' | 'about' | 'song'
-const ALL: StepId[] = ['who', 'names', 'occasion', 'photos', 'about', 'song']
+type StepId = 'who' | 'names' | 'occasion' | 'photos' | 'about' | 'more' | 'song'
+const ALL: StepId[] = ['who', 'names', 'occasion', 'photos', 'about', 'more', 'song']
 const ENOUGH = 30
 
 export const Route = createFileRoute('/start')({
@@ -38,7 +40,7 @@ export const Route = createFileRoute('/start')({
 })
 
 function Start() {
-  const { intake, setIntake, setSeed, about, setAbout, sortedFrom, setSortedFrom, occasionGiven, setOccasionGiven, plan, setPlan, startSong, songs } = useDraft()
+  const { intake, setIntake, setSeed, about, setAbout, sortedFrom, setSortedFrom, followups, setFollowups, occasionGiven, setOccasionGiven, plan, setPlan, startSong, songs } = useDraft()
   const navigate = useNavigate()
   const { step: stepParam, occasion: asked } = Route.useSearch()
   const photos = usePhotos()
@@ -46,6 +48,7 @@ function Start() {
   const heading = useRef<HTMLHeadingElement>(null)
   const [busy, setBusy] = useState('')
   const [dragging, setDragging] = useState(false)
+  const [asking, setAsking] = useState(false)
 
   useEffect(() => {
     if (!asked) return
@@ -55,7 +58,13 @@ function Start() {
   }, [asked])
 
   const skipOccasion = occasionGiven || Boolean(asked)
-  const steps = useMemo(() => ALL.filter((s) => !(s === 'occasion' && skipOccasion) && !(s === 'song' && songs === false)), [skipOccasion, songs])
+  const noteText = about.trim()
+  // A note the studio has nothing to ask about has no step for questions (unless the sender is standing on it).
+  const nothingToAsk = followups?.about === noteText && followups.asked.length === 0 && stepParam !== 'more'
+  const steps = useMemo(
+    () => ALL.filter((s) => !(s === 'occasion' && skipOccasion) && !(s === 'song' && songs === false) && !(s === 'more' && nothingToAsk)),
+    [skipOccasion, songs, nothingToAsk],
+  )
   const stepId: StepId = stepParam && steps.includes(stepParam) ? stepParam : steps[0]
   const at = steps.indexOf(stepId)
   const last = at === steps.length - 1
@@ -77,32 +86,68 @@ function Start() {
     heading.current?.focus({ preventScroll: true })
   }, [stepId])
 
+  // Arriving at the questions: the studio reads the note and asks about it. A note with nothing to ask about moves straight on.
+  useEffect(() => {
+    if (stepId !== 'more') return
+    const onward = () => void navigate({ to: '/start', search: { step: steps[at + 1] ?? 'about' }, replace: true })
+    if (noteText.length < ENOUGH) return void navigate({ to: '/start', search: { step: 'about' }, replace: true })
+    if (followups?.about === noteText) {
+      if (!followups.asked.length) onward()
+      return
+    }
+    let live = true
+    setAsking(true)
+    fetch('/api/followups', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text: noteText, sender: me, recipient: them }) })
+      .then(async (response) => {
+        const body = (await response.json()) as { questions?: unknown }
+        if (!response.ok) throw new Error('no questions')
+        // Checked again here: every question must hang on words the sender wrote.
+        return cleanFollowups(body.questions, noteText)
+      })
+      .catch(() => followupsLocally(noteText, them))
+      .then((questions) => {
+        if (!live) return
+        setFollowups({ about: noteText, asked: questions.map((q) => ({ ...q, answer: '' })) })
+        setAsking(false)
+      })
+    return () => {
+      live = false
+      setAsking(false)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stepId, noteText, followups?.about])
+  const questions = followups?.about === noteText ? followups.asked : []
+  const answer = (index: number, value: string) => followups && setFollowups({ ...followups, asked: followups.asked.map((q, i) => (i === index ? { ...q, answer: value } : q)) })
+
   /** Sort the sender's words into scenes, have the film directed from them, build it, and start the song behind it. */
   const finish = async () => {
     if (!canGenerate(intake)) return go('names')
     let draft = intake
     const text = about.trim()
     const seed = newSeed()
-    if (text && text !== sortedFrom) {
+    // What the sender answered is part of what they wrote.
+    const answers = cleanAnswers(questions)
+    const written = withAnswers(text, answers)
+    if (text && written !== sortedFrom) {
       setBusy(`Sorting your words into ${name}’s scenes…`)
       let notes
       let directed: DirectionPlan | null = null
       const facts = { occasion: intake.occasion, relationship: intake.relationship, photos: intake.photos.length, letter: intake.letter.trim().length >= 40 }
       try {
-        const response = await fetch('/api/sort', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text, sender: me, recipient: them, ...facts }) })
+        const response = await fetch('/api/sort', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text, sender: me, recipient: them, ...facts, answers }) })
         const body = (await response.json()) as { notes?: unknown; direction?: unknown }
         if (!response.ok || !body.notes) throw new Error('sort failed')
         // Checked again here: only the sender's own words go into the film.
-        notes = keepTheirWords(body.notes, text)
+        notes = keepTheirWords(body.notes, written)
         // And the direction can only name a kind of film, colours and designs the studio has.
         directed = cleanDirection(body.direction, DIRECTED_WORLDS)
       } catch {
-        notes = sortLocally(text)
+        notes = sortLocallyWithAnswers(text, answers)
       }
       directed ??= directLocally({ ...facts, recipient: them, notes })
       draft = { ...applyNotes(intake, notes), direction: { ...directed, seed } }
       setIntake(() => draft)
-      setSortedFrom(text)
+      setSortedFrom(written)
     } else if (intake.direction) {
       // The same words, built again: the studio's direction goes with the new version.
       draft = { ...intake, direction: { ...intake.direction, seed } }
@@ -267,6 +312,27 @@ function Start() {
           </p>
           <p className="fine">Your words are sorted into scenes by one of Google’s AI models. It only moves your words; it doesn’t write any.</p>
         </>
+      ),
+    },
+    more: {
+      question: `A little more about ${name}?`,
+      hint: 'We read what you wrote. A line on any of these makes the film more theirs. Skip any you like.',
+      canNext: !asking,
+      nextLabel: questions.some((q) => q.answer.trim()) ? undefined : 'Skip these',
+      body: asking ? (
+        <Working className="start-busy">Reading what you wrote about {name}…</Working>
+      ) : (
+        <ol className="start-more">
+          {questions.map((q, i) => (
+            <li key={q.quote}>
+              <p className="more-quote">
+                <span>You wrote</span> “{q.quote}”
+              </p>
+              <label htmlFor={`more-${i}`}>{q.question}</label>
+              <textarea id={`more-${i}`} rows={2} maxLength={FOLLOWUP_LIMITS.answer} value={q.answer} onChange={(e) => answer(i, e.target.value)} />
+            </li>
+          ))}
+        </ol>
       ),
     },
     song: {

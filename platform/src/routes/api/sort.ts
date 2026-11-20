@@ -3,7 +3,10 @@ import { direct } from '../../server/direct'
 import { allowSort, sortNotes } from '../../server/sort'
 import { json } from '../../server/store'
 import { directLocally } from '../../story/direction'
-import { NOTES_LIMIT, sortLocally } from '../../story/notes'
+import { cleanAnswers, sortLocallyWithAnswers } from '../../story/followups'
+import type { Answered } from '../../story/followups'
+import { NOTES_LIMIT } from '../../story/notes'
+import type { SortedNotes } from '../../story/notes'
 import { isOccasion, isRelationship } from '../../story/types'
 import type { Occasion, Relationship } from '../../story/types'
 import { LIMITS } from '../../story/validate'
@@ -24,8 +27,10 @@ export const Route = createFileRoute('/api/sort')({
         let relationship: Relationship | undefined
         let photos = 0
         let letter = false
+        let answers: Answered[] = []
         try {
-          const body = (await request.json()) as { text?: unknown; sender?: unknown; recipient?: unknown; occasion?: unknown; relationship?: unknown; photos?: unknown; letter?: unknown }
+          const body = (await request.json()) as { text?: unknown; sender?: unknown; recipient?: unknown; occasion?: unknown; relationship?: unknown; photos?: unknown; letter?: unknown; answers?: unknown }
+          answers = cleanAnswers(body.answers)
           if (isOccasion(body.occasion)) occasion = body.occasion
           if (isRelationship(body.relationship)) relationship = body.relationship
           photos = typeof body.photos === 'number' && body.photos > 0 ? Math.min(Math.floor(body.photos), LIMITS.photos) : 0
@@ -40,12 +45,12 @@ export const Route = createFileRoute('/api/sort')({
         if (text.length > NOTES_LIMIT) return json({ error: `That’s more than fits (up to ${NOTES_LIMIT} characters).` }, { status: 400 })
         const client = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local'
         // Past the hourly cap the words are still sorted, by rule on this server.
-        const brief = (notes: ReturnType<typeof sortLocally>) => ({ occasion, relationship, recipient, notes, photos, letter })
+        const brief = (notes: SortedNotes) => ({ occasion, relationship, recipient, notes, photos, letter })
         if (!allowSort(client)) {
-          const notes = sortLocally(text)
+          const notes = sortLocallyWithAnswers(text, answers)
           return json({ notes, by: 'rule', direction: directLocally(brief(notes)), directedBy: 'rule' })
         }
-        const sorted = await sortNotes(text, sender, recipient)
+        const sorted = await sortNotes(text, sender, recipient, answers)
         const directed = await direct(brief(sorted.notes))
         return json({ ...sorted, direction: directed.direction, directedBy: directed.by })
       },
