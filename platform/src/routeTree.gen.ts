@@ -20,6 +20,7 @@ import { Route as ApiGiftsRouteImport } from './routes/api/gifts'
 import { Route as ApiLyricsRouteImport } from './routes/api/lyrics'
 import { Route as ApiMusicRouteImport } from './routes/api/music'
 import { Route as ApiSortRouteImport } from './routes/api/sort'
+import { Route as ApiTranscribeRouteImport } from './routes/api/transcribe'
 import { Route as GSlugRouteImport } from './routes/g.$slug'
 import { Route as ManageSlugRouteImport } from './routes/manage.$slug'
 import { Route as ApiGiftSlugRouteImport } from './routes/api/gift.$slug'
@@ -83,6 +84,11 @@ const ApiSortRoute = ApiSortRouteImport.update({
   path: '/api/sort',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiTranscribeRoute = ApiTranscribeRouteImport.update({
+  id: '/api/transcribe',
+  path: '/api/transcribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GSlugRoute = GSlugRouteImport.update({
   id: '/g/$slug',
   path: '/g/$slug',
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/api/lyrics': typeof ApiLyricsRoute
   '/api/music': typeof ApiMusicRoute
   '/api/sort': typeof ApiSortRoute
+  '/api/transcribe': typeof ApiTranscribeRoute
   '/g/$slug': typeof GSlugRoute
   '/manage/$slug': typeof ManageSlugRoute
   '/api/gift/$slug': typeof ApiGiftSlugRoute
@@ -151,6 +158,7 @@ export interface FileRoutesByTo {
   '/api/lyrics': typeof ApiLyricsRoute
   '/api/music': typeof ApiMusicRoute
   '/api/sort': typeof ApiSortRoute
+  '/api/transcribe': typeof ApiTranscribeRoute
   '/g/$slug': typeof GSlugRoute
   '/manage/$slug': typeof ManageSlugRoute
   '/api/gift/$slug': typeof ApiGiftSlugRoute
@@ -172,6 +180,7 @@ export interface FileRoutesById {
   '/api/lyrics': typeof ApiLyricsRoute
   '/api/music': typeof ApiMusicRoute
   '/api/sort': typeof ApiSortRoute
+  '/api/transcribe': typeof ApiTranscribeRoute
   '/g/$slug': typeof GSlugRoute
   '/manage/$slug': typeof ManageSlugRoute
   '/api/gift/$slug': typeof ApiGiftSlugRoute
@@ -194,6 +203,7 @@ export interface FileRouteTypes {
     | '/api/lyrics'
     | '/api/music'
     | '/api/sort'
+    | '/api/transcribe'
     | '/g/$slug'
     | '/manage/$slug'
     | '/api/gift/$slug'
@@ -214,6 +224,7 @@ export interface FileRouteTypes {
     | '/api/lyrics'
     | '/api/music'
     | '/api/sort'
+    | '/api/transcribe'
     | '/g/$slug'
     | '/manage/$slug'
     | '/api/gift/$slug'
@@ -234,6 +245,7 @@ export interface FileRouteTypes {
     | '/api/lyrics'
     | '/api/music'
     | '/api/sort'
+    | '/api/transcribe'
     | '/g/$slug'
     | '/manage/$slug'
     | '/api/gift/$slug'
@@ -255,6 +267,7 @@ export interface RootRouteChildren {
   ApiLyricsRoute: typeof ApiLyricsRoute
   ApiMusicRoute: typeof ApiMusicRoute
   ApiSortRoute: typeof ApiSortRoute
+  ApiTranscribeRoute: typeof ApiTranscribeRoute
   GSlugRoute: typeof GSlugRoute
   ManageSlugRoute: typeof ManageSlugRoute
   ApiGiftSlugRoute: typeof ApiGiftSlugRoute
@@ -343,6 +356,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSortRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/transcribe': {
+      id: '/api/transcribe'
+      path: '/api/transcribe'
+      fullPath: '/api/transcribe'
+      preLoaderRoute: typeof ApiTranscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/g/$slug': {
       id: '/g/$slug'
       path: '/g/$slug'
@@ -407,6 +427,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiLyricsRoute: ApiLyricsRoute,
   ApiMusicRoute: ApiMusicRoute,
   ApiSortRoute: ApiSortRoute,
+  ApiTranscribeRoute: ApiTranscribeRoute,
   GSlugRoute: GSlugRoute,
   ManageSlugRoute: ManageSlugRoute,
   ApiGiftSlugRoute: ApiGiftSlugRoute,

@@ -108,8 +108,8 @@ export function Film({
   const backdrop = useRef<Backdrop | null>(null)
   const particles = useRef<Particles | null>(null)
   const clock = useRef({ t: 0, index: 0, wishDone: false, track: '' })
-  const live = useRef({ phase, paused })
-  live.current = { phase, paused }
+  const live = useRef({ phase, paused, muted })
+  live.current = { phase, paused, muted }
   const timers = useRef<number[]>([])
   const idleTimer = useRef(0)
   const calm = useRef(false)
@@ -267,6 +267,36 @@ export function Film({
 
   /* ---------- the clock ---------- */
 
+  // The sender's voice notes. One plays over its scene, kept in step with the film's own clock, with
+  // the song turned down under it; it stops when the film is paused, rewound or moved elsewhere.
+  const voice = useRef<HTMLAudioElement | null>(null)
+  const hushVoice = () => {
+    if (voice.current && !voice.current.paused) voice.current.pause()
+    engine.current?.duck(false)
+    delete document.documentElement.dataset.voice
+  }
+  const voiceAt = (t: number) => {
+    const now = film.scenes.find((s) => s.voice && t >= s.voice.start && t < s.voice.start + s.voice.seconds)?.voice
+    if (!now) return hushVoice()
+    const el = (voice.current ??= new Audio())
+    if (el.dataset.src !== now.src) {
+      el.dataset.src = now.src
+      el.src = now.src
+    }
+    el.muted = live.current.muted
+    const at = t - now.start
+    if (Math.abs(el.currentTime - at) > 0.45) el.currentTime = at
+    if (el.paused) void el.play().catch(() => {})
+    engine.current?.duck(true)
+    // For tests and for anyone looking: a voice note is playing, and how far in it is.
+    document.documentElement.dataset.voice = el.currentTime.toFixed(1)
+  }
+  useEffect(() => () => voice.current?.pause(), [])
+  useEffect(() => {
+    if (phase !== 'playing') hushVoice()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase])
+
   useEffect(() => {
     if (phase !== 'playing' && phase !== 'ended') return
     let frame = 0
@@ -276,7 +306,7 @@ export function Film({
       // A frame's timestamp can be earlier than the moment this clock was started; time never runs backwards.
       const dt = Math.max(0, Math.min(0.1, (now - last) / 1000))
       last = now
-      if (live.current.paused || live.current.phase !== 'playing') return
+      if (live.current.paused || live.current.phase !== 'playing') return void hushVoice()
 
       const c = clock.current
       const current = film.shots[c.index]
@@ -292,6 +322,7 @@ export function Film({
         }
       }
       c.t = t
+      voiceAt(t)
       const next = shotAt(film, t)
       if (next.index !== c.index) {
         c.index = next.index

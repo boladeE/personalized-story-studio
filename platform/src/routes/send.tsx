@@ -71,6 +71,14 @@ function Send() {
           }
         }
       }
+      for (const chapter of intake.outline ?? []) {
+        if (!chapter.voice?.src) continue
+        try {
+          form.append(`voice:${chapter.id}`, await (await fetch(chapter.voice.src)).blob(), `${chapter.id}-voice`)
+        } catch {
+          throw new Error('A voice note couldn’t be read. Record it again, or remove it.')
+        }
+      }
       const payload = { intake: { ...intake, photos: intake.photos.map(({ id, caption, aspect }) => ({ id, caption, aspect })) }, seed, question, answer, songId: song?.id ?? null }
       form.append('payload', JSON.stringify(payload))
       setProgress('Creating the private link…')

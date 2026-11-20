@@ -200,7 +200,7 @@ export function generateStory(intake: Intake, seed: number): Story {
       const made = frames.get(chapter.id) ?? []
       if (!made.length) continue
       order.push(chapter.id)
-      built.set(chapter.id, { type: chapter.id, name: chapterName(chapter), mood: chapter.mood, layout: chapter.layout, ...(chapter.intro?.trim() ? { intro: chapter.intro.trim() } : {}), ...(drawn.has(chapter.id) ? { design: drawn.get(chapter.id) } : {}), frames: made })
+      built.set(chapter.id, { type: chapter.id, name: chapterName(chapter), mood: chapter.mood, layout: chapter.layout, ...(chapter.intro?.trim() ? { intro: chapter.intro.trim() } : {}), ...(chapter.voice?.src ? { voice: chapter.voice } : {}), ...(drawn.has(chapter.id) ? { design: drawn.get(chapter.id) } : {}), frames: made })
     }
     fixed('letter')
     fixed('wish')

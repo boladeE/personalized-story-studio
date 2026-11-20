@@ -2,10 +2,11 @@ import { useRef, useState } from 'react'
 import { OCCASIONS, occasionOf } from '../story/occasions'
 import { NO_PHOTO, OUTLINE_LIMITS, outlineOf, withChapter } from '../story/outline'
 import { endingOf } from '../story/types'
-import type { Chapter, Intake, Memory, SceneLayout } from '../story/types'
+import type { Chapter, Intake, Memory, SceneLayout, VoiceNote } from '../story/types'
 import { LIMITS } from '../story/validate'
 import { Cross, Field, GrowingText, ListEditor, oneLine } from './fields'
 import { usePhotos } from './photos'
+import { useRecorder } from './recorder'
 import { UndoToast } from './UndoToast'
 import { Working } from './Working'
 
@@ -125,6 +126,42 @@ export function SceneWords({
 }
 
 type Setter = <K extends keyof Intake>(key: K, value: Intake[K]) => void
+
+const VOICE_SECONDS = 45
+
+/** The sender's own voice for a scene: recorded here, heard in the film over that scene with the song turned down. */
+function VoiceField({ voice, onChange }: { voice?: VoiceNote; onChange: (voice: VoiceNote | undefined) => void }) {
+  const recorder = useRecorder(VOICE_SECONDS)
+  const record = async () => {
+    const made = await recorder.start()
+    if (made) onChange({ src: URL.createObjectURL(made.blob), seconds: made.seconds })
+  }
+  return (
+    <div className="voice-field">
+      <b>Your voice</b>
+      {recorder.state === 'recording' ? (
+        <button type="button" className="chip-button is-main" onClick={recorder.stop}>
+          Stop ({Math.floor(recorder.seconds)}s)
+        </button>
+      ) : voice?.src ? (
+        <>
+          <audio controls src={voice.src} aria-label="Your voice note" />
+          <button type="button" className="chip-button" onClick={() => void record()}>
+            Record it again
+          </button>
+          <button type="button" className="text-button" onClick={() => onChange(undefined)}>
+            Remove the voice note
+          </button>
+        </>
+      ) : (
+        <button type="button" className="chip-button" onClick={() => void record()}>
+          Record a voice note
+        </button>
+      )}
+      <small>{recorder.state === 'denied' ? 'The microphone is blocked for this site. Allow it in the browser, then try again.' : `Up to ${VOICE_SECONDS} seconds. It plays over this scene, with the song turned down under it.`}</small>
+    </div>
+  )
+}
 
 /** What a scene of the film's own asks of the sender, in a line. */
 export function chapterAsk(layout: SceneLayout, intake: Intake): string {
@@ -299,6 +336,7 @@ export function ChapterWords({
           {photoPick}
         </>
       )}
+      {chapter.layout !== 'photos' && <VoiceField voice={chapter.voice} onChange={(voice) => change({ voice })} />}
       {chapter.layout === 'photos' && <Roll intake={intake} set={set} />}
     </>
   )

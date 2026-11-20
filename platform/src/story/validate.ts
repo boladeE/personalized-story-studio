@@ -113,6 +113,8 @@ function parseOutline(raw: unknown): Chapter[] | undefined {
       mood,
       lines: lines.map((l) => text(l, layout === 'moment' ? LIMITS.memoryStory : LIMITS.listItem, `Scene ${i + 1}`)),
       ...(typeof r.intro === 'string' && r.intro.trim() ? { intro: text(r.intro, 120, `Scene ${i + 1}’s intro`) } : {}),
+      // A voice note's sound arrives beside the gift; here it is only how long it runs.
+      ...(r.voice && typeof r.voice === 'object' && typeof (r.voice as { seconds?: unknown }).seconds === 'number' ? { voice: { src: '', seconds: Math.max(0.5, Math.min(60, (r.voice as { seconds: number }).seconds)) } } : {}),
       ...(r.photoId ? { photoId: id(r.photoId, `Scene ${i + 1}’s photo`) } : {}),
     }
   })

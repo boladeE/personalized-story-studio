@@ -201,6 +201,7 @@ export function sniffAudio(bytes: Uint8Array): string | null {
   if (ascii(0, 4) === 'OggS') return 'audio/ogg'
   if (ascii(0, 4) === 'fLaC') return 'audio/flac'
   if (ascii(4, 8) === 'ftyp') return 'audio/mp4'
+  if (bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3) return 'audio/webm'
   return null
 }
 

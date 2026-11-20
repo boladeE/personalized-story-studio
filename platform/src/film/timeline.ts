@@ -56,6 +56,8 @@ export interface FilmScene {
   scene: number
   name: string
   start: number
+  /** The sender's voice over this scene: where it starts in the film and how long it runs. */
+  voice?: { src: string; start: number; seconds: number }
 }
 
 export interface Film {
@@ -217,7 +219,9 @@ export function buildFilm(story: Story): Film {
     }
 
     if (!drafts.length) return
-    scenes.push({ scene: sceneIndex, name: scene.name, start: clock })
+    const entry: FilmScene = { scene: sceneIndex, name: scene.name, start: clock }
+    scenes.push(entry)
+    const firstOfScene = shots.length
     for (const draft of drafts) {
       const { seconds, text, ...rest } = draft
       // Whole bars for most shots; the playful scenes cut twice as fast.
@@ -238,6 +242,18 @@ export function buildFilm(story: Story): Film {
         text: text ?? spoken(rest),
       } as Shot)
       clock += duration
+    }
+    // A voice note starts once the scene's title card has gone, and the scene stays until it has been heard out.
+    if (scene.voice?.src && shots.length > firstOfScene) {
+      const mine = shots.slice(firstOfScene)
+      const from = (mine.find((s) => s.kind !== 'card') ?? mine[0]).start
+      const short = scene.voice.seconds + 0.8 - (clock - from)
+      if (short > 0) {
+        const extra = Math.ceil(short / beat) * beat
+        shots[shots.length - 1].duration += extra
+        clock += extra
+      }
+      entry.voice = { src: scene.voice.src, start: from, seconds: scene.voice.seconds }
     }
   })
 

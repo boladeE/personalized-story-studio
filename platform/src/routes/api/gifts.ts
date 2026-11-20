@@ -3,7 +3,7 @@ import { generateStory } from '../../story/generate'
 import { LIMITS, parseIntake } from '../../story/validate'
 import { vibeById } from '../../story/vibes'
 import { readSong } from '../../server/music'
-import { hashAnswer, json, newManageKey, newSlug, saveGift, sha256, sniffImage, sniffVideo } from '../../server/store'
+import { hashAnswer, json, newManageKey, newSlug, saveGift, sha256, sniffAudio, sniffImage, sniffVideo } from '../../server/store'
 import type { GiftRecord } from '../../server/store'
 
 const MAX_BODY = 150 * 1024 * 1024
@@ -11,6 +11,7 @@ const MAX_PHOTO = 10 * 1024 * 1024
 /** A little over what the browser lets in, for the form's own wrapping. */
 const MAX_CLIP = 26 * 1024 * 1024
 const MAX_CLIPS = 3
+const MAX_VOICE = 4 * 1024 * 1024
 
 /** Create a private gift from the sender's draft. Payment is not connected yet. */
 export const Route = createFileRoute('/api/gifts')({
@@ -65,6 +66,22 @@ export const Route = createFileRoute('/api/gifts')({
             media[`${photo.id}-clip`] = clipType
             photo.clip = `/api/media/${slug}/${photo.id}-clip`
           }
+        }
+
+        // A scene's voice note travels with it.
+        for (const chapter of parsed.intake.outline ?? []) {
+          if (!chapter.voice) continue
+          const file = form.get(`voice:${chapter.id}`)
+          if (!(file instanceof File) || file.size > MAX_VOICE) {
+            delete chapter.voice
+            continue
+          }
+          const bytes = new Uint8Array(await file.arrayBuffer())
+          const type = sniffAudio(bytes)
+          if (!type) return json({ error: 'A voice note couldn’t be read.' }, { status: 415 })
+          files.push({ id: `${chapter.id}-voice`, bytes })
+          media[`${chapter.id}-voice`] = type
+          chapter.voice = { src: `/api/media/${slug}/${chapter.id}-voice`, seconds: chapter.voice.seconds }
         }
 
         let soundtrack: GiftRecord['story']['soundtrack']

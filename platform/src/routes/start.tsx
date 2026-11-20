@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { useDraft } from '../components/draft'
 import { UndoToast } from '../components/UndoToast'
 import { Working } from '../components/Working'
+import { useRecorder } from '../components/recorder'
 import { usePhotos } from '../components/photos'
 import { cleanDirection, directLocally, DIRECTED_WORLDS } from '../story/direction'
 import type { DirectionPlan } from '../story/direction'
@@ -52,6 +53,49 @@ async function photoPeeks(photos: Photo[]): Promise<Array<{ id: string; jpeg: st
     }
   }
   return peeks
+}
+
+/**
+ * Saying it instead of typing it: the sender talks, and what they said is written into the box, where
+ * they can read it and change it. The recording is used for that once and not kept.
+ */
+function SpeakIt({ onWords }: { onWords: (words: string) => void }) {
+  const recorder = useRecorder(120)
+  const [state, setState] = useState<'idle' | 'writing'>('idle')
+  const [problem, setProblem] = useState('')
+  const speak = async () => {
+    setProblem('')
+    const made = await recorder.start()
+    if (!made) return
+    setState('writing')
+    try {
+      const response = await fetch('/api/transcribe', { method: 'POST', headers: { 'content-type': made.blob.type || 'audio/webm' }, body: made.blob })
+      const body = (await response.json().catch(() => ({}))) as { text?: string; error?: string }
+      if (!response.ok) throw new Error(body.error || 'That couldn’t be written down. Try again, or type it.')
+      if (body.text?.trim()) onWords(body.text.trim())
+      else setProblem('Nothing could be heard in that. Try again a little closer to the microphone.')
+    } catch (error) {
+      setProblem(error instanceof Error ? error.message : 'That couldn’t be written down. Try again, or type it.')
+    } finally {
+      setState('idle')
+    }
+  }
+  return (
+    <div className="speak-row">
+      {recorder.state === 'recording' ? (
+        <button type="button" className="button small primary" onClick={recorder.stop}>
+          Stop ({Math.floor(recorder.seconds)}s)
+        </button>
+      ) : (
+        <button type="button" className="button small ghost" disabled={state === 'writing'} onClick={() => void speak()}>
+          {state === 'writing' ? 'Writing it down…' : 'Say it instead'}
+        </button>
+      )}
+      <small role="status">
+        {problem || (recorder.state === 'denied' ? 'The microphone is blocked for this site. Allow it in the browser, then try again.' : recorder.state === 'recording' ? 'Talk about them the way you would to a friend. Up to two minutes.' : '')}
+      </small>
+    </div>
+  )
 }
 
 export const Route = createFileRoute('/start')({
@@ -359,6 +403,7 @@ function Start() {
             <li>Why it’s them</li>
           </ul>
           <textarea className="start-about" rows={7} aria-label={`About ${name}`} maxLength={NOTES_LIMIT} value={about} onChange={(e) => setAbout(e.target.value)} />
+          <SpeakIt onWords={(words) => setAbout(`${about.trim()}${about.trim() ? ' ' : ''}${words}`.slice(0, NOTES_LIMIT))} />
           <p className="fine start-count" aria-live="polite">
             {about.trim().length === 0
               ? 'The more specific, the better the film.'

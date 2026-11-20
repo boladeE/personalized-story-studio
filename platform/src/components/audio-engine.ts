@@ -266,13 +266,24 @@ export class AudioEngine {
     }
   }
 
+  /** Turn the song down under a voice note, and back up after it. */
+  duck(down: boolean) {
+    if (!this.ctx || !this.songBus || this.muted || this.ducked === down) return void (this.ducked = down)
+    this.ducked = down
+    const now = this.ctx.currentTime
+    this.songBus.gain.cancelScheduledValues(now)
+    this.songBus.gain.setValueAtTime(this.songBus.gain.value, now)
+    this.songBus.gain.linearRampToValueAtTime(down ? 0.22 : 0.9, now + 0.5)
+  }
+  private ducked = false
+
   setMuted(muted: boolean) {
     this.muted = muted
     if (!this.ctx) return
     const now = this.ctx.currentTime
     for (const [node, level] of [
       [this.master, 0.7],
-      [this.songBus, 0.9],
+      [this.songBus, this.ducked ? 0.22 : 0.9],
     ] as const) {
       if (!node) continue
       node.gain.cancelScheduledValues(now)

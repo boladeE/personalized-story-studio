@@ -58,6 +58,12 @@ export interface Memory {
   photoId: string
 }
 
+/** A recording of the sender speaking, and how long it runs. */
+export interface VoiceNote {
+  src: string
+  seconds: number
+}
+
 /** How a scene written for one film is laid out. These few layouts are the only fixed thing about such a scene. */
 export const SCENE_LAYOUTS = ['line', 'list', 'moment', 'photos'] as const
 export type SceneLayout = (typeof SCENE_LAYOUTS)[number]
@@ -77,6 +83,8 @@ export interface Chapter {
   lines: string[]
   /** A short line on the scene's title card that leads the viewer into it. */
   intro?: string
+  /** The sender's own voice, recorded for this scene. It plays over the scene, with the song turned down under it. */
+  voice?: VoiceNote
   /** The photo a moment is told beside, if the sender picked one. */
   photoId?: string
 }
@@ -184,6 +192,8 @@ export interface Scene {
   layout?: SceneLayout
   /** The line under the scene's name on its title card. */
   intro?: string
+  /** The sender's voice, played over this scene. */
+  voice?: VoiceNote
   /** Which of the world's designs this scene is drawn in. Gifts stored before designs existed carry none. */
   design?: string
   frames: Frame[]

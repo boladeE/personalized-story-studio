@@ -1741,3 +1741,34 @@ select:focus-visible {
   color: var(--hibiscus-deep);
   font-weight: 700;
 }
+
+/* A scene's voice note, and saying the note out loud. */
+.voice-field {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  margin: 4px 0 14px;
+}
+.voice-field b {
+  font-size: 14.5px;
+  color: var(--palm);
+}
+.voice-field audio {
+  width: 100%;
+  height: 40px;
+}
+.voice-field small {
+  color: var(--muted);
+  font-size: 13.5px;
+}
+.speak-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-top: 12px;
+}
+.speak-row small {
+  color: var(--muted);
+  font-size: 14.5px;
+}
