@@ -49,6 +49,26 @@ export interface Memory {
   photoId: string
 }
 
+/** Why the studio chose a kind of film: one of a fixed set of reasons it can say to the sender. */
+export const DIRECTION_REASONS = ['teasing', 'memories', 'photos', 'tender', 'short'] as const
+export type DirectionReason = (typeof DIRECTION_REASONS)[number]
+
+/**
+ * The studio's direction for a film, made from what the sender wrote: the kind
+ * of film, its colours, each scene's design and the order they play in. It
+ * holds for the version (seed) it was made for; another version is drawn
+ * afresh. Anything the sender chooses for themselves always wins.
+ */
+export interface Direction {
+  seed: number
+  world: WorldId
+  look: LookId
+  designs: Record<string, string>
+  /** The scenes between the opening and the ending, in playing order. */
+  order: string[]
+  because: DirectionReason
+}
+
 /** Everything the sender tells us. All strings come from the sender. */
 export interface Intake {
   occasion: Occasion
@@ -66,6 +86,8 @@ export interface Intake {
   /** Unset or `surprise` lets the seed choose. */
   world?: WorldId | 'surprise'
   cut?: Cut
+  /** The studio's own choices for the first version of the film. See Direction. */
+  direction?: Direction
 }
 
 export type EndingProp = 'candle' | 'seal'

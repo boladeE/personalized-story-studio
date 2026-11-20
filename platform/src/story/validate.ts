@@ -1,3 +1,4 @@
+import { cleanStoredDirection } from './direction'
 import { isOccasion, isRelationship, isWorld } from './types'
 import type { Cut, Intake, LookId } from './types'
 
@@ -107,6 +108,7 @@ export function parseIntake(raw: unknown): { ok: true; intake: Intake } | { ok: 
     if (!LOOK_IDS.includes(look)) throw new IntakeError('Unknown look')
     if (r.world !== undefined && r.world !== 'surprise' && !isWorld(r.world)) throw new IntakeError('Unknown kind of film')
     const cut = parseCut(r.cut)
+    const direction = r.direction === undefined ? null : cleanStoredDirection(r.direction)
 
     const intake: Intake = {
       occasion: r.occasion,
@@ -123,6 +125,8 @@ export function parseIntake(raw: unknown): { ok: true; intake: Intake } | { ok: 
       look,
       ...(r.world !== undefined ? { world: r.world as Intake['world'] } : {}),
       ...(cut ? { cut } : {}),
+      // The studio's own choices travel with the gift; anything in them it doesn't recognise is dropped.
+      ...(direction ? { direction } : {}),
     }
     if (!intake.sender.trim() || !intake.recipient.trim()) throw new IntakeError('Both names are needed')
     return { ok: true, intake }

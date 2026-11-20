@@ -465,13 +465,19 @@ test('the short flow sorts the sender’s words, plays the film at once and brin
   await expect(page.getByRole('button', { name: 'Surprise me' })).toHaveCount(2)
   await page.getByRole('button', { name: 'A woman’s voice' }).click()
 
-  // Making the film sends the words to be sorted (and nothing else), then the song is asked for behind it.
+  // Making the film sends the words to be sorted and directed, with how many photos there are and whether there is a letter
+  // (never the photos or the letter themselves). Then the song is asked for behind it.
   const sortRequest = page.waitForRequest((r) => r.url().endsWith('/api/sort'))
   const lyricsRequest = page.waitForRequest((r) => r.url().endsWith('/api/lyrics'))
   const songRequest = page.waitForRequest((r) => r.url().endsWith('/api/music') && r.method() === 'POST')
   await page.getByRole('button', { name: 'Make the film' }).click()
-  expect((await sortRequest).postDataJSON()).toEqual({ text: NOTE, sender: 'Tobi', recipient: 'Zara' })
+  const sent = (await sortRequest).postDataJSON() as Record<string, unknown>
+  expect(sent).toMatchObject({ text: NOTE, sender: 'Tobi', recipient: 'Zara', occasion: 'anniversary', relationship: 'girlfriend', letter: false })
+  expect(Object.keys(sent).sort()).toEqual(['letter', 'occasion', 'photos', 'recipient', 'relationship', 'sender', 'text'])
+  expect(typeof sent.photos).toBe('number')
   await expect(page).toHaveURL(/\/preview$/)
+  // The studio directed the film from the words: this note teases, so it is a mixtape.
+  await expect(page.locator('.preview-body > .film')).toHaveAttribute('data-world', 'mixtape')
   const brief = (await lyricsRequest).postDataJSON() as { details: Record<string, unknown> }
   expect(brief.details).toMatchObject({ occasion: 'anniversary', relationship: 'girlfriend', recipient: 'Zara', sender: 'Tobi' })
   expect(brief.details.habits).toEqual(['You always steal the duvet, then ask why I am cold.', 'You never finish your tea.'])
@@ -479,9 +485,10 @@ test('the short flow sorts the sender’s words, plays the film at once and brin
   expect(asked).toMatchObject({ vibe: 'afrobeats', voice: 'woman' })
   expect(String(asked.lyrics)).toContain('Zara')
 
-  // The song lands on the film by itself while the opening is still up, whichever kind of film was drawn.
+  // The song lands on the film by itself while the opening is still up. What the studio said about its direction was for the wait.
   await expect(page.locator('.film .opening')).toContainText('Our anniversary')
   await expect(page.locator('.song-status')).toHaveCount(0, { timeout: 15_000 })
+  await expect(page.locator('.direction-note')).toHaveCount(0)
   await startFilm(page)
   await expect.poll(async () => (await audioState(page))?.trackId, { timeout: 15_000 }).toBe('song')
   const said = (await walk(page, (shot) => shot.kind === 'wish')).map((s) => s.text).join(' ')
@@ -489,8 +496,16 @@ test('the short flow sorts the sender’s words, plays the film at once and brin
   expect(said).toContain('You never finish your tea.')
   await expect(page.getByRole('button', { name: 'Open the note' })).toBeVisible()
 
+  // The editor says why the studio made it this kind of film, for as long as that choice stands.
+  await openEditor(page, 'Look')
+  await expect(page.getByRole('radio', { name: /^The Mixtape/ })).toBeChecked()
+  await expect(page.locator('.scene-panel-note')).toHaveText('The studio made it a mixtape, because so much of what you wrote is the way Zara is, habits and all.')
+  await page.getByRole('radio', { name: /^The Scrapbook/ }).check()
+  await expect(page.locator('.scene-panel-note')).toHaveCount(0)
+  await undoButton(page).click()
+  await expect(page.locator('.scene-panel-note')).toBeVisible()
+  await page.getByRole('button', { name: /^Back to / }).click()
   // What is in the film and what else could go in is in the editor's row. Choosing a scene offers its words first.
-  await openEditor(page)
   await expect(sceneTile(page, 'Memory lane')).toHaveClass(/is-in/)
   await expect(sceneTile(page, 'The main character')).toHaveClass(/is-in/)
   await pickScene(page, 'Reasons')

@@ -14,6 +14,7 @@ import { Still } from '../film/Still'
 import { scenePosters } from '../film/previews'
 import { buildFilm } from '../film/timeline'
 import type { Shot } from '../film/timeline'
+import { directionLine } from '../story/direction'
 import { canGenerate, generateStory, sceneBoard } from '../story/generate'
 import { newSeed } from '../story/rng'
 import { SAMPLE_INTAKE, SAMPLE_NOTE, SAMPLE_SOUNDTRACK } from '../story/sample'
@@ -224,6 +225,8 @@ function Preview() {
     return (needle.length > 2 ? shots.find((s) => s.sceneType === shown.type && s.kind !== 'card' && s.text.includes(needle)) : undefined) ?? posters.get(shown.type)
   })()
   const inFilm = rows.filter((r) => r.state === 'in')
+  // What the studio says about how it directed this version, while its choices still stand.
+  const direction = !useSample && intake.direction?.seed === seed && intake.direction.world === world ? directionLine(intake.direction, story.recipient) : ''
   const status = !useSample && job.state !== 'idle' && !room
 
   return (
@@ -264,6 +267,7 @@ function Preview() {
       </StudioHeader>
       <div className="preview-notes">
         {status && <SongStatus job={job} name={story.recipient} kept={Boolean(song)} onPlay={playJobSong} onRetry={() => startSong(intake, plan, true)} onDismiss={dismissJob} />}
+        {direction && making && !editing && <p className="direction-note">{direction}</p>}
       </div>
       <div className="preview-body">
         <Film
@@ -360,6 +364,7 @@ function Preview() {
             <LookPanel
               story={story}
               back={selected.name}
+              note={direction}
               onClose={() => setSide('scene')}
               onLook={(look) => {
                 const before = source.look

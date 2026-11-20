@@ -1079,6 +1079,16 @@ select:focus-visible {
   border-bottom-width: 7px;
 }
 
+/* While the song is made: how the studio directed the film, and why. */
+.direction-note {
+  margin: 0;
+  padding: 8px clamp(16px, 4vw, 40px) 9px;
+  background: var(--palm);
+  color: #e8efe9;
+  font-size: 15px;
+  text-wrap: balance;
+}
+
 /* What just happened, beside the button that takes it back. */
 .edit-note {
   max-width: 34ch;

@@ -126,7 +126,7 @@ export function ScenePanel({
 }
 
 /** The whole film's look, in the panel beside the still: its kind and its colours. */
-export function LookPanel({ story, back, onClose, onLook, onWorld }: { story: Story; /** The scene to go back to. */ back: string; onClose: () => void; onLook: (look: LookId) => void; onWorld: (world: WorldId) => void }) {
+export function LookPanel({ story, back, note, onClose, onLook, onWorld }: { story: Story; /** The scene to go back to. */ back: string; /** What the studio says about its own choice of film, while that choice stands. */ note?: string; onClose: () => void; onLook: (look: LookId) => void; onWorld: (world: WorldId) => void }) {
   const world = story.world ?? 'screening'
   return (
     <aside className="scene-panel is-look" aria-label="The look of the film">
@@ -134,6 +134,7 @@ export function LookPanel({ story, back, onClose, onLook, onWorld }: { story: St
         <h1>The look</h1>
         <p>For the whole film. The still shows each change as you make it.</p>
       </header>
+      {note && <p className="scene-panel-note">{note}</p>}
       <fieldset className="adjust-group">
         <legend>Kind of film</legend>
         <div className="world-options">

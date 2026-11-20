@@ -89,19 +89,22 @@ export function generateStory(intake: Intake, seed: number): Story {
     unusedPhotos: () => intake.photos.filter((p) => !used.has(p.id)),
   }
 
+  // The studio's direction holds for the version it was made for. Another version is drawn from the seed.
+  const directed = intake.direction?.seed === seed ? intake.direction : undefined
   // Always draw the look, so switching it later doesn't reshuffle anything else.
   const drawnLook = rng.pick(LOOKS).id
-  const look: LookId = intake.look === 'surprise' ? drawnLook : intake.look
+  const look: LookId = intake.look === 'surprise' ? (directed?.look ?? drawnLook) : intake.look
   const drawnWorld = direct.pick(WORLDS).id
-  const world: WorldId = intake.world && intake.world !== 'surprise' ? intake.world : drawnWorld
+  const world: WorldId = intake.world && intake.world !== 'surprise' ? intake.world : (directed?.world ?? drawnWorld)
   // Every scene type draws a design whether or not it is used, so one choice never moves another.
   const designs = new Map<string, string>()
   for (const type of Object.keys(SCENES)) {
     const options = designsFor(world, type)
     const drawn = direct.next()
     if (!options.length) continue
-    const chosen = intake.cut?.designs?.[type]
-    designs.set(type, options.some((d) => d.id === chosen) ? chosen! : options[Math.floor(drawn * options.length)].id)
+    // The sender's choice, then the studio's direction (when it was for this kind of film), then the draw.
+    const chosen = [intake.cut?.designs?.[type], directed?.world === world ? directed.designs[type] : undefined].find((id) => options.some((d) => d.id === id))
+    designs.set(type, chosen ?? options[Math.floor(drawn * options.length)].id)
   }
 
   // Scenes are built in the studio's order, so moving or dropping one doesn't change the others.
@@ -120,7 +123,7 @@ export function generateStory(intake: Intake, seed: number): Story {
     }
   }
 
-  const scenes = arrange(order, intake.cut).map((type, index) => ({ id: `${type}-${index}`, ...built.get(type)! }))
+  const scenes = arrange(order, directed && !intake.cut?.order?.length ? { ...intake.cut, order: directed.order } : intake.cut).map((type, index) => ({ id: `${type}-${index}`, ...built.get(type)! }))
   return { occasion: intake.occasion, seed, look, world, sender: intake.sender.trim(), recipient: intake.recipient.trim(), scenes }
 }
 

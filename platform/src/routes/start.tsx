@@ -5,6 +5,8 @@ import { useDraft } from '../components/draft'
 import { UndoToast } from '../components/UndoToast'
 import { Working } from '../components/Working'
 import { usePhotos } from '../components/photos'
+import { cleanDirection, directLocally, DIRECTED_WORLDS } from '../story/direction'
+import type { DirectionPlan } from '../story/direction'
 import { canGenerate } from '../story/generate'
 import { applyNotes, keepTheirWords, NOTES_LIMIT, sortLocally } from '../story/notes'
 import { occasionOf, OCCASIONS } from '../story/occasions'
@@ -75,28 +77,38 @@ function Start() {
     heading.current?.focus({ preventScroll: true })
   }, [stepId])
 
-  /** Sort the sender's words into scenes, build the film, and start the song behind it. */
+  /** Sort the sender's words into scenes, have the film directed from them, build it, and start the song behind it. */
   const finish = async () => {
     if (!canGenerate(intake)) return go('names')
     let draft = intake
     const text = about.trim()
+    const seed = newSeed()
     if (text && text !== sortedFrom) {
       setBusy(`Sorting your words into ${name}’s scenes…`)
       let notes
+      let directed: DirectionPlan | null = null
+      const facts = { occasion: intake.occasion, relationship: intake.relationship, photos: intake.photos.length, letter: intake.letter.trim().length >= 40 }
       try {
-        const response = await fetch('/api/sort', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text, sender: me, recipient: them }) })
-        const body = (await response.json()) as { notes?: unknown }
+        const response = await fetch('/api/sort', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text, sender: me, recipient: them, ...facts }) })
+        const body = (await response.json()) as { notes?: unknown; direction?: unknown }
         if (!response.ok || !body.notes) throw new Error('sort failed')
         // Checked again here: only the sender's own words go into the film.
         notes = keepTheirWords(body.notes, text)
+        // And the direction can only name a kind of film, colours and designs the studio has.
+        directed = cleanDirection(body.direction, DIRECTED_WORLDS)
       } catch {
         notes = sortLocally(text)
       }
-      draft = applyNotes(intake, notes)
+      directed ??= directLocally({ ...facts, recipient: them, notes })
+      draft = { ...applyNotes(intake, notes), direction: { ...directed, seed } }
       setIntake(() => draft)
       setSortedFrom(text)
+    } else if (intake.direction) {
+      // The same words, built again: the studio's direction goes with the new version.
+      draft = { ...intake, direction: { ...intake.direction, seed } }
+      setIntake(() => draft)
     }
-    setSeed(newSeed())
+    setSeed(seed)
     // Every film gets its own song. If the check for the music service hasn't answered yet, try anyway:
     // a song that can't be made says so on the preview.
     if (songs !== false) startSong(draft, plan, true)
