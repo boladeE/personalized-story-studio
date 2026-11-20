@@ -553,7 +553,9 @@ test('the short flow writes the film’s own scenes from the sender’s words, p
   // The answer sits with the habit it was about, in the song's brief (which drops quote marks) and in the film.
   expect(brief.details.habits).toEqual(['You always steal the duvet, then ask why I am cold. You run hot anyway. Every time.', 'You never finish your tea.'])
   const asked = (await songRequest).postDataJSON() as Record<string, unknown>
-  expect(asked).toMatchObject({ vibe: 'afrobeats', voice: 'woman' })
+  // "Surprise me" is the studio's pick for this film: a lively style for a note that teases, not the same one every time.
+  expect(asked).toMatchObject({ voice: 'woman' })
+  expect(['afrobeats', 'highlife', 'lofi-rnb']).toContain(asked.vibe)
   expect(String(asked.lyrics)).toContain('Zara')
 
   // The song lands on the film by itself while the opening is still up. What the studio said about its direction was for the wait.

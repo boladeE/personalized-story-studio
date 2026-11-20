@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import type { Answered } from '../story/followups'
 import { emptyIntake } from '../story/sample'
 import type { Intake } from '../story/types'
-import { songDetails, VIBES } from '../story/vibes'
+import { songDetails, surpriseVibe, VIBES } from '../story/vibes'
 import type { VibeId, Voice } from '../story/vibes'
 
 /**
@@ -142,7 +142,7 @@ export function DraftProvider({ children }: { children: ReactNode }) {
     setJob({ state: 'writing' })
     void (async () => {
       try {
-        const vibe = forPlan.vibe === 'surprise' ? DEFAULT_VIBE : forPlan.vibe
+        const vibe = forPlan.vibe === 'surprise' ? surpriseVibe(forIntake) : forPlan.vibe
         let lyrics = ''
         let made: Record<string, unknown> | undefined
         // The music model refuses words that come too close to an existing song (a 422). The sender did

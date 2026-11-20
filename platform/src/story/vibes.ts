@@ -150,6 +150,21 @@ export function parseSongDetails(raw: unknown): SongDetails | null {
   }
 }
 
+/**
+ * The studio's own pick of style, for "Surprise me": one that suits how the film was directed, and a
+ * different one from film to film. It is drawn from the film's version, so trying the same song again
+ * keeps its style, and a film that was never directed draws from its two names.
+ */
+export function surpriseVibe(intake: Pick<Intake, 'direction' | 'sender' | 'recipient'>): VibeId {
+  const lively: VibeId[] = ['afrobeats', 'highlife', 'lofi-rnb']
+  const gentle: VibeId[] = ['afro-soul', 'piano', 'lofi-rnb']
+  const because = intake.direction?.because
+  const pool = because === 'teasing' || because === 'short' ? lively : because === 'tender' || because === 'memories' ? gentle : VIBES.map((v) => v.id)
+  const names = `${intake.sender}|${intake.recipient}`
+  const draw = intake.direction?.seed ?? [...names].reduce((sum, ch) => (sum * 31 + ch.charCodeAt(0)) >>> 0, 7)
+  return pool[draw % pool.length]
+}
+
 /** The parts of an intake a song is written from. */
 export function songDetails(intake: Intake): SongDetails | null {
   // A film with its own scenes is sung from them: what happened, what they do, what is loved.

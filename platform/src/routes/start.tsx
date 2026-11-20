@@ -8,7 +8,7 @@ import { usePhotos } from '../components/photos'
 import { cleanDirection, directLocally, DIRECTED_WORLDS } from '../story/direction'
 import type { DirectionPlan } from '../story/direction'
 import { cleanAnswers, cleanFollowups, FOLLOWUP_LIMITS, followupsLocally, withAnswers } from '../story/followups'
-import { canGenerate } from '../story/generate'
+import { canGenerate, LOOKS } from '../story/generate'
 import { isTheirWords, NOTES_LIMIT } from '../story/notes'
 import { cleanOutline, notesOf, outlineByWords } from '../story/outline'
 import { occasionOf, OCCASIONS } from '../story/occasions'
@@ -156,13 +156,15 @@ function Start() {
         outline = outlineByWords(text, answers, them)
       }
       directed ??= directLocally({ ...facts, recipient: them, notes: notesOf(outline, wish) })
+      // The colours are drawn for each film. Left to the director they came out the same for every film of a kind.
+      const look = LOOKS[seed % LOOKS.length].id
       // New scenes: any cut the sender made of the last ones no longer applies.
-      draft = { ...intake, outline, wish: wish || intake.wish, cut: undefined, direction: { ...directed, designs: {}, order: [], seed } }
+      draft = { ...intake, outline, wish: wish || intake.wish, cut: undefined, direction: { ...directed, look, designs: {}, order: [], seed } }
       setIntake(() => draft)
       setSortedFrom(written)
     } else if (intake.direction) {
-      // The same words, built again: the studio's direction goes with the new version.
-      draft = { ...intake, direction: { ...intake.direction, seed } }
+      // The same words, built again: the studio's direction goes with the new version, in colours of its own.
+      draft = { ...intake, direction: { ...intake.direction, look: LOOKS[seed % LOOKS.length].id, seed } }
       setIntake(() => draft)
     }
     setSeed(seed)

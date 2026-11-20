@@ -5,7 +5,7 @@ import { blankChapter, chapterName, cleanOutline, notesOf, outlineByWords, outli
 import { emptyIntake, SAMPLE_FIXED, SAMPLE_INTAKE } from '../src/story/sample'
 import type { Chapter, Intake } from '../src/story/types'
 import { parseIntake } from '../src/story/validate'
-import { songDetails } from '../src/story/vibes'
+import { songDetails, surpriseVibe, VIBES } from '../src/story/vibes'
 import { WORLDS } from '../src/story/worlds'
 
 process.env.MUSIC_PROVIDER = 'demo'
@@ -236,5 +236,20 @@ describe('the sample', () => {
     // Every photo is seen once: four beside their moments, the rest in the last scene.
     const shown = story.scenes.flatMap((s) => s.frames).flatMap((f) => (f.kind === 'photo' ? [f.photo.id] : f.kind === 'montage' ? f.photos.map((p) => p.id) : []))
     expect([...shown].sort()).toEqual(SAMPLE_INTAKE.photos.map((p) => p.id).sort())
+  })
+})
+
+describe('“Surprise me” for the song', () => {
+  const directed = (because: 'teasing' | 'tender', seed: number) => maya({ direction: { seed, world: 'mixtape', look: 'garden', designs: {}, order: [], because } })
+  it('picks a style that suits the film, not the same one for every film, and keeps it when the song is tried again', () => {
+    const lively = new Set(Array.from({ length: 12 }, (_, seed) => surpriseVibe(directed('teasing', seed))))
+    const gentle = new Set(Array.from({ length: 12 }, (_, seed) => surpriseVibe(directed('tender', seed))))
+    expect([...lively].sort()).toEqual(['afrobeats', 'highlife', 'lofi-rnb'])
+    expect([...gentle].sort()).toEqual(['afro-soul', 'lofi-rnb', 'piano'])
+    expect(surpriseVibe(directed('teasing', 41))).toBe(surpriseVibe(directed('teasing', 41)))
+    // A film that was never directed still gets a style of its own, from its two names.
+    const undirected = new Set(['Zara', 'Kemi', 'Maya', 'Rin', 'Ada', 'Tobi', 'Leo', 'Sam'].map((recipient) => surpriseVibe({ sender: 'Tola', recipient })))
+    expect(undirected.size).toBeGreaterThan(1)
+    for (const id of undirected) expect(VIBES.map((v) => v.id)).toContain(id)
   })
 })
