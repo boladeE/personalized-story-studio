@@ -184,6 +184,16 @@ export function sniffImage(bytes: Uint8Array): string | null {
   return null
 }
 
+/** A clip's kind, from its first bytes. Still photos saved in the same container (HEIC, AVIF) are not clips. */
+export function sniffVideo(bytes: Uint8Array): string | null {
+  if (bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3) return 'video/webm'
+  const ascii = (from: number, to: number) => String.fromCharCode(...bytes.subarray(from, to))
+  if (ascii(4, 8) !== 'ftyp') return null
+  const brand = ascii(8, 12)
+  if (/^(hei[cxms]|hev[cxms]|mif1|msf1|avif|avis)$/.test(brand)) return null
+  return brand === 'qt  ' ? 'video/quicktime' : 'video/mp4'
+}
+
 export function sniffAudio(bytes: Uint8Array): string | null {
   const ascii = (from: number, to: number) => String.fromCharCode(...bytes.subarray(from, to))
   if (ascii(0, 4) === 'RIFF' && ascii(8, 12) === 'WAVE') return 'audio/wav'

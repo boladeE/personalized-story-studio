@@ -169,6 +169,8 @@ describe('a film with its own scenes', () => {
     expect(told.map((f) => f.kind === 'photo' && [f.title, f.body])).toEqual([
       ['The coffee queue', 'We met in a coffee queue and she let me go first.'],
       ['The night the power went out we played cards till two.', undefined],
+      // With a photo to spare, a single line is said beside one too.
+      ['The wink', 'She winks at me.'],
     ])
     expect(told[0].kind === 'photo' && told[0].photo.id).toBe(photos[1].id)
     const rest = frames.find((f) => f.kind === 'montage')!

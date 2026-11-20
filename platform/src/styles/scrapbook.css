@@ -466,7 +466,7 @@
   background: #fffdf8;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
 }
-.sb-polaroid-img img {
+.sb-polaroid-img :is(img, video) {
   display: block;
   width: auto;
   height: auto;
@@ -475,7 +475,7 @@
   margin: 0 auto;
 }
 /* A contact sheet's frames are all one shape, so a photo sits whole inside its frame. */
-.sb-contact img {
+.sb-contact :is(img, video) {
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -507,8 +507,8 @@
   background: #fffdf8;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.26);
 }
-.sb-mount img,
-.sb-print img {
+.sb-mount :is(img, video),
+.sb-print :is(img, video) {
   display: block;
   width: auto;
   max-width: 100%;
@@ -611,7 +611,7 @@
   left: auto;
   right: clamp(8px, 2cqw, 28px);
 }
-.sb-photo.is-clipped .sb-print img {
+.sb-photo.is-clipped .sb-print :is(img, video) {
   width: 100%;
 }
 .sb-photo.is-clipped {
@@ -1069,7 +1069,7 @@
 }
 .sb-pile li.fit-1 span { font-size: clamp(12px, min(1.45cqw, 2.7cqh), 18px); }
 .sb-pile li.fit-2 span { font-size: clamp(11px, min(1.2cqw, 2.25cqh), 15px); }
-.sb-pile li img {
+.sb-pile li :is(img, video) {
   display: block;
   width: auto;
   height: auto;
@@ -1133,7 +1133,7 @@
   aspect-ratio: 3 / 2;
   background: #26222b;
 }
-.sb-frame img {
+.sb-frame :is(img, video) {
   animation: sb-expose 0.7s both;
   animation-delay: calc(0.9s + var(--i) * 0.4s);
 }
@@ -1528,7 +1528,7 @@
     margin: -7cqh auto 0;
     justify-self: center;
   }
-  .sb-photo.is-clipped .sb-print img {
+  .sb-photo.is-clipped .sb-print :is(img, video) {
     max-height: calc(min(var(--pic), 30cqh) * var(--fit));
   }
   .sb-clip {

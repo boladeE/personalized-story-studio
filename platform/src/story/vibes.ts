@@ -101,6 +101,8 @@ export function songPrompt(vibe: Vibe, occasion: Occasion = 'birthday') {
 export interface SongDetails {
   /** What the song is for. Older requests carry none and are birthdays. */
   occasion: Occasion
+  /** An occasion of the sender's own, in their words, when none of the studio's fits. */
+  occasionName?: string
   /** Who the recipient is to the sender, when the sender said. */
   relationship?: Relationship
   recipient: string
@@ -140,6 +142,7 @@ export function parseSongDetails(raw: unknown): SongDetails | null {
   if (!recipient) return null
   return {
     occasion: isOccasion(r.occasion) ? r.occasion : 'birthday',
+    ...(tidy(r.occasionName, 40) ? { occasionName: tidy(r.occasionName, 40) } : {}),
     ...(isRelationship(r.relationship) ? { relationship: r.relationship } : {}),
     recipient,
     sender: tidy(r.sender, SONG_LIMITS.name),
@@ -179,10 +182,11 @@ export function songDetails(intake: Intake): SongDetails | null {
   const outline = outlineOf(intake)
   if (outline) {
     const told = notesOf(outline.filter((c) => !(intake.cut?.off ?? []).includes(c.id)))
-    return parseSongDetails({ occasion: intake.occasion, relationship: intake.relationship, recipient: intake.recipient, sender: intake.sender, reasons: told.reasons, habits: told.habits, moments: told.memories.map((m) => m.story), wish: intake.wish })
+    return parseSongDetails({ occasion: intake.occasion, occasionName: intake.occasionName, relationship: intake.relationship, recipient: intake.recipient, sender: intake.sender, reasons: told.reasons, habits: told.habits, moments: told.memories.map((m) => m.story), wish: intake.wish })
   }
   return parseSongDetails({
     occasion: intake.occasion,
+    occasionName: intake.occasionName,
     relationship: intake.relationship,
     recipient: intake.recipient,
     sender: intake.sender,
@@ -420,6 +424,8 @@ export function lyricsBrief(d: SongDetails, tone: LyricTone = 'smooth') {
   if (d.habits.length) facts.push(`${who}'s funny habits:\n${bullets(d.habits)}`)
   if (d.moments.length) facts.push(`Moments they shared:\n${bullets(d.moments)}`)
   if (d.wish) facts.push(`${wish(singer, who)}: ${d.wish}`)
+  // An occasion of the sender's own has no stock greeting; the song says what it is for once, in plain words.
+  if (d.occasionName) facts.push(`What the song is for, in ${singer}'s words: ${d.occasionName}. Say so once, in the bridge, the way ${singer} would say it out loud. No stock greeting.`)
   if (!facts.length) facts.push('No other details were given.')
   const noun = relationshipOf(d.relationship)?.noun
   const kin = noun ? ` ${who} is ${singer}'s ${noun}.` : ''

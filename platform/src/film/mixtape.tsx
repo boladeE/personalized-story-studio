@@ -1,3 +1,4 @@
+import { Media } from './Media'
 import { useLayoutEffect, useRef } from 'react'
 import type { Photo } from '../story/types'
 import { fit } from './scrapbook'
@@ -66,9 +67,7 @@ function useShrink<T extends HTMLElement>(key: string) {
   return ref
 }
 
-function Img({ photo }: { photo: Photo }) {
-  return <img src={photo.src} alt="" draggable={false} />
-}
+const Img = Media
 
 /** Level meters, bouncing. */
 function Meter({ bars = 14 }: { bars?: number }) {

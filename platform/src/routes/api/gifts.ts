@@ -3,11 +3,14 @@ import { generateStory } from '../../story/generate'
 import { LIMITS, parseIntake } from '../../story/validate'
 import { vibeById } from '../../story/vibes'
 import { readSong } from '../../server/music'
-import { hashAnswer, json, newManageKey, newSlug, saveGift, sha256, sniffImage } from '../../server/store'
+import { hashAnswer, json, newManageKey, newSlug, saveGift, sha256, sniffImage, sniffVideo } from '../../server/store'
 import type { GiftRecord } from '../../server/store'
 
-const MAX_BODY = 60 * 1024 * 1024
+const MAX_BODY = 150 * 1024 * 1024
 const MAX_PHOTO = 10 * 1024 * 1024
+/** A little over what the browser lets in, for the form's own wrapping. */
+const MAX_CLIP = 26 * 1024 * 1024
+const MAX_CLIPS = 3
 
 /** Create a private gift from the sender's draft. Payment is not connected yet. */
 export const Route = createFileRoute('/api/gifts')({
@@ -38,6 +41,7 @@ export const Route = createFileRoute('/api/gifts')({
         const slug = newSlug()
         const files: Array<{ id: string; bytes: Uint8Array }> = []
         const media: Record<string, string> = {}
+        let clips = 0
         for (const photo of parsed.intake.photos) {
           const file = form.get(`photo:${photo.id}`)
           if (!(file instanceof File)) return json({ error: 'A photo is missing from the upload.' }, { status: 400 })
@@ -48,6 +52,19 @@ export const Route = createFileRoute('/api/gifts')({
           files.push({ id: photo.id, bytes })
           media[photo.id] = type
           photo.src = `/api/media/${slug}/${photo.id}`
+          // A clip rides beside its first frame, which is the photo above.
+          const clip = form.get(`clip:${photo.id}`)
+          delete photo.clip
+          if (clip instanceof File) {
+            if (++clips > MAX_CLIPS) return json({ error: `Up to ${MAX_CLIPS} clips fit in one film.` }, { status: 400 })
+            if (clip.size > MAX_CLIP) return json({ error: 'One of the clips is too large.' }, { status: 413 })
+            const clipBytes = new Uint8Array(await clip.arrayBuffer())
+            const clipType = sniffVideo(clipBytes)
+            if (!clipType) return json({ error: 'Clips must be MP4, MOV or WebM videos.' }, { status: 415 })
+            files.push({ id: `${photo.id}-clip`, bytes: clipBytes })
+            media[`${photo.id}-clip`] = clipType
+            photo.clip = `/api/media/${slug}/${photo.id}-clip`
+          }
         }
 
         let soundtrack: GiftRecord['story']['soundtrack']

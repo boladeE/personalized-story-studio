@@ -26,10 +26,12 @@ export const Route = createFileRoute('/api/sort')({
         let photos = 0
         let letter = false
         let answers: Answered[] = []
+        let occasionName = ''
         try {
-          const body = (await request.json()) as { text?: unknown; sender?: unknown; recipient?: unknown; occasion?: unknown; relationship?: unknown; photos?: unknown; letter?: unknown; answers?: unknown }
+          const body = (await request.json()) as { text?: unknown; sender?: unknown; recipient?: unknown; occasion?: unknown; occasionName?: unknown; relationship?: unknown; photos?: unknown; letter?: unknown; answers?: unknown }
           answers = cleanAnswers(body.answers)
           if (isOccasion(body.occasion)) occasion = body.occasion
+          occasionName = typeof body.occasionName === 'string' ? body.occasionName.trim().slice(0, LIMITS.occasionName) : ''
           if (isRelationship(body.relationship)) relationship = body.relationship
           photos = typeof body.photos === 'number' && body.photos > 0 ? Math.min(Math.floor(body.photos), LIMITS.photos) : 0
           letter = body.letter === true
@@ -42,7 +44,7 @@ export const Route = createFileRoute('/api/sort')({
         if (!text) return json({ error: 'Write a little about them first.' }, { status: 400 })
         if (text.length > NOTES_LIMIT) return json({ error: `That’s more than fits (up to ${NOTES_LIMIT} characters).` }, { status: 400 })
         const client = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local'
-        const brief = { text, sender, recipient, answered: answers, occasion, relationship, photos, letter }
+        const brief = { text, sender, recipient, answered: answers, occasion, ...(occasionName ? { occasionName } : {}), relationship, photos, letter }
         // Past the hourly cap the film is still outlined, by rule on this server.
         return json(allowSort(client) ? await outlineFilm(brief) : outlineByRule(brief))
       },

@@ -313,3 +313,15 @@ describe('AI music', () => {
     expect(lyrics.allowLyrics('writer-a').allowed).toBe(false)
   })
 })
+
+describe('telling a clip from a photo', () => {
+  it('knows MP4, MOV and WebM by their first bytes, and that an iPhone photo is not a clip', async () => {
+    const { sniffVideo } = await import('../src/server/store')
+    const box = (brand: string) => new Uint8Array([0, 0, 0, 24, ...Buffer.from(`ftyp${brand}`), 0, 0, 0, 0])
+    expect(sniffVideo(box('isom'))).toBe('video/mp4')
+    expect(sniffVideo(box('qt  '))).toBe('video/quicktime')
+    expect(sniffVideo(new Uint8Array([0x1a, 0x45, 0xdf, 0xa3, 0, 0, 0, 0, 0, 0, 0, 0]))).toBe('video/webm')
+    expect(sniffVideo(box('heic'))).toBeNull()
+    expect(sniffVideo(new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0, 0, 0, 0, 0]))).toBeNull()
+  })
+})

@@ -62,8 +62,16 @@ function Send() {
         } catch {
           throw new Error(`Photo ${i + 1} couldn’t be read. Remove it or try a JPEG or PNG.`)
         }
+        if (photo.clip) {
+          setProgress(`Preparing clip ${i + 1}…`)
+          try {
+            form.append(`clip:${photo.id}`, await (await fetch(photo.clip)).blob(), `${photo.id}-clip`)
+          } catch {
+            throw new Error(`The clip in place ${i + 1} couldn’t be read. Remove it and add it again.`)
+          }
+        }
       }
-      const payload = { intake: { ...intake, photos: intake.photos.map(({ id, caption }) => ({ id, caption })) }, seed, question, answer, songId: song?.id ?? null }
+      const payload = { intake: { ...intake, photos: intake.photos.map(({ id, caption, aspect }) => ({ id, caption, aspect })) }, seed, question, answer, songId: song?.id ?? null }
       form.append('payload', JSON.stringify(payload))
       setProgress('Creating the private link…')
       const response = await fetch('/api/gifts', { method: 'POST', body: form })

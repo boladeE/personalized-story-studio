@@ -1,3 +1,4 @@
+import { Stilled } from './Media'
 import { useLayoutEffect, useRef } from 'react'
 import type { CSSProperties } from 'react'
 import type { LookId, WorldId } from '../story/types'
@@ -66,7 +67,10 @@ export function Still({ look, content, ghost = false, world = 'screening' }: { l
         style={style}
       >
         <div className="film-glow">{glow && <img key={glow} src={glow} alt="" />}</div>
-        <div className="film-frame">{shot && <ShotView key={shot.id} shot={shot} state="current" loud={loud} actions={noop} world={world} />}</div>
+        <div className="film-frame">
+          {/* A still never plays a clip: it shows its first frame. */}
+          <Stilled.Provider value={true}>{shot && <ShotView key={shot.id} shot={shot} state="current" loud={loud} actions={noop} world={world} />}</Stilled.Provider>
+        </div>
         <div className="film-vignette" />
         <div className="film-grain" />
         <div className="film-bar top" />

@@ -155,6 +155,7 @@ export function OpeningWords({ intake, setIntake }: { intake: Intake; setIntake:
   const set: Setter = (key, value) => setIntake((c) => ({ ...c, [key]: value }))
   // A film needs both names, so a name being retyped is held here until there is one to use.
   const [names, setNames] = useState({ recipient: intake.recipient, sender: intake.sender })
+  const [own, setOwn] = useState(Boolean(intake.occasionName))
   const name = (key: 'recipient' | 'sender', value: string) => {
     setNames((was) => ({ ...was, [key]: value }))
     if (value.trim()) set(key, value)
@@ -165,15 +166,26 @@ export function OpeningWords({ intake, setIntake }: { intake: Intake; setIntake:
       <Field label="Your name">{(id) => <input id={id} maxLength={LIMITS.name} value={names.sender} onChange={(e) => name('sender', e.target.value)} />}</Field>
       <Field label="The occasion">
         {(id) => (
-          <select id={id} value={intake.occasion} onChange={(e) => set('occasion', e.target.value as Intake['occasion'])}>
+          <select
+            id={id}
+            value={own ? 'own' : intake.occasion}
+            onChange={(e) => {
+              const picked = e.target.value
+              setOwn(picked === 'own')
+              if (picked === 'own') setIntake((c) => ({ ...c, occasion: 'just-because' }))
+              else setIntake((c) => ({ ...c, occasion: picked as Intake['occasion'], occasionName: undefined }))
+            }}
+          >
             {OCCASIONS.map((o) => (
               <option key={o.id} value={o.id}>
                 {o.name}
               </option>
             ))}
+            <option value="own">Something else</option>
           </select>
         )}
       </Field>
+      {own && <Field label="What it’s for">{(id) => <input id={id} maxLength={LIMITS.occasionName} value={intake.occasionName ?? ''} onChange={(e) => set('occasionName', e.target.value)} />}</Field>}
     </>
   )
 }
@@ -200,45 +212,8 @@ export function ChapterWords({
   const set: Setter = (key, value) => setIntake((c) => ({ ...c, [key]: value }))
   const change = (patch: Partial<Chapter>) => setIntake((c) => ({ ...c, outline: withChapter(outlineOf(c) ?? [], chapter.id, patch) }))
   const lines = chapter.lines.length ? chapter.lines : ['']
-  return (
+  const photoPick = (
     <>
-      <Field label="Scene name">{(id) => <input id={id} maxLength={OUTLINE_LIMITS.name} value={chapter.name} onChange={(e) => change({ name: oneLine(e.target.value) })} />}</Field>
-      {chapter.layout !== 'photos' && (
-        <fieldset className="scene-shape">
-          <legend>Shown as</legend>
-          <div className="scene-shape-row">
-            {SHAPES.map((shape) => (
-              <label key={shape.id} className="scene-shape-option">
-                <input type="radio" name={`shape-${chapter.id}`} checked={chapter.layout === shape.id} onChange={() => change({ layout: shape.id })} />
-                {shape.name}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-      )}
-      {chapter.layout === 'line' && (
-        <Field label="The line">
-          {(id) => <textarea id={id} rows={2} maxLength={OUTLINE_LIMITS.line} value={lines[0]} onChange={(e) => change({ lines: [oneLine(e.target.value), ...lines.slice(1)] })} />}
-        </Field>
-      )}
-      {chapter.layout === 'list' && <ListEditor label="Line" values={lines} max={OUTLINE_LIMITS.lines} onChange={(v) => change({ lines: v })} onActive={onWriting} />}
-      {chapter.layout === 'moment' && (
-        <>
-          <Field label="What it says">
-            {(id) => (
-              <textarea
-                id={id}
-                rows={5}
-                maxLength={LIMITS.memoryStory}
-                value={lines.join('\n\n')}
-                onSelect={(e) => onWriting(pageAt(e.currentTarget))}
-                onChange={(e) => {
-                  onWriting(pageAt(e.currentTarget))
-                  change({ lines: e.target.value.split('\n\n') })
-                }}
-              />
-            )}
-          </Field>
           {intake.photos.length > 0 && (
             <fieldset className="photo-pick">
               <legend>Photo for this scene</legend>
@@ -260,6 +235,49 @@ export function ChapterWords({
               </div>
             </fieldset>
           )}
+    </>
+  )
+  return (
+    <>
+      <Field label="Scene name">{(id) => <input id={id} maxLength={OUTLINE_LIMITS.name} value={chapter.name} onChange={(e) => change({ name: oneLine(e.target.value) })} />}</Field>
+      {chapter.layout !== 'photos' && (
+        <fieldset className="scene-shape">
+          <legend>Shown as</legend>
+          <div className="scene-shape-row">
+            {SHAPES.map((shape) => (
+              <label key={shape.id} className="scene-shape-option">
+                <input type="radio" name={`shape-${chapter.id}`} checked={chapter.layout === shape.id} onChange={() => change({ layout: shape.id })} />
+                {shape.name}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
+      {chapter.layout === 'line' && (
+        <Field label="The line">
+          {(id) => <textarea id={id} rows={2} maxLength={OUTLINE_LIMITS.line} value={lines[0]} onChange={(e) => change({ lines: [oneLine(e.target.value), ...lines.slice(1)] })} />}
+        </Field>
+      )}
+      {chapter.layout === 'line' && photoPick}
+      {chapter.layout === 'list' && <ListEditor label="Line" values={lines} max={OUTLINE_LIMITS.lines} onChange={(v) => change({ lines: v })} onActive={onWriting} />}
+      {chapter.layout === 'moment' && (
+        <>
+          <Field label="What it says">
+            {(id) => (
+              <textarea
+                id={id}
+                rows={5}
+                maxLength={LIMITS.memoryStory}
+                value={lines.join('\n\n')}
+                onSelect={(e) => onWriting(pageAt(e.currentTarget))}
+                onChange={(e) => {
+                  onWriting(pageAt(e.currentTarget))
+                  change({ lines: e.target.value.split('\n\n') })
+                }}
+              />
+            )}
+          </Field>
+          {photoPick}
         </>
       )}
       {chapter.layout === 'photos' && <Roll intake={intake} set={set} />}
@@ -324,7 +342,7 @@ function Roll({ intake, set }: { intake: Intake; set: Setter }) {
       <input
         ref={input}
         type="file"
-        accept="image/*,.heic,.heif"
+        accept="image/*,.heic,.heif,video/mp4,video/quicktime,video/webm,.mov"
         multiple
         hidden
         aria-label="Add photos"
@@ -342,7 +360,10 @@ function Roll({ intake, set }: { intake: Intake; set: Setter }) {
       <ul className="roll-edit">
         {intake.photos.map((photo, i) => (
           <li key={photo.id}>
-            <img src={photo.src} alt={`Photo ${i + 1}`} />
+            <span className="roll-thumb">
+              <img src={photo.src} alt={`Photo ${i + 1}`} />
+              {photo.clip && <span className="clip-mark">Clip</span>}
+            </span>
             <GrowingText
               aria-label={`Caption for photo ${i + 1}`}
               maxLength={LIMITS.caption}
@@ -358,7 +379,7 @@ function Roll({ intake, set }: { intake: Intake; set: Setter }) {
         {intake.photos.length < LIMITS.photos && (
           <li className="roll-add">
             <button type="button" onClick={() => input.current?.click()}>
-              <b>Add photos</b>
+              <b>Add photos or clips</b>
               <span>{intake.photos.length ? `${LIMITS.photos - intake.photos.length} more fit` : 'From this device'}</span>
             </button>
           </li>

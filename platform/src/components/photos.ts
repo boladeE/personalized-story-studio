@@ -2,12 +2,17 @@ import { useState } from 'react'
 import type { Photo } from '../story/types'
 import { LIMITS } from '../story/validate'
 import { useDraft } from './draft'
+import { CLIP_LIMITS, isClip, readClip } from './clip-intake'
 import { readablePhoto } from './photo-intake'
 
 const MAX_PHOTO_BYTES = 15 * 1024 * 1024
 
 /** Free the local preview URLs of photos that are leaving the draft. */
-export const releasePhotos = (photos: Photo[]) => photos.forEach((p) => p.src.startsWith('blob:') && URL.revokeObjectURL(p.src))
+export const releasePhotos = (photos: Photo[]) =>
+  photos.forEach((p) => {
+    if (p.src.startsWith('blob:')) URL.revokeObjectURL(p.src)
+    if (p.clip?.startsWith('blob:')) URL.revokeObjectURL(p.clip)
+  })
 
 /**
  * Adding and removing the draft's photos. They stay on the sender's device as
@@ -21,10 +26,28 @@ export function usePhotos() {
 
   const add = async (files: File[]) => {
     const room = LIMITS.photos - intake.photos.length
+    // Clips first: a few seconds of video that sit where a photo would.
+    const videos = files.filter(isClip)
+    files = files.filter((f) => !isClip(f))
+    const clipRoom = Math.max(0, Math.min(CLIP_LIMITS.count - intake.photos.filter((p) => p.clip).length, room))
+    const clipNotes: string[] = []
+    const clips: Photo[] = []
+    if (videos.length) setReading(videos.length)
+    for (const file of videos) {
+      if (clips.length >= clipRoom) clipNotes.push(`Only ${CLIP_LIMITS.count} clips fit in one film.`)
+      else if (file.size > CLIP_LIMITS.bytes) clipNotes.push('A clip is over 25 MB and was skipped. A few seconds is plenty.')
+      else {
+        const read = await readClip(file)
+        if (read.ok) clips.push({ id: `p-${crypto.randomUUID()}`, src: URL.createObjectURL(read.poster), caption: '', clip: URL.createObjectURL(file), aspect: read.aspect })
+        else clipNotes.push(read.why === 'long' ? `A clip is longer than ${CLIP_LIMITS.seconds} seconds and was skipped.` : 'A clip couldn’t be played by this browser and was skipped.')
+      }
+      setReading((n) => Math.max(0, n - 1))
+    }
+    if (clips.length) setIntake((c) => ({ ...c, photos: [...c.photos, ...clips.slice(0, Math.max(0, LIMITS.photos - c.photos.length))] }))
     const sized = files.filter((f) => f.size <= MAX_PHOTO_BYTES)
     const tooBig = files.length - sized.length
     // Only read as many as can still go in.
-    const wanted = sized.slice(0, Math.max(0, room))
+    const wanted = sized.slice(0, Math.max(0, room - clips.length))
     const over = sized.length - wanted.length
     setError('')
     setReading(wanted.length)
@@ -43,6 +66,7 @@ export function usePhotos() {
       tooBig && `${plural(tooBig, 'photo is', 'photos are')} over 15 MB and ${tooBig === 1 ? 'was' : 'were'} skipped.`,
       unread && `${plural(unread, 'file', 'files')} couldn’t be read as ${unread === 1 ? 'a photo' : 'photos'}.`,
       over > 0 && `Only ${LIMITS.photos} photos fit in one story.`,
+      ...new Set(clipNotes),
     ].filter(Boolean)
     setError(problems.join(' '))
     if (!read.length) return

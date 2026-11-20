@@ -11,23 +11,23 @@ import { cleanAnswers, cleanFollowups, FOLLOWUP_LIMITS, followupsLocally, withAn
 import { canGenerate, LOOKS } from '../story/generate'
 import { closeToTheirWords, NOTES_LIMIT } from '../story/notes'
 import { cleanOutline, notesOf, outlineByWords } from '../story/outline'
-import { occasionOf, OCCASIONS } from '../story/occasions'
+import { OCCASIONS, occasionFor, occasionOf } from '../story/occasions'
 import { RELATIONSHIPS } from '../story/relationships'
 import { newSeed } from '../story/rng'
-import { endingOf, isOccasion } from '../story/types'
-import type { Chapter, EndingChoice, Occasion } from '../story/types'
+import { isOccasion } from '../story/types'
+import type { Chapter, Occasion } from '../story/types'
 import { LIMITS } from '../story/validate'
 import { vibeById, VIBES, VOICES } from '../story/vibes'
 
 /**
- * The short way to make a film: three taps, two names, how it should end, some
- * photos and one box of the sender's own words. The studio reads the words and asks up to
+ * The short way to make a film: three taps, two names, some photos and one
+ * box of the sender's own words. The studio reads the words and asks up to
  * three short questions about them, writes the film's own scenes from them, directs the
  * film and plays it at the end; everything else can be added from the preview.
  */
 
-type StepId = 'who' | 'names' | 'occasion' | 'ending' | 'photos' | 'about' | 'more' | 'song'
-const ALL: StepId[] = ['who', 'names', 'occasion', 'ending', 'photos', 'about', 'more', 'song']
+type StepId = 'who' | 'names' | 'occasion' | 'photos' | 'about' | 'more' | 'song'
+const ALL: StepId[] = ['who', 'names', 'occasion', 'photos', 'about', 'more', 'song']
 const ENOUGH = 30
 
 export const Route = createFileRoute('/start')({
@@ -120,12 +120,8 @@ function Start() {
   const questions = followups?.about === noteText ? followups.asked : []
   const answer = (index: number, value: string) => followups && setFollowups({ ...followups, asked: followups.asked.map((q, i) => (i === index ? { ...q, answer: value } : q)) })
 
-  /** Change one part of an invitation. */
-  const setEnding = (part: { invite?: string; first?: string; second?: string }) =>
-    setIntake((c) => {
-      const was: Extract<EndingChoice, { kind: 'invitation' }> = c.ending?.kind === 'invitation' ? c.ending : { kind: 'invitation', invite: '', choices: ['', ''] }
-      return { ...c, ending: { kind: 'invitation', invite: part.invite ?? was.invite, choices: [part.first ?? was.choices[0], part.second ?? was.choices[1]] } }
-    })
+  // An occasion of the sender's own: named in their words, when none of the studio's fits.
+  const [ownOccasion, setOwnOccasion] = useState(Boolean(intake.occasionName))
 
   /** Have the film's scenes written from the sender's words, build it, and start the song behind it. */
   const finish = async () => {
@@ -141,7 +137,7 @@ function Start() {
       let outline: Chapter[] = []
       let wish = ''
       let directed: DirectionPlan | null = null
-      const facts = { occasion: intake.occasion, relationship: intake.relationship, photos: intake.photos.length, letter: intake.letter.trim().length >= 40 }
+      const facts = { occasion: intake.occasion, occasionName: intake.occasionName?.trim() || undefined, relationship: intake.relationship, photos: intake.photos.length, letter: intake.letter.trim().length >= 40 }
       try {
         const response = await fetch('/api/sort', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text, sender: me, recipient: them, ...facts, answers }) })
         const body = (await response.json()) as { outline?: unknown; wish?: unknown; direction?: unknown }
@@ -217,86 +213,41 @@ function Start() {
     },
     occasion: {
       question: 'What’s the occasion?',
-      hint: 'The ticket, the opening and the ending are written for it.',
-      canNext: true,
-      body: (
-        <div className="pills" role="group" aria-label="Occasion">
-          {OCCASIONS.map((o) => (
-            <button
-              key={o.id}
-              type="button"
-              className="pill"
-              aria-pressed={intake.occasion === o.id}
-              onClick={() => {
-                setIntake((c) => ({ ...c, occasion: o.id }))
-                next()
-              }}
-            >
-              {o.name}
-            </button>
-          ))}
-        </div>
-      ),
-    },
-    ending: {
-      question: `How should ${name}’s film end?`,
-      hint: 'The whole film builds to this. Pick one.',
-      // An ending the sender started must be finished, or left for the occasion's own.
-      canNext: !intake.ending || Boolean(endingOf(intake)),
+      hint: 'Pick one, or name your own.',
+      canNext: !ownOccasion || Boolean(intake.occasionName?.trim()),
       body: (
         <>
-          <div className="start-endings" role="radiogroup" aria-label="How the film ends">
-            <label className="start-ending">
-              <input type="radio" name="ending" checked={!intake.ending} onChange={() => setIntake((c) => ({ ...c, ending: undefined }))} />
-              <span>
-                <b>{occasionOf(intake.occasion).ending.prop === 'candle' ? 'With a wish' : 'With a sealed note'}</b>
-                <small>{occasionOf(intake.occasion).ending.description}</small>
-              </span>
-            </label>
-            <label className="start-ending">
-              <input type="radio" name="ending" checked={intake.ending?.kind === 'question'} onChange={() => setIntake((c) => ({ ...c, ending: { kind: 'question', ask: c.ending?.kind === 'question' ? c.ending.ask : '' } }))} />
-              <span>
-                <b>With a question</b>
-                <small>You ask. {name === 'them' ? 'They answer' : `${name} answers`}, then your last line appears.</small>
-              </span>
-            </label>
-            <label className="start-ending">
-              <input
-                type="radio"
-                name="ending"
-                checked={intake.ending?.kind === 'invitation'}
-                onChange={() => setIntake((c) => ({ ...c, ending: c.ending?.kind === 'invitation' ? c.ending : { kind: 'invitation', invite: '', choices: ['', ''] } }))}
-              />
-              <span>
-                <b>With an invitation</b>
-                <small>A plan for the two of you, with two things to pick from. Then your last line appears.</small>
-              </span>
-            </label>
+          <div className="pills" role="group" aria-label="Occasion">
+            {OCCASIONS.map((o) => (
+              <button
+                key={o.id}
+                type="button"
+                className="pill"
+                aria-pressed={!ownOccasion && intake.occasion === o.id}
+                onClick={() => {
+                  setOwnOccasion(false)
+                  setIntake((c) => ({ ...c, occasion: o.id, occasionName: undefined }))
+                  next()
+                }}
+              >
+                {o.name}
+              </button>
+            ))}
+            <button type="button" className="pill" aria-pressed={ownOccasion} onClick={() => setOwnOccasion(true)}>
+              Something else
+            </button>
           </div>
-          {intake.ending?.kind === 'question' && (
-            <div className="start-fields start-ending-fields">
+          {ownOccasion && (
+            <div className="start-fields">
               <label>
-                <span>Your question</span>
-                <input value={intake.ending.ask} maxLength={LIMITS.ask} onChange={(e) => setIntake((c) => ({ ...c, ending: { kind: 'question', ask: e.target.value } }))} />
+                <span>What’s it for?</span>
+                <input
+                  autoFocus
+                  value={intake.occasionName ?? ''}
+                  maxLength={LIMITS.occasionName}
+                  onChange={(e) => setIntake((c) => ({ ...c, occasion: 'just-because', occasionName: e.target.value }))}
+                />
               </label>
-            </div>
-          )}
-          {intake.ending?.kind === 'invitation' && (
-            <div className="start-fields start-ending-fields">
-              <label>
-                <span>What are you inviting {name} to?</span>
-                <input value={intake.ending.invite} maxLength={LIMITS.ask} onChange={(e) => setEnding({ invite: e.target.value })} />
-              </label>
-              <div className="start-pair">
-                <label>
-                  <span>One thing to pick</span>
-                  <input value={intake.ending.choices[0]} maxLength={LIMITS.choice} onChange={(e) => setEnding({ first: e.target.value })} />
-                </label>
-                <label>
-                  <span>The other</span>
-                  <input value={intake.ending.choices[1]} maxLength={LIMITS.choice} onChange={(e) => setEnding({ second: e.target.value })} />
-                </label>
-              </div>
             </div>
           )}
         </>
@@ -304,7 +255,7 @@ function Start() {
     },
     photos: {
       question: `Add a few photos of ${name}.`,
-      hint: 'Three or more is best. They stay on this device until you send the film, and you can caption them later.',
+      hint: 'Three or more is best, and up to three short video clips. They stay on this device until you send the film.',
       canNext: true,
       nextLabel: intake.photos.length ? undefined : 'Skip photos',
       body: (
@@ -312,7 +263,7 @@ function Start() {
           <input
             ref={fileInput}
             type="file"
-            accept="image/*,.heic,.heif"
+            accept="image/*,.heic,.heif,video/mp4,video/quicktime,video/webm,.mov"
             multiple
             hidden
             aria-label="Add photos"
@@ -325,6 +276,7 @@ function Start() {
             {intake.photos.map((photo, i) => (
               <li key={photo.id}>
                 <img src={photo.src} alt={`Photo ${i + 1}`} />
+                {photo.clip && <span className="clip-mark">Clip</span>}
                 <button type="button" onClick={() => photos.remove(photo.id)} aria-label={`Remove photo ${i + 1}`}>
                   <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
                     <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -371,7 +323,7 @@ function Start() {
     },
     about: {
       question: `Tell us about ${name}.`,
-      hint: 'Write it however it comes out. The studio shapes it into scenes and tidies the wording, without adding anything you didn’t say.',
+      hint: 'Write it however it comes out.',
       canNext: about.trim().length >= ENOUGH,
       body: (
         <>
@@ -388,7 +340,7 @@ function Start() {
                 ? 'A sentence or two more and there’s enough for a film.'
                 : 'That’s enough for a film. Add more if it comes to you.'}
           </p>
-          <p className="fine">One of Google’s AI models reads this, decides what the film’s scenes are, and tidies your wording to fit the screen. It is told to keep what you meant and add nothing. You can change any word once the film is made.</p>
+
         </>
       ),
     },
@@ -475,7 +427,7 @@ function Start() {
                 <span key={me ? 'signed' : 'unsigned'} className={me ? undefined : 'is-blank'}>
                   {me ? `From ${me}` : 'From you'}
                 </span>
-                {occasionKnown && <span className="maker-occasion">{occasionOf(intake.occasion).ticket}</span>}
+                {occasionKnown && <span className="maker-occasion">{occasionFor(intake).ticket}</span>}
               </span>
             </span>
             <span className="maker-stub">

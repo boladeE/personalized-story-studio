@@ -42,8 +42,13 @@ export interface Cut {
 
 export interface Photo {
   id: string
+  /** The picture. For a clip, its first frame. */
   src: string
   caption: string
+  /** A short video that plays, silent and looping, where the picture would sit. */
+  clip?: string
+  /** A clip's width over its height, so its place is the right shape before it loads. */
+  aspect?: number
 }
 
 export interface Memory {
@@ -100,6 +105,11 @@ export interface Direction {
 /** Everything the sender tells us. All strings come from the sender. */
 export interface Intake {
   occasion: Occasion
+  /**
+   * An occasion of the sender's own ("Graduation", "Your first day"), when none of the studio's fits.
+   * The film is then built as a "just because" film that names this on its ticket and in its song.
+   */
+  occasionName?: string
   relationship?: Relationship
   sender: string
   recipient: string

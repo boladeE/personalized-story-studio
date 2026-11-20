@@ -23,6 +23,7 @@ export const LIMITS = {
   photos: 12,
   /** The sender's own ending: their question or invitation, and each thing to pick from. */
   ask: 140,
+  occasionName: 40,
   choice: 40,
   question: 160,
   answer: 80,
@@ -124,7 +125,8 @@ export function parseIntake(raw: unknown): { ok: true; intake: Intake } | { ok: 
 
     const photos = list(r.photos, 'Photos').map((p, i) => {
       const photo = (p ?? {}) as Record<string, unknown>
-      return { id: id(photo.id, `Photo ${i + 1}`), src: '', caption: text(photo.caption, LIMITS.caption, `Photo ${i + 1} caption`) }
+      const aspect = typeof photo.aspect === 'number' && photo.aspect > 0.2 && photo.aspect < 5 ? photo.aspect : undefined
+      return { id: id(photo.id, `Photo ${i + 1}`), src: '', caption: text(photo.caption, LIMITS.caption, `Photo ${i + 1} caption`), ...(aspect ? { aspect } : {}) }
     })
     if (photos.length > LIMITS.photos) throw new IntakeError(`Up to ${LIMITS.photos} photos`)
     if (new Set(photos.map((p) => p.id)).size !== photos.length) throw new IntakeError('Duplicate photo ids')
@@ -160,6 +162,7 @@ export function parseIntake(raw: unknown): { ok: true; intake: Intake } | { ok: 
     const intake: Intake = {
       occasion: r.occasion,
       ...(isRelationship(r.relationship) ? { relationship: r.relationship } : {}),
+      ...(typeof r.occasionName === 'string' && r.occasionName.trim() ? { occasionName: text(r.occasionName, LIMITS.occasionName, 'The occasion') } : {}),
       sender: text(r.sender, LIMITS.name, 'Your name'),
       recipient: text(r.recipient, LIMITS.name, 'Their name'),
       photos,

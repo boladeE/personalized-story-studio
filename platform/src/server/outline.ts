@@ -31,6 +31,8 @@ export interface OutlineBrief {
   recipient: string
   answered: Answered[]
   occasion: Occasion
+  /** An occasion of the sender's own, when none of the studio's fits. */
+  occasionName?: string
   relationship?: Relationship
   photos: number
   letter: boolean
@@ -74,15 +76,16 @@ export function outlineBrief(brief: OutlineBrief) {
   const from = brief.sender || 'the sender'
   return [
     `${from} is making a short film as a gift for ${who}, and wrote the note below. Outline the film: decide what its scenes are. The scenes come from this note and from nothing else. There is no standard set of scenes to fill; a different note would give a different film.`,
-    `The occasion: ${occasionOf(brief.occasion).name}.${brief.relationship ? ` ${who} is ${from}'s ${brief.relationship}.` : ''} Photos given: ${brief.photos}. The film already has its own opening and ending${brief.letter ? ', and a letter' : ''}; do not outline those.`,
+    `The occasion: ${brief.occasionName?.trim() || occasionOf(brief.occasion).name}.${brief.relationship ? ` ${who} is ${from}'s ${brief.relationship}.` : ''} Photos given: ${brief.photos}. The film already has its own opening and ending${brief.letter ? ', and a letter' : ''}; do not outline those.`,
     [
       'The scenes:',
       '- A scene is one thing: one moment that happened, one habit or saying that deserves a screen to itself, or a run of things that are alike. Group what belongs together and keep apart what does not.',
       `- name: what this scene is called, in one to four words. Take it from the scene's own words, or say plainly what they are about ("The coffee queue", "Voice notes", "Sunday calls"). It is a title, never a sentence, and never says what the scene will say. Never use a stock label such as "Memories", "Memory lane", "Reasons", "Reasons I love you", "Red flags", "Habits", "Quirks", "Little things" or "Highlights" unless the note itself uses those words. Never put a name, a place or a fact in a title that is not in the note. No two scenes share a name.`,
-      '- layout: `line` is a single sentence on a screen of its own (`lines` has exactly one item, at most 140 characters). `list` is two to seven short lines that are alike, shown one after another (one per item). `moment` is something told: a thing that happened, or a longer thought about who they are. \`lines\` holds its pages, one to five, each one or two short sentences (at most 130 characters) that read well alone; the first is shown beside a photo when there is one, and each page after it has a screen to itself. Several paragraphs about one thing are one scene of several pages, not several scenes and not one crowded page.' +
+      '- layout: `line` is a single sentence on a screen of its own (`lines` has exactly one item, at most 140 characters). `list` is two to seven short lines that are alike, shown one after another (one per item). `moment` is something told: a thing that happened, or a longer thought about who they are. \`lines\` holds its pages, one to five, each one or two whole sentences (about 130 characters at most) that read well alone. A page is never a piece of a sentence: do not cut one sentence across two pages, and if the telling is a single sentence it is a single page; the first is shown beside a photo when there is one, and each page after it has a screen to itself. Several paragraphs about one thing are one scene of several pages, not several scenes and not one crowded page.' +
         (brief.photos ? ` \`photos\` is a scene of ${from}'s photos, at most one, with a name and no lines; include it when there are more photos than moments.` : ' Do not use `photos`: there are none.'),
       `- mood: playful when the scene teases ${who} or is funny, tender when it is sincere or loving, warm otherwise.`,
       `- Put the scenes in the order the film should play. Open with what is most like ${who}. Playful scenes usually come before tender ones, and the film ends on the scene that means the most.`,
+      '- Every scene must be worth a screen. Do not make a scene out of a few words that only repeat what another scene says, and do not pad a scene to fill it.',
       `- Between two and ${OUTLINE_LIMITS.scenes - 1} scenes. A short note makes a short film: never stretch it, and never use a line twice. Leaving something out is fine.`,
     ].join('\n'),
     [

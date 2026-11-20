@@ -1,3 +1,4 @@
+import { Media } from './Media'
 import { useLayoutEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 import type { Photo } from '../story/types'
@@ -85,9 +86,7 @@ function Clip() {
   )
 }
 
-function Img({ photo }: { photo: Photo }) {
-  return <img src={photo.src} alt="" draggable={false} />
-}
+const Img = Media
 
 export function PageBody({ shot, actions, leaving }: { shot: Shot; actions: ShotActions; leaving: boolean }) {
   switch (shot.kind) {

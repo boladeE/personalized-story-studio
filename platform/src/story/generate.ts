@@ -73,6 +73,12 @@ function chapterFrames(chapter: Chapter, ctx: BuildContext, loud: boolean): Fram
     case 'line': {
       const [text] = lines
       if (!text) return []
+      // With a photo to spare, the line is said beside it: a face says more than a page of type.
+      const photo = (chapter.photoId && ctx.photoById(chapter.photoId)) || (ctx.unusedPhotos().length ? ctx.takePhoto() : undefined)
+      if (photo) {
+        const own = !chapter.name.trim() || sameStart(name, text)
+        return [{ kind: 'photo', photo, layout: ctx.rng.pick<PhotoLayout>(['left', 'right']), kicker: '', ...(own && text.length <= 90 ? { title: text } : { title: name, body: text }) }]
+      }
       // A line short enough to shout fills the screen under the scene's name; a longer one is read under it.
       if (text.length > 90) return [{ kind: 'title', kicker: '', title: name, body: text }]
       return [{ kind: 'title', kicker: sameStart(name, text) ? '' : name, title: text }]
@@ -109,7 +115,8 @@ export function generateStory(intake: Intake, seed: number): Story {
   // a design never changes which words or photos a seed picks.
   const direct = createRng((seed ^ 0x5bd1e995) >>> 0)
   const used = new Set<string>()
-  const reserved = new Set(intake.memories.map((m) => m.photoId).filter(Boolean))
+  // Photos the sender chose for a scene are kept for it.
+  const reserved = new Set([...intake.memories.map((m) => m.photoId), ...(intake.outline ?? []).map((c) => c.photoId ?? '')].filter(Boolean))
 
   const ctx: BuildContext = {
     intake,
@@ -178,13 +185,15 @@ export function generateStory(intake: Intake, seed: number): Story {
     }
     fixed('ticket')
     fixed('hello')
-    // Moments are told beside photos, so they take theirs before the scene that shows the rest.
+    // Told scenes take their photos first, then single lines take one each while there are photos to spare,
+    // and the scene of photos shows whatever is left.
     const frames = new Map<string, Frame[]>()
     const loud = (c: Chapter) => {
       const design = designsFor(world, 'list').find((d) => d.id === drawn.get(c.id))
       return design ? Boolean(design.loud) : c.mood === 'playful'
     }
-    for (const chapter of outline) if (chapter.layout !== 'photos') frames.set(chapter.id, chapterFrames(chapter, ctx, loud(chapter)))
+    for (const chapter of outline) if (chapter.layout === 'moment') frames.set(chapter.id, chapterFrames(chapter, ctx, false))
+    for (const chapter of outline) if (chapter.layout === 'line' || chapter.layout === 'list') frames.set(chapter.id, chapterFrames(chapter, ctx, loud(chapter)))
     for (const chapter of outline) if (chapter.layout === 'photos') frames.set(chapter.id, chapterFrames(chapter, ctx, false))
     for (const chapter of outline) {
       const made = frames.get(chapter.id) ?? []

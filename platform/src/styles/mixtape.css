@@ -273,7 +273,7 @@
   transform: rotate(var(--r, -2deg));
   animation: mx-cover 0.5s 0.12s cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
 }
-.mx-cover img {
+.mx-cover :is(img, video) {
   display: block;
   width: 100%;
   aspect-ratio: 1 / 1;
@@ -326,7 +326,7 @@
 .mx-photo.is-poster.layout-right .mx-cover {
   inset: 0 0 0 auto;
 }
-.mx-photo.is-poster .mx-cover img {
+.mx-photo.is-poster .mx-cover :is(img, video) {
   width: 100%;
   height: 100%;
   aspect-ratio: auto;
@@ -493,7 +493,7 @@
   transform: rotate(var(--r, 0deg));
   animation: mx-deal 0.4s calc(0.35s + var(--i) * 0.22s) cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
 }
-.mx-covers img {
+.mx-covers :is(img, video) {
   display: block;
   width: 100%;
   height: 100%;

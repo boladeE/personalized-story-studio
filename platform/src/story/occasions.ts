@@ -257,5 +257,12 @@ const BY_ID = new Map(DEFS.map((def) => [def.id, def]))
 /** Every occasion, in the order they are offered. */
 export const OCCASIONS: OccasionDef[] = OCCASION_IDS.map((id) => BY_ID.get(id)!)
 
+/** The occasion a film is for: one of the studio's, or the sender's own, named on the ticket in their words. */
+export function occasionFor(intake: { occasion: Occasion; occasionName?: string }): OccasionDef {
+  const named = intake.occasionName?.trim()
+  if (!named) return occasionOf(intake.occasion)
+  return { ...occasionOf('just-because'), name: named, ticket: named }
+}
+
 /** Falls back to the birthday for anything unknown, which is what older gifts are. */
 export const occasionOf = (id: unknown): OccasionDef => BY_ID.get(id as Occasion) ?? BY_ID.get('birthday')!

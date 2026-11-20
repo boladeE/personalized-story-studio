@@ -1,5 +1,6 @@
+import { readFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
-import { audioState, chooseStyle, closeEditor, filmState, open, openEditor, pickScene, startFilm } from './helpers'
+import { audioState, chooseStyle, closeEditor, filmState, open, openEditor, pickScene, startFilm, trackErrors, walk } from './helpers'
 
 test('end to end: build, write and make a song, lock, send, recipient unlocks and plays, sender deletes', async ({ page, browser, baseURL }) => {
   // Against a running server (E2E_BASE_URL) the song may be a real one, which takes about a minute to make.
@@ -174,4 +175,76 @@ test('the manage page needs its private key', async ({ page }) => {
 test('send page has an empty state without a draft', async ({ page }) => {
   await open(page, '/send')
   await expect(page.getByRole('heading', { name: 'There’s nothing to send yet.' })).toBeVisible()
+})
+
+test('a video clip plays silently in the film, is a still in the editor, and travels with the gift', async ({ page, browser }) => {
+  test.setTimeout(120_000)
+  const errors = trackErrors(page)
+  const clip = readFileSync(new URL('./fixtures/clip.mp4', import.meta.url))
+  await open(page, '/start')
+  await page.getByRole('button', { name: 'Friend', exact: true }).click()
+  await page.getByLabel('Their name').fill('Kemi')
+  await page.getByLabel('Your name').fill('Ada')
+  await page.getByLabel('Your name').press('Enter')
+  // An occasion of the sender's own goes on the ticket in their words.
+  await page.getByRole('button', { name: 'Something else' }).click()
+  await expect(page.getByRole('button', { name: 'Next' })).toBeDisabled()
+  await page.getByLabel('What’s it for?').fill('Your first day')
+  await page.getByRole('button', { name: 'Next' }).click()
+  await expect(page.locator('.maker-occasion')).toHaveText('Your first day')
+
+  // A clip goes in beside the photos, marked as one. A file that is no video is named, not taken.
+  await page.locator('input[type=file]').setInputFiles([
+    { name: 'wave.mp4', mimeType: 'video/mp4', buffer: clip },
+    { name: 'broken.mov', mimeType: 'video/quicktime', buffer: Buffer.from('not a video at all') },
+  ])
+  await expect(page.locator('.start-photos .clip-mark')).toHaveCount(1)
+  await expect(page.getByRole('alert')).toContainText('couldn’t be played by this browser')
+  await page.getByRole('button', { name: 'Next' }).click()
+  await page.getByLabel('About Kemi').fill('Moving day. The lift broke, and you carried the sofa up five floors arguing about the angle. You never finish your tea.')
+  await page.getByRole('button', { name: 'Next' }).click()
+  await page.getByRole('button', { name: 'Skip these' }).click()
+  await page.getByRole('button', { name: 'Make the film' }).click()
+  await expect(page).toHaveURL(/\/preview$/)
+  await expect(page.locator('.song-status')).toHaveCount(0, { timeout: 15_000 })
+  await expect(page.locator('.film').first()).toContainText('Your first day')
+
+  // In the film the clip plays where a photo would: moving, looping, and silent under the song.
+  const playing = async (film: typeof page) => {
+    await startFilm(film)
+    await walk(film, (shot) => shot.kind === 'photo')
+    const video = film.locator('.film:not(.still) .shot.is-current video')
+    await expect(video).toHaveCount(1)
+    expect(await video.evaluate((v: HTMLVideoElement) => [v.muted, v.loop, v.playsInline])).toEqual([true, true, true])
+    await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.currentTime)).toBeGreaterThan(0.2)
+    expect(await video.evaluate((v: HTMLVideoElement) => v.getBoundingClientRect().width)).toBeGreaterThan(80)
+    return video
+  }
+  await playing(page)
+  // In the editor's stills it is its first frame, not a second film playing.
+  await openEditor(page)
+  await page.getByRole('button', { name: 'Stop' }).click()
+  await pickScene(page, 'Moving day')
+  await expect(page.locator('.stage-still-frame .shot img')).toHaveCount(1)
+  await expect(page.locator('.stage-still-frame video, .scene-strip video')).toHaveCount(0)
+  await closeEditor(page)
+
+  // Sent, it is stored with the gift and plays for the recipient from behind the lock.
+  await page.getByRole('link', { name: 'Send this gift' }).click()
+  await page.getByLabel('A question only Kemi can answer').fill('What broke on moving day?')
+  await page.getByLabel('The answer').fill('The lift')
+  await page.getByRole('button', { name: 'Create the private link' }).click()
+  const link = await page.getByLabel('Their private link').inputValue()
+  const slug = link.split('/g/')[1]
+  const recipient = await (await browser.newContext()).newPage()
+  await open(recipient, link)
+  await recipient.getByLabel('What broke on moving day?').fill('the lift')
+  await recipient.getByRole('button', { name: 'Open it' }).click()
+  const video = await playing(recipient)
+  expect(await video.getAttribute('src')).toMatch(new RegExp(`^/api/media/${slug}/p-[a-z0-9-]+-clip$`))
+  expect(await video.getAttribute('poster')).toMatch(new RegExp(`^/api/media/${slug}/p-`))
+  // Like the photos, it can't be fetched without unlocking.
+  const fresh = await (await browser.newContext()).newPage()
+  expect((await fresh.request.get(new URL((await video.getAttribute('src'))!, link).href)).status()).toBe(401)
+  expect(errors).toEqual([])
 })

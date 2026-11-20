@@ -1,7 +1,7 @@
 import { endingOf, OCCASION_IDS } from './types'
 import type { Frame, Intake, Memory, Mood, Occasion, Photo, PhotoLayout } from './types'
 import type { Rng } from './rng'
-import { FAMILY_VERDICTS, occasionOf } from './occasions'
+import { FAMILY_VERDICTS, occasionFor, occasionOf } from './occasions'
 import { isRomantic } from './relationships'
 
 /**
@@ -52,7 +52,7 @@ const ticket: SceneDef = {
   mood: 'warm',
   description: 'A ticket with their name on it. Tearing it starts the film and the music.',
   missing: (i) => (i.recipient.trim() ? null : 'Add their name'),
-  build: ({ intake }) => [{ kind: 'ticket', recipient: intake.recipient.trim(), occasion: occasionOf(intake.occasion).ticket }],
+  build: ({ intake }) => [{ kind: 'ticket', recipient: intake.recipient.trim(), occasion: occasionFor(intake).ticket }],
 }
 
 const hello: SceneDef = {

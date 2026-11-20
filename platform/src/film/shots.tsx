@@ -1,3 +1,4 @@
+import { Media } from './Media'
 import { useLayoutEffect, useRef, useState } from 'react'
 import type { CSSProperties, ElementType, ReactNode } from 'react'
 import type { WorldId } from '../story/types'
@@ -190,7 +191,7 @@ function ShotBody({ shot, actions, leaving }: { shot: Shot; actions: ShotActions
           <ul className="deal" data-count={count}>
             {shot.photos.map((photo, i) => (
               <li key={photo.id} style={vars({ '--i': i, '--x': `${spots[i][0]}%`, '--y': `${spots[i][1]}%`, '--r': `${spots[i][2]}deg`, '--from': `${i % 2 ? 40 : -40}deg` })}>
-                <img src={photo.src} alt="" draggable={false} />
+                <Media photo={photo} />
                 {photo.caption && <span>{photo.caption}</span>}
               </li>
             ))}
@@ -287,15 +288,7 @@ function Plate({ shot }: { shot: Extract<Shot, { kind: 'photo' }> }) {
     <div className={`photo layout-${layout}`} aria-hidden="true">
       <figure className="plate">
         <div className="plate-img">
-          <img
-            src={shot.photo.src}
-            alt=""
-            draggable={false}
-            ref={(img) => {
-              if (img?.complete && img.naturalWidth) setTall(img.naturalHeight > img.naturalWidth * 1.05)
-            }}
-            onLoad={(e) => setTall(e.currentTarget.naturalHeight > e.currentTarget.naturalWidth * 1.05)}
-          />
+          <Media photo={shot.photo} onSize={(width, height) => setTall(height > width * 1.05)} />
         </div>
         {shot.photo.caption && <figcaption>{shot.photo.caption}</figcaption>}
       </figure>
