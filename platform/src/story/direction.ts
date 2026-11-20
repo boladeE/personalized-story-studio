@@ -54,14 +54,19 @@ export function directLocally(brief: DirectionBrief): DirectionPlan {
   const because: DirectionReason = said <= 2 ? 'short' : habits >= 2 && habits >= memories ? 'teasing' : memories >= 2 ? 'memories' : brief.photos >= 4 ? 'photos' : 'tender'
   const world: WorldId = because === 'teasing' || because === 'short' ? 'mixtape' : 'scrapbook'
   const look: LookId = { teasing: 'screening', short: 'garden', memories: 'garden', photos: 'paper', tender: 'garden' }[because] as LookId
-  const longStories = notes.memories.some((m) => m.story.length > 220)
-  const want: Record<string, string> =
-    world === 'mixtape'
-      ? { spotlight: longStories ? 'cover' : 'poster', memoryLane: longStories ? 'cover' : 'poster', redFlags: habits >= 4 ? 'tracklist' : 'shout', reasons: reasons >= 4 ? 'liner' : 'nowplaying' }
-      : { spotlight: 'polaroid', memoryLane: longStories ? 'clipped' : 'taped', redFlags: habits >= 4 ? 'checklist' : 'stickies', reasons: reasons >= 4 ? 'cards' : 'bunting', cameraRoll: brief.photos >= 5 ? 'strip' : 'pile' }
   // The jokes come before the sincere scenes, so the film ends on its warmest note.
   const order = because === 'teasing' || because === 'short' ? ['spotlight', 'redFlags', 'memoryLane', 'cameraRoll', 'reasons', 'letter'] : ['spotlight', 'memoryLane', 'cameraRoll', 'redFlags', 'reasons', 'letter']
-  return { world, look, designs: want, order, because }
+  return { world, look, designs: designsByRule(world, brief), order, because }
+}
+
+/** The design each scene gets by rule in a kind of film: a long list builds on one screen, a long story gets room beside its photo. */
+export function designsByRule(world: WorldId, brief: DirectionBrief): Record<string, string> {
+  const habits = brief.notes.habits.length
+  const reasons = brief.notes.reasons.length
+  const longStories = brief.notes.memories.some((m) => m.story.length > 220)
+  if (world === 'mixtape') return { spotlight: longStories ? 'cover' : 'poster', memoryLane: longStories ? 'cover' : 'poster', redFlags: habits >= 4 ? 'tracklist' : 'shout', reasons: reasons >= 4 ? 'liner' : 'nowplaying' }
+  if (world === 'scrapbook') return { spotlight: 'polaroid', memoryLane: longStories ? 'clipped' : 'taped', redFlags: habits >= 4 ? 'checklist' : 'stickies', reasons: reasons >= 4 ? 'cards' : 'bunting', cameraRoll: brief.photos >= 5 ? 'strip' : 'pile' }
+  return { redFlags: habits >= 4 ? 'docket' : 'slam', reasons: reasons >= 4 ? 'ledger' : 'numeral' }
 }
 
 /**

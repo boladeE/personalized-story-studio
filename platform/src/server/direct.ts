@@ -1,4 +1,4 @@
-import { cleanDirection, directLocally, DIRECTED_WORLDS, MIDDLE_SCENES } from '../story/direction'
+import { cleanDirection, designsByRule, directLocally, DIRECTED_WORLDS, MIDDLE_SCENES } from '../story/direction'
 import type { DirectionBrief, DirectionPlan } from '../story/direction'
 import { occasionOf } from '../story/occasions'
 import { DIRECTION_REASONS } from '../story/types'
@@ -36,6 +36,7 @@ const SCHEMA = {
     designs: {
       type: 'object',
       properties: Object.fromEntries(['spotlight', 'memoryLane', 'redFlags', 'reasons', 'cameraRoll'].map((type) => [type, { type: 'string' }])),
+      required: ['spotlight', 'memoryLane', 'redFlags', 'reasons'],
     },
     order: { type: 'array', items: { type: 'string', enum: MIDDLE_SCENES } },
     because: { type: 'string', enum: [...DIRECTION_REASONS] },
@@ -65,7 +66,7 @@ export function directBrief(brief: DirectionBrief) {
       '- world: the kind of film whose character suits the note.',
       '- look: one of that world\'s three looks.',
       '- designs: for each scene type that world lists, the design that suits the words. A list of four or more items reads better in a design that builds on one screen; a few items land harder one to a screen. A long story needs room beside its photo.',
-      `- order: the scenes that can be moved (${MIDDLE_SCENES.map((t) => `${t} = ${SCENE_NAMES[t]}`).join('; ')}), in the order that tells this note best. Films usually land better when the jokes come before the sincere scenes.`,
+      `- order: the scenes that can be moved (${MIDDLE_SCENES.map((t) => `${t} = ${SCENE_NAMES[t]}`).join('; ')}), in the order that tells this note best. The main character introduces them, so it comes first, and the letter comes last. Between those, films usually land better when the jokes come before the sincere scenes.`,
       `- because: the one word that is the main reason for the world you chose: teasing (the note is mostly habits and jokes), memories (it is told in moments), photos (there are many photos and few words), tender (it is mostly sincere), short (there is very little to go on).`,
     ].join('\n'),
   ].join('\n\n')
@@ -97,14 +98,18 @@ async function askModel(brief: DirectionBrief): Promise<unknown> {
   }
 }
 
-/** A model's direction laid over the rule's: every scene has a design and every movable scene a place, whatever the model left out. */
+/**
+ * A model's direction laid over the rule's: every scene has a design and every movable scene a place,
+ * whatever the model left out. Two things are not the model's to move: the film introduces its main
+ * character first, and the letter is the last thing before the ending.
+ */
 export function completeDirection(raw: unknown, brief: DirectionBrief): DirectionPlan | null {
   const chosen = cleanDirection(raw, DIRECTED_WORLDS)
   if (!chosen) return null
-  const rule = directLocally(brief)
-  const designs = chosen.world === rule.world ? { ...rule.designs, ...chosen.designs } : chosen.designs
-  const order = [...chosen.order, ...rule.order.filter((type) => !chosen.order.includes(type))]
-  return { ...chosen, designs, order }
+  const designs = { ...designsByRule(chosen.world, brief), ...chosen.designs }
+  const all = [...chosen.order, ...directLocally(brief).order.filter((type) => !chosen.order.includes(type))]
+  const between = all.filter((type) => type !== 'spotlight' && type !== 'letter')
+  return { ...chosen, designs, order: ['spotlight', ...between, 'letter'] }
 }
 
 export async function direct(brief: DirectionBrief): Promise<{ direction: DirectionPlan; by: 'model' | 'rule' }> {

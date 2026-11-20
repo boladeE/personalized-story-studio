@@ -66,9 +66,16 @@ describe('what a director may say', () => {
   it('fills in what a model left out from the rules, so every scene has a design and a place', () => {
     const plan = completeDirection({ world: 'mixtape', look: 'paper', designs: { redFlags: 'tracklist' }, order: ['reasons'], because: 'teasing' }, TEASING)!
     expect(plan.designs).toMatchObject({ redFlags: 'tracklist', reasons: 'nowplaying', spotlight: 'poster' })
-    expect(plan.order[0]).toBe('reasons')
     expect([...plan.order].sort()).toEqual(['cameraRoll', 'letter', 'memoryLane', 'reasons', 'redFlags', 'spotlight'])
+    // A model that picks a different kind of film from the rule still gets every scene designed for the film it picked.
+    const other = completeDirection({ world: 'scrapbook', look: 'garden', designs: { spotlight: 'polaroid' }, order: [], because: 'tender' }, TEASING)!
+    expect(other.designs).toEqual({ spotlight: 'polaroid', memoryLane: 'taped', redFlags: 'stickies', reasons: 'bunting', cameraRoll: 'pile' })
     expect(completeDirection({ world: 'screening' }, TEASING)).toBeNull()
+  })
+
+  it('keeps the introduction first and the letter last, wherever a model puts them', () => {
+    const plan = completeDirection({ world: 'scrapbook', look: 'garden', designs: {}, order: ['redFlags', 'letter', 'memoryLane', 'reasons', 'spotlight', 'cameraRoll'], because: 'tender' }, TEASING)!
+    expect(plan.order).toEqual(['spotlight', 'redFlags', 'memoryLane', 'reasons', 'cameraRoll', 'letter'])
   })
 
   it('tells the model what the studio has and what was written, and never a letter or a photo', () => {
