@@ -162,7 +162,8 @@ export function surpriseVibe(intake: Pick<Intake, 'direction' | 'sender' | 'reci
   const pool = because === 'teasing' || because === 'short' ? lively : because === 'tender' || because === 'memories' ? gentle : VIBES.map((v) => v.id)
   const names = `${intake.sender}|${intake.recipient}`
   const draw = intake.direction?.seed ?? [...names].reduce((sum, ch) => (sum * 31 + ch.charCodeAt(0)) >>> 0, 7)
-  return pool[draw % pool.length]
+  // Stirred first, so the style doesn't march in step with the colours, which are drawn from the same version.
+  return pool[(Math.imul(draw ^ 0x9e3779b9, 0x85ebca6b) >>> 13) % pool.length]
 }
 
 /** The parts of an intake a song is written from. */
