@@ -68,6 +68,19 @@ export function Film({
   covered?: boolean
 }) {
   const film = useMemo(() => buildFilm(story), [story])
+  // Every photo is fetched while the opening is still up. Fetched only when its scene arrived, a photo
+  // came in late or not at all, and the scene played as words beside an empty space.
+  useEffect(() => {
+    const kept = story.scenes
+      .flatMap((scene) => scene.frames.flatMap((frame) => (frame.kind === 'photo' ? [frame.photo] : frame.kind === 'montage' ? frame.photos : [])))
+      .map((photo) => {
+        const img = new Image()
+        img.decoding = 'async'
+        img.src = photo.src
+        return img
+      })
+    return () => kept.forEach((img) => (img.src = ''))
+  }, [story])
   const world = story.world ?? 'screening'
   const album = world === 'scrapbook'
   // The album and the mixtape are drawn on flat stock: no smoke, no dust, and no loud cards of the Screening's.

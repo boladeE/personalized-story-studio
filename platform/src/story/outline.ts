@@ -23,7 +23,7 @@ export const OUTLINE_LIMITS = {
   /** A single line longer than this is told as a passage, not shouted. */
   line: 140,
   /** The most pages a told scene keeps. */
-  pages: 6,
+  pages: 3,
   /** What fits beside a photo on a scene's first page, and on each page after it. */
   firstPage: 230,
   page: 130,

@@ -101,7 +101,7 @@ export function buildFilm(story: Story): Film {
     // line that leads into it. No scene starts cold on its words.
     const isChapter = scene.type !== 'hello' && scene.type !== 'wish'
     if (isChapter) {
-      drafts.push({ kind: 'card', number: `Scene ${ORDINALS[numbered] ?? numbered + 1}`, title: scene.name, ...(scene.intro ? { sub: scene.intro } : {}), seconds: scene.intro ? read(words(scene.intro)) + 1.6 : 3, enter: 'type', exit: 'fade' })
+      drafts.push({ kind: 'card', number: `Scene ${ORDINALS[numbered] ?? numbered + 1}`, title: scene.name, ...(scene.intro ? { sub: scene.intro } : {}), seconds: scene.intro ? Math.min(5.4, 2.2 + words(scene.intro) * 0.3) : 2.6, enter: 'type', exit: 'fade' })
       numbered++
     }
 
