@@ -39,7 +39,9 @@ async function askModel(text: string, sender: string, recipient: string): Promis
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), Number(process.env.FOLLOWUP_TIMEOUT_MS ?? 12_000))
   try {
-    const model = process.env.GEMINI_FOLLOWUP_MODEL ?? process.env.GEMINI_SORT_MODEL ?? 'gemini-3.8-flash'
+    // The sender is waiting on this step, so the fast model stays: about 3.5 seconds, and its questions were as good as
+    // Hydrogen's (7 to 9 seconds) when both were tried on 2026-11-20. Flash-Lite was quicker still but asked less well.
+    const model = process.env.GEMINI_FOLLOWUP_MODEL ?? 'gemini-3.8-flash'
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST',
       signal: controller.signal,

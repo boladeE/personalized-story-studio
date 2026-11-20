@@ -69,10 +69,11 @@ export async function writeLyrics(details: SongDetails, tone: LyricTone = 'smoot
   if (provider === 'demo') return demoLyrics(details)
 
   const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), Number(process.env.LYRICS_TIMEOUT_MS ?? 60_000))
+  const timer = setTimeout(() => controller.abort(), Number(process.env.LYRICS_TIMEOUT_MS ?? 90_000))
   try {
-    // The Pro model keeps to the sender's facts; Flash at this speed invents details to reach a rhyme.
-    const model = process.env.GEMINI_LYRICS_MODEL ?? 'gemini-pro-latest'
+    // Neon writes well and keeps to the sender's facts. Carbon, tried beside it on 2026-11-20, was more vivid but put things
+    // in the song that were never said (a wrench, a dry pipe). At medium thinking Neon is a little better and takes a minute.
+    const model = process.env.GEMINI_LYRICS_MODEL ?? 'gemini-4-neon'
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST',
       signal: controller.signal,

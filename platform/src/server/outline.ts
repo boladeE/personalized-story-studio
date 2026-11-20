@@ -106,9 +106,11 @@ export function outlineBrief(brief: OutlineBrief) {
 
 async function askModel(brief: OutlineBrief): Promise<unknown> {
   const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), Number(process.env.SORT_TIMEOUT_MS ?? 30_000))
+  const timer = setTimeout(() => controller.abort(), Number(process.env.SORT_TIMEOUT_MS ?? 60_000))
   try {
-    const model = process.env.GEMINI_OUTLINE_MODEL ?? process.env.GEMINI_SORT_MODEL ?? 'gemini-3.8-flash'
+    // Neon keeps to the brief best of the models tried on 2026-11-20 (it alone kept the closing line out of the scenes
+    // every time), at 12 to 18 seconds a note. Flash answers in 5 and Hydrogen in 10, with looser outlines.
+    const model = process.env.GEMINI_OUTLINE_MODEL ?? 'gemini-4-neon'
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST',
       signal: controller.signal,
