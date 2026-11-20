@@ -24,9 +24,36 @@ const STEPS = [
   { name: 'Send it privately', text: 'One link, opened with a question only they can answer.' },
 ]
 
+const QUESTIONS: Array<{ q: string; a: string }> = [
+  {
+    q: 'What do I need to start?',
+    a: 'Two names, a few photos and a few sentences about them. That is enough for a film and a song. A letter, captions, more memories and a last line are all optional, and you can add them after you have watched it.',
+  },
+  {
+    q: 'How do they receive it?',
+    a: 'You get one private link and send it however you like. It opens in the browser on a phone or a computer, with nothing to install, and plays by itself once they tap the ticket.',
+  },
+  {
+    q: 'Who can see it?',
+    a: 'Only someone who has the link and can answer the question you set. You also get a separate link for yourself: from there you can delete the gift at any time, and its photos and words are deleted with it.',
+  },
+  {
+    q: 'Who writes and sings the song?',
+    a: 'The words are drafted from the details you give, and the song is sung by Google’s AI music models. You read the words first and can rewrite any line before it is made. Your letter and photos are never used for the song.',
+  },
+  {
+    q: 'My occasion isn’t on the list.',
+    a: 'Start with “Just because”. Nothing in that film names an occasion, so it fits whatever you need it for.',
+  },
+  {
+    q: 'What does it cost?',
+    a: 'Payment isn’t connected yet. While the studio is being tested, making and sending a film costs nothing.',
+  },
+]
+
 /**
  * The home page, on one screen: what this is, the sample film to watch, and one way in. Everything
- * else a visitor might ask is a link away (`/questions`), and the occasion is chosen inside the flow.
+ * else a visitor might ask is in the questions below that first screen, and the occasion is chosen inside the flow.
  */
 function Home() {
   // The page shows the product itself: the fictional sample, ready to play.
@@ -43,6 +70,7 @@ function Home() {
       </header>
 
       <main className="one-main">
+        <div className="one-first">
         <section className="one-hero">
           <div className="one-pitch">
             <h1 className="studio-title">The little things about someone you love, turned into a film.</h1>
@@ -72,6 +100,19 @@ function Home() {
             </li>
           ))}
         </ol>
+        </div>
+
+        <section id="questions" className="one-questions" aria-labelledby="questions-title">
+          <h2 id="questions-title">Questions</h2>
+          <div className="question-list">
+            {QUESTIONS.map((item) => (
+              <details key={item.q}>
+                <summary>{item.q}</summary>
+                <p>{item.a}</p>
+              </details>
+            ))}
+          </div>
+        </section>
       </main>
 
       <footer className="home-footer one-footer">
@@ -79,7 +120,7 @@ function Home() {
           <span className="wordmark">
             little things <span>digital</span>
           </span>
-          <Link to="/questions">Questions</Link>
+          <a href="#questions">Questions</a>
         </div>
       </footer>
     </div>

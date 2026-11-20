@@ -68,7 +68,7 @@ On `platform_v2` a film's **scenes are its own**. There is no fixed list of scen
 
 ## The home page is one screen (2026-11-20)
 
-Testers found the home page too much, so `/` is now the pitch, the sample film (the Scrapbook, playable in place), one "Start a film" button and three short steps, with nothing to scroll for on a desktop. The occasion tickets, the three kinds of film, the scene stills, the song explainer, "How it works" in four steps and the closing pitch are gone from it; the occasion is chosen inside the flow (a link can still carry one, `/start?occasion=…`). The questions and their answers moved to `/questions`, linked from the footer.
+Testers found the home page too much, so `/` is now the pitch, the sample film (the Scrapbook, playable in place), one "Start a film" button and three short steps, with nothing to scroll for on a desktop. The occasion tickets, the three kinds of film, the scene stills, the song explainer, "How it works" in four steps and the closing pitch are gone from it; the occasion is chosen inside the flow (a link can still carry one, `/start?occasion=…`). The questions and their answers sit below that first screen, folded shut.
 
 ## Privacy of what senders give (2026-11-20)
 

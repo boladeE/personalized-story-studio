@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CreateRouteImport } from './routes/create'
 import { Route as PreviewRouteImport } from './routes/preview'
-import { Route as QuestionsRouteImport } from './routes/questions'
 import { Route as SendRouteImport } from './routes/send'
 import { Route as SongRouteImport } from './routes/song'
 import { Route as StartRouteImport } from './routes/start'
@@ -42,11 +41,6 @@ const CreateRoute = CreateRouteImport.update({
 const PreviewRoute = PreviewRouteImport.update({
   id: '/preview',
   path: '/preview',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QuestionsRoute = QuestionsRouteImport.update({
-  id: '/questions',
-  path: '/questions',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SendRoute = SendRouteImport.update({
@@ -129,7 +123,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
   '/preview': typeof PreviewRoute
-  '/questions': typeof QuestionsRoute
   '/send': typeof SendRoute
   '/song': typeof SongRoute
   '/start': typeof StartRoute
@@ -150,7 +143,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
   '/preview': typeof PreviewRoute
-  '/questions': typeof QuestionsRoute
   '/send': typeof SendRoute
   '/song': typeof SongRoute
   '/start': typeof StartRoute
@@ -172,7 +164,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
   '/preview': typeof PreviewRoute
-  '/questions': typeof QuestionsRoute
   '/send': typeof SendRoute
   '/song': typeof SongRoute
   '/start': typeof StartRoute
@@ -195,7 +186,6 @@ export interface FileRouteTypes {
     | '/'
     | '/create'
     | '/preview'
-    | '/questions'
     | '/send'
     | '/song'
     | '/start'
@@ -216,7 +206,6 @@ export interface FileRouteTypes {
     | '/'
     | '/create'
     | '/preview'
-    | '/questions'
     | '/send'
     | '/song'
     | '/start'
@@ -237,7 +226,6 @@ export interface FileRouteTypes {
     | '/'
     | '/create'
     | '/preview'
-    | '/questions'
     | '/send'
     | '/song'
     | '/start'
@@ -259,7 +247,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CreateRoute: typeof CreateRoute
   PreviewRoute: typeof PreviewRoute
-  QuestionsRoute: typeof QuestionsRoute
   SendRoute: typeof SendRoute
   SongRoute: typeof SongRoute
   StartRoute: typeof StartRoute
@@ -298,13 +285,6 @@ declare module '@tanstack/react-router' {
       path: '/preview'
       fullPath: '/preview'
       preLoaderRoute: typeof PreviewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/questions': {
-      id: '/questions'
-      path: '/questions'
-      fullPath: '/questions'
-      preLoaderRoute: typeof QuestionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/send': {
@@ -419,7 +399,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CreateRoute: CreateRoute,
   PreviewRoute: PreviewRoute,
-  QuestionsRoute: QuestionsRoute,
   SendRoute: SendRoute,
   SongRoute: SongRoute,
   StartRoute: StartRoute,

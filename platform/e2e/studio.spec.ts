@@ -250,8 +250,6 @@ for (const [width, height] of [[360, 740], [768, 900], [1360, 800]]) {
     // The home page, top to bottom.
     await open(page, '/')
     expect(await page.evaluate(() => document.documentElement.scrollWidth), 'the home page is wider than the screen').toBeLessThanOrEqual(width)
-    // On a desktop the whole home page is one screen: nothing to scroll for.
-    if (width >= 1000) expect(await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight)).toBeLessThanOrEqual(0)
     expect(await offScreen(page, '.home-header > *, .one-pitch > *, .one-steps li, .one-footer a')).toBe(0)
     await open(page, '/create')
     await page.getByRole('button', { name: 'Fill with the sample' }).click()
@@ -397,13 +395,11 @@ test('the home page is one screen, and a link with an occasion starts a short fl
   const errors = trackErrors(page)
   await open(page, '/')
   await expect(page.getByRole('heading', { level: 1 })).toContainText('turned into a film')
-  // The home page is one screen: the pitch, the sample, three steps and one way in. Questions are a link away.
-  await expect(page.locator('main section, main ol')).toHaveCount(2)
+  // The first screen is the pitch, the sample, three steps and one way in.
   await expect(page.locator('.one-steps li')).toHaveCount(3)
   await expect(page.locator('.one-screen .film')).toHaveAttribute('data-world', 'scrapbook')
-  await page.getByRole('link', { name: 'Questions' }).click()
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Questions')
-  await expect(page.locator('.question-list details')).toHaveCount(6)
+  // The questions are below that first screen, folded shut.
+  await expect(page.locator('#questions .question-list details')).toHaveCount(6)
 
   // A link can still carry the occasion: it is written into the draft and leaves the address, and the flow doesn't ask for it again.
   await open(page, '/start?occasion=thank-you')
