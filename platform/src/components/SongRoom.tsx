@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { CSSProperties, RefObject } from 'react'
 import { SAMPLE_LYRICS, SAMPLE_SOUNDTRACK } from '../story/sample'
 import type { Intake } from '../story/types'
-import { hasRefusedLine, LYRIC_LIMITS, lyricParts, songDetails, tunePreview, vibeById, VIBES } from '../story/vibes'
+import { hasRefusedLine, LYRIC_LIMITS, lyricParts, songDetails, surpriseVoice, tunePreview, vibeById, VIBES, VOICES } from '../story/vibes'
 import type { LyricTone, VibeId } from '../story/vibes'
 import { DEFAULT_VIBE, useDraft } from './draft'
 import type { DraftWords } from './draft'
@@ -19,7 +19,9 @@ import { Working } from './Working'
 type Change = 'again' | 'sound' | 'words'
 
 export function SongRoom({ intake, sample }: { intake: Intake; sample: boolean }) {
-  const { song, setSong, takes, words, setWords, job, plan, songs, startSong, remakeSong, dismissJob } = useDraft()
+  const { song, setSong, takes, words, setWords, job, plan, setPlan, songs, startSong, remakeSong, dismissJob } = useDraft()
+  // Who sings: what the sender chose, or what the studio chose for them.
+  const voiceNow = plan.voice === 'surprise' ? surpriseVoice(intake) : plan.voice
   const recipient = intake.recipient.trim()
   const details = sample ? null : songDetails(intake)
   const [open, setOpen] = useState<Change | null>(null)
@@ -284,6 +286,17 @@ export function SongRoom({ intake, sample }: { intake: Intake; sample: boolean }
                         ))}
                       </fieldset>
                       <p className="fine">Each sample is 16 seconds of the style. Your song gets its own melody.</p>
+                      {!wordless && (
+                        <fieldset className="tone song-voice">
+                          <legend>Who sings it</legend>
+                          {VOICES.filter((v) => v.id !== 'surprise').map((v) => (
+                            <label key={v.id} className="choice">
+                              <input type="radio" name="song-voice" checked={voiceNow === v.id} onChange={() => setPlan({ ...plan, voice: v.id })} />
+                              {v.name}
+                            </label>
+                          ))}
+                        </fieldset>
+                      )}
                       <label className="choice wordless">
                         <input type="checkbox" checked={wordless} onChange={(e) => setWordless(e.target.checked)} />
                         Music only, no singing

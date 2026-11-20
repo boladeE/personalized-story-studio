@@ -184,7 +184,7 @@ export function DraftProvider({ children }: { children: ReactNode }) {
     void (async () => {
       try {
         const sung = remake.words?.lyrics.trim()
-        const payload = sung ? { vibe: remake.vibe, details, lyrics: remake.words!.lyrics, title: remake.words!.title, voice: forPlan.voice } : { vibe: remake.vibe, occasion: forIntake.occasion }
+        const payload = sung ? { vibe: remake.vibe, details, lyrics: remake.words!.lyrics, title: remake.words!.title, voice: forPlan.voice === 'surprise' ? surpriseVoice(forIntake) : forPlan.voice } : { vibe: remake.vibe, occasion: forIntake.occasion }
         const response = await fetch('/api/music', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })
         const made = (await response.json().catch(() => ({}))) as Record<string, unknown>
         if (mine !== run.current) return
