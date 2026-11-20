@@ -44,9 +44,15 @@ export const DEFAULT_VIBE: VibeId = VIBES[0].id
 export type SongJob =
   | { state: 'idle' }
   | { state: 'writing' }
-  | { state: 'singing' }
-  | { state: 'ready'; song: DraftSong }
-  | { state: 'failed'; error: string }
+  | { state: 'singing'; again?: boolean }
+  | { state: 'ready'; song: DraftSong; again?: boolean }
+  | { state: 'failed'; error: string; again?: boolean }
+
+/** What a film's song is recorded again with: a tune, and the words to sing (none for music only). */
+export interface Remake {
+  vibe: VibeId
+  words: DraftWords | null
+}
 
 interface DraftValue {
   intake: Intake
@@ -77,8 +83,12 @@ interface DraftValue {
   songs: boolean | null
   /** Write and sing a song for this intake. Does nothing while one is already being made, unless `restart` is set. */
   startSong: (intake: Intake, plan: SongPlan, restart?: boolean) => void
+  /** Record the film's song again, with other words or another tune. The film keeps the song it has until the new one is ready. */
+  remakeSong: (intake: Intake, plan: SongPlan, remake: Remake) => void
   /** Put the finished song on the film. */
   playJobSong: () => void
+  /** Stop saying that a song didn't come through. */
+  dismissJob: () => void
 }
 
 const DraftContext = createContext<DraftValue | null>(null)
@@ -159,6 +169,31 @@ export function DraftProvider({ children }: { children: ReactNode }) {
       }
     })()
   }, [])
+  const remakeSong = useCallback((forIntake: Intake, forPlan: SongPlan, remake: Remake) => {
+    const details = songDetails(forIntake)
+    if (!details || inFlight.current) return
+    inFlight.current = true
+    const mine = ++run.current
+    setJob({ state: 'singing', again: true })
+    void (async () => {
+      try {
+        const sung = remake.words?.lyrics.trim()
+        const payload = sung ? { vibe: remake.vibe, details, lyrics: remake.words!.lyrics, title: remake.words!.title, voice: forPlan.voice } : { vibe: remake.vibe, occasion: forIntake.occasion }
+        const response = await fetch('/api/music', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })
+        const made = (await response.json().catch(() => ({}))) as Record<string, unknown>
+        if (mine !== run.current) return
+        if (!response.ok || !made.id || !made.src) throw new Error(typeof made.error === 'string' ? made.error : 'The song didn’t come through.')
+        const song: DraftSong = { id: String(made.id), src: String(made.src), label: String(made.label ?? 'Original song'), sung: Boolean(made.sung), lyrics: typeof made.lyrics === 'string' ? made.lyrics : sung ? remake.words!.lyrics : undefined, vibe: remake.vibe }
+        setTakes((list) => [...list, song].slice(-MAX_TAKES))
+        inFlight.current = false
+        setJob({ state: 'ready', song, again: true })
+      } catch (error) {
+        if (mine !== run.current) return
+        inFlight.current = false
+        setJob({ state: 'failed', error: error instanceof Error ? error.message : 'The song didn’t come through.', again: true })
+      }
+    })()
+  }, [])
   const value = useMemo<DraftValue>(
     () => ({
       intake,
@@ -185,13 +220,17 @@ export function DraftProvider({ children }: { children: ReactNode }) {
       job,
       songs,
       startSong,
+      remakeSong,
       playJobSong: () => {
         if (job.state !== 'ready') return
         setSong(job.song)
         setJob({ state: 'idle' })
       },
+      dismissJob: () => {
+        if (job.state === 'failed') setJob({ state: 'idle' })
+      },
     }),
-    [intake, seed, song, takes, words, about, sortedFrom, occasionGiven, plan, job, songs, startSong],
+    [intake, seed, song, takes, words, about, sortedFrom, occasionGiven, plan, job, songs, startSong, remakeSong],
   )
   return <DraftContext.Provider value={value}>{children}</DraftContext.Provider>
 }

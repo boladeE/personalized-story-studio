@@ -16,11 +16,15 @@ export const filmState = (page: Page) =>
     text: document.querySelector<HTMLElement>('.film:not(.still) .shot.is-current')?.dataset.text ?? '',
   }))
 
-/** The film is watched first. Its editor (scenes, look, song) opens under it from Edit. */
-export async function openEditor(page: Page, tab?: 'Scenes' | 'Look' | 'Song') {
+/** The film is watched first. Its editor opens around it from Edit; `part` goes on to the look of the film, or to the song's room. */
+export async function openEditor(page: Page, part?: 'Look' | 'Song') {
   await page.getByRole('link', { name: 'Edit', exact: true }).click()
-  if (tab) await page.getByRole('tab', { name: tab }).click()
+  if (part === 'Look') await page.getByRole('button', { name: /^Look/ }).click()
+  if (part === 'Song') await page.locator('.film-song-open').click()
 }
+
+/** The editor's Undo, beside Done. */
+export const undoButton = (page: Page) => page.locator('.studio-header').getByRole('button', { name: 'Undo' })
 
 export async function closeEditor(page: Page) {
   await page.getByRole('link', { name: 'Done', exact: true }).click()

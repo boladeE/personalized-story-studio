@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
+import type { Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
-import { audioState, chooseStyle, closeEditor, filmState, open, openEditor, pickScene, sceneTile, startFilm, trackErrors, walk } from './helpers'
+import { audioState, chooseStyle, closeEditor, filmState, open, openEditor, pickScene, sceneTile, startFilm, trackErrors, undoButton, walk } from './helpers'
 import { OCCASIONS } from '../src/story/occasions'
 
 // Tiny valid PNG (1x1) for upload tests.
@@ -136,7 +137,7 @@ test('another version rebuilds from the ticket with the same content, the last o
   let last = ''
   for (let i = 0; i < 5; i++) {
     last = await order()
-    await openEditor(page, 'Look')
+    await openEditor(page)
     await page.getByRole('button', { name: 'Try another version' }).click()
     await expect(page.locator('.preview-body > .film')).toHaveAttribute('data-phase', 'ticket')
     await closeEditor(page)
@@ -147,10 +148,12 @@ test('another version rebuilds from the ticket with the same content, the last o
   expect(versions.size).toBeGreaterThan(1)
   // A version that was drawn over can be had back.
   const kept = await order()
-  await openEditor(page, 'Look')
+  await openEditor(page)
+  await expect(undoButton(page)).toBeDisabled()
   await page.getByRole('button', { name: 'Try another version' }).click()
-  await page.getByRole('button', { name: 'Back to the last version' }).click()
-  await expect(page.getByRole('button', { name: 'Back to the last version' })).toHaveCount(0)
+  await expect(page.locator('.edit-note')).toHaveText('The film has another version.')
+  await undoButton(page).click()
+  await expect(undoButton(page)).toBeDisabled()
   await closeEditor(page)
   await startFilm(page)
   expect(await order()).toBe(kept)
@@ -175,15 +178,36 @@ test('sound can be muted and the preview has an honest empty state', async ({ pa
   expect((await audioState(page))!.songMode).toBe('stream')
   const heard = (await audioState(page))!.songTime!
   await expect.poll(async () => (await audioState(page))!.songTime!).toBeGreaterThan(heard + 0.5)
-  await openEditor(page, 'Song')
+  // The editor names the film's song in a bar of its own, which leads to the song's room.
+  await openEditor(page)
   await expect(page).toHaveURL(/edit=1/)
+  await expect(page.locator('.film-song')).toContainText('“Zara’s song”, written and sung for this film')
+  await page.getByRole('link', { name: 'Hear it' }).click()
+  await expect(page).toHaveURL(/song=1/)
   // There is one piece of music, the song made for the film, and nothing else to switch to.
-  await expect(page.locator('#desk-panel')).toContainText('“Zara’s song”, written and sung for this film.')
-  await expect(page.locator('#desk-panel')).not.toContainText(/score|studio’s music/i)
-  await expect(page.locator('#desk-panel input[name="soundtrack"]')).toHaveCount(0)
-  // The tabs answer the arrow keys.
-  await page.keyboard.press('ArrowLeft')
-  await expect(page.getByRole('tab', { name: 'Look' })).toBeFocused()
+  const songRoom = page.locator('.songroom')
+  await expect(songRoom.getByRole('heading', { level: 1 })).toHaveText('Zara’s song')
+  await expect(songRoom).toContainText('Written and sung for this film')
+  await expect(songRoom).not.toContainText(/score|studio’s music/i)
+  await expect(songRoom.locator('input[name="take"]')).toHaveCount(0)
+  // Its words are laid out to read, and the sample's can't be changed.
+  await expect(songRoom.locator('.song-lyrics .lyric-part').first()).toContainText('Meant to stay for one')
+  await expect(songRoom.getByRole('button', { name: /Rewrite the words/ })).toHaveCount(0)
+  // The song plays by itself here, from one button: the film is quiet, and the song's own time moves.
+  await expect.poll(async () => (await audioState(page))?.trackId ?? null).toBeNull()
+  const songTime = () => page.locator('.player audio').evaluate((el: HTMLAudioElement) => el.currentTime)
+  await page.getByRole('button', { name: 'Play the song' }).click()
+  await expect.poll(songTime, { timeout: 15_000 }).toBeGreaterThan(0.4)
+  await page.getByRole('button', { name: 'Pause the song' }).click()
+  const paused = await songTime()
+  await page.waitForTimeout(400)
+  expect(await songTime()).toBe(paused)
+  await expect(page.getByRole('button', { name: 'Play the song' })).toBeVisible()
+  // Back to the scenes, where the look of the whole film is one button away.
+  await page.getByRole('link', { name: 'Back to the scenes' }).click()
+  await expect(page).not.toHaveURL(/song=1/)
+  await expect(page).toHaveURL(/edit=1/)
+  await page.getByRole('button', { name: /^Look/ }).click()
   await expect(page.getByRole('radio', { name: /^The Screening/ })).toBeChecked()
   // A visitor can try the other looks on the sample too.
   await page.getByRole('radio', { name: 'Garden' }).check()
@@ -192,7 +216,7 @@ test('sound can be muted and the preview has an honest empty state', async ({ pa
   // Back leaves the editor, as Done does.
   await page.goBack()
   await expect(page).not.toHaveURL(/edit=1/)
-  await expect(page.locator('.edit-desk')).toHaveCount(0)
+  await expect(page.locator('.scene-nav')).toHaveCount(0)
   await startFilm(page)
   await expect.poll(async () => (await audioState(page))?.trackId, { timeout: 15_000 }).toBe('song')
   await page.getByRole('button', { name: 'Sound on' }).click()
@@ -248,31 +272,20 @@ for (const [width, height] of [[360, 740], [768, 900], [1360, 800]]) {
     // Every shot of both kinds of film, in both designs of each scene.
     for (const pass of ['The Screening', 'The Scrapbook', 'The Scrapbook again'] as const) {
     if (pass === 'The Scrapbook again') {
-      // The editor fits too: each of its tabs, and every scene's changes.
+      // The editor fits too: every scene's words and changes, the look, the row's head and the song's bar.
       await openEditor(page)
-      for (const tab of ['Look', 'Song', 'Scenes']) {
-        await page.getByRole('tab', { name: tab }).click()
-        const off = await page.evaluate(() =>
-          Array.from(document.querySelectorAll<HTMLElement>('.edit-desk button, .edit-desk a, .edit-desk label, .edit-desk p'))
-            .map((el) => el.getBoundingClientRect())
-            .filter((r) => r.width > 0 && (r.left < -1 || r.right > window.innerWidth + 1)).length,
-        )
-        // The row of scenes scrolls sideways by design; nothing else runs off.
-        if (tab !== 'Scenes') expect(off, `something in the ${tab} tab runs off the screen`).toBe(0)
-        expect(await page.evaluate(() => document.documentElement.scrollWidth), `the ${tab} tab makes the page wider than the screen`).toBeLessThanOrEqual(width)
-      }
       const tiles = page.locator('.scene-tile.is-in > button')
       for (let i = 0; i < (await tiles.count()); i++) {
         await tiles.nth(i).click()
-        const tools = await page.locator('.scene-card').evaluate((card) =>
-          Array.from(card.querySelectorAll('button, a'))
-            .map((el) => el.getBoundingClientRect())
-            .filter((r) => r.left < -1 || r.right > window.innerWidth + 1).length,
-        )
-        expect(tools, 'a scene’s changes run off the screen').toBe(0)
+        expect(await offScreen(page, '.scene-panel :is(button, a, input, textarea, label, p), .scene-nav-head > *, .film-song > *, .stage-foot > *'), 'part of the editor runs off the screen').toBe(0)
+        expect(await page.evaluate(() => document.documentElement.scrollWidth), 'a scene makes the editor wider than the screen').toBeLessThanOrEqual(width)
         const other = page.getByRole('button', { name: /^Another design/ })
         if (await other.count()) await other.click()
       }
+      await page.getByRole('button', { name: /^Look/ }).click()
+      expect(await offScreen(page, '.scene-panel :is(button, label, p)'), 'part of the look runs off the screen').toBe(0)
+      expect(await page.evaluate(() => document.documentElement.scrollWidth), 'the look makes the editor wider than the screen').toBeLessThanOrEqual(width)
+      await page.getByRole('button', { name: /^Back to / }).click()
       await closeEditor(page)
       // The film is already running and carries on from the last scene changed, so wind it back to the start.
       await page.getByRole('slider', { name: 'Film position' }).fill('0')
@@ -310,37 +323,43 @@ for (const [width, height] of [[360, 740], [768, 900], [1360, 800]]) {
       await next.click()
     }
     }
-    // The song page: the written sheet, the tunes and a take all fit, and no sung line is hidden.
-    // Writing a scene's words in the editor fits too: a list, the memories and the photos.
+    // Writing a scene's words beside its still fits too: a list, the memories and the photos.
     await openEditor(page)
-    for (const [scene, button] of [
-      ['Red flags', 'Edit the words in Red flags'],
-      ['Memory lane', 'Edit the words in Memory lane'],
-      ['The camera roll', 'Change the photos in The camera roll'],
-    ]) {
+    // The film has been playing; a still of the chosen scene takes its place once it is stopped.
+    if (await page.getByRole('button', { name: 'Stop' }).count()) await page.getByRole('button', { name: 'Stop' }).click()
+    for (const scene of ['Red flags', 'Memory lane', 'The camera roll']) {
       await pickScene(page, scene)
-      await page.getByRole('button', { name: button }).click()
       await expect(page.locator('.stage-still-frame .still-box[data-fit]')).toBeVisible()
-      const off = await page.evaluate(() =>
-        Array.from(document.querySelectorAll<HTMLElement>('.scene-words input, .scene-words textarea, .scene-words button, .scene-words img, .scene-words label'))
-          .filter((el) => el.offsetParent !== null && !el.closest('.pick'))
-          .map((el) => el.getBoundingClientRect())
-          .filter((r) => r.width > 0 && (r.left < -1 || r.right > window.innerWidth + 1)).length,
-      )
-      expect(off, `a field of ${scene} runs off the screen`).toBe(0)
+      expect(await offScreen(page, '.scene-words :is(input, textarea, button, img, label)'), `a field of ${scene} runs off the screen`).toBe(0)
       expect(await page.evaluate(() => document.documentElement.scrollWidth), `writing ${scene} makes the page wider than the screen`).toBeLessThanOrEqual(width)
-      expect((await page.locator('.stage-still-frame').boundingBox())!.height, `the still of ${scene} keeps some room while it is written`).toBeGreaterThan(90)
-      await page.getByRole('button', { name: 'Back to scenes' }).click()
+      expect((await page.locator('.stage-still-frame').boundingBox())!.height, `the still of ${scene} keeps some room`).toBeGreaterThan(90)
     }
-    await page.getByRole('tab', { name: 'Song' }).click()
-    await page.getByRole('link', { name: 'Change the song' }).click()
+    // The song's room: the player, the three ways to change it, the tunes and the written sheet all fit, and no sung line is hidden.
+    await page.locator('.film-song-open').click()
+    await expect(page.getByRole('button', { name: 'Play the song' })).toBeVisible()
+    await page.getByRole('button', { name: /Change the sound/ }).click()
+    expect(await offScreen(page, '.songroom :is(button, a, input, label, p, h1, h3)'), 'part of the song’s room runs off the screen').toBe(0)
+    await page.getByRole('button', { name: /Rewrite the words/ }).click()
     await expect(page.getByLabel('Lyrics')).toHaveValue(/Zara/)
-    await page.getByRole('button', { name: 'Make another take' }).click()
-    await expect(page.getByRole('radio', { name: /^Take 2/ })).toBeChecked()
-    expect(await page.evaluate(() => document.documentElement.scrollWidth), 'the song page is wider than the screen').toBeLessThanOrEqual(width)
     expect(await page.getByLabel('Lyrics').evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(1)
+    expect(await offScreen(page, '.songroom :is(button, a, input, textarea, label, p)'), 'part of the song’s sheet runs off the screen').toBe(0)
+    await page.getByRole('button', { name: 'Sing these words' }).click()
+    await expect(page.getByRole('radio', { name: /^Take 2/ })).toBeChecked()
+    expect(await offScreen(page, '.songroom :is(button, a, input, label, p, h1, h3)'), 'a second take runs off the screen').toBe(0)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth), 'the song’s room is wider than the screen').toBeLessThanOrEqual(width)
   })
 }
+
+/** How many of these are on the page but run past its left or right edge. */
+const offScreen = (page: Page, selector: string) =>
+  page.evaluate(
+    (sel) =>
+      Array.from(document.querySelectorAll<HTMLElement>(sel))
+        .filter((el) => el.offsetParent !== null && !el.closest('.pick, .scene-strip, .visually-hidden'))
+        .map((el) => el.getBoundingClientRect())
+        .filter((r) => r.width > 0 && (r.left < -1 || r.right > window.innerWidth + 1)).length,
+    selector,
+  )
 
 const NOTE =
   'Moving day. The lift broke, and you carried the sofa up five floors arguing about the angle. You always steal the duvet, then ask why I am cold. You never finish your tea. I love you because you remember the small things I mention once.'
@@ -475,13 +494,13 @@ test('the short flow sorts the sender’s words, plays the film at once and brin
   await expect(sceneTile(page, 'Memory lane')).toHaveClass(/is-in/)
   await expect(sceneTile(page, 'The main character')).toHaveClass(/is-in/)
   await pickScene(page, 'Reasons')
-  await expect(page.locator('.scene-card')).toContainText('Add 2 more reasons.')
+  await expect(page.locator('.scene-panel')).toContainText('Add 2 more reasons.')
   await pickScene(page, 'Memory lane')
-  await expect(page.locator('.scene-tools > *').first()).toHaveText('Edit words')
 
-  // Its words are changed right there, under the film, which stops while they are written.
-  await page.getByRole('button', { name: 'Edit the words in Memory lane' }).click()
+  // Its words are open right there, beside the still of it: nothing to find first. The film is still while they are written.
+  await expect(page.locator('.scene-panel').getByRole('heading', { level: 1 })).toHaveText('Memory lane')
   await expect(page).toHaveURL(/\/preview\?edit=1$/)
+  await page.getByLabel('Title').click()
   const film = page.locator('.preview-body > .film')
   await expect(film).toHaveAttribute('data-phase', 'ticket')
   expect((await audioState(page))?.trackId ?? null).toBeNull()
@@ -490,15 +509,13 @@ test('the short flow sorts the sender’s words, plays the film at once and brin
   // A still of the scene follows what is written.
   const still = page.locator('.stage-still-frame .shot')
   await expect(still).toHaveAttribute('data-text', /The day the lift broke/)
-  await page.getByRole('button', { name: 'Back to scenes' }).click()
-  // The change can be taken back in one tap.
-  await expect(page.locator('.scene-undo')).toContainText('Memory lane changed.')
-  await page.locator('.scene-undo').getByRole('button', { name: 'Undo' }).click()
-  await expect(page.locator('.scene-undo')).toHaveCount(0)
-  await page.getByRole('button', { name: 'Edit the words in Memory lane' }).click()
+  // The change can be taken back in one tap, from beside Done.
+  await undoButton(page).click()
+  await expect(page.locator('.edit-note')).toHaveText('Memory lane changed. Undone.')
   await expect(page.getByLabel('Title')).toHaveValue('Moving day')
+  await expect(still).toHaveAttribute('data-text', /Moving day/)
+  await expect(undoButton(page)).toBeDisabled()
   await page.getByLabel('Title').fill('The day the lift broke')
-  await page.getByRole('button', { name: 'Back to scenes' }).click()
   // And the film plays the new words, with its song.
   await page.getByRole('button', { name: 'Play from here' }).click()
   await expect(film).toHaveAttribute('data-phase', 'playing')
@@ -508,13 +525,13 @@ test('the short flow sorts the sender’s words, plays the film at once and brin
 
   // A scene that isn't in the film yet is written in the same place, and joins the film once it has enough.
   await pickScene(page, 'Reasons')
-  await page.getByRole('button', { name: 'Add Reasons' }).click()
+  // Choosing another scene keeps what was written, as a step Undo can take back.
+  await expect(page.locator('.edit-note')).toHaveText('Memory lane changed.')
   await page.getByRole('textbox', { name: 'Reason 1' }).fill('You remember what I mention once')
   // Where the still will be says what the scene still needs.
   await expect(page.locator('.stage-still-empty')).toContainText('Add 1 more reason.')
   await page.getByRole('textbox', { name: 'Reason 2' }).fill('You carry the heavy end')
   await expect(still).toHaveAttribute('data-text', /You carry the heavy end/)
-  await page.getByRole('button', { name: 'Back to scenes' }).click()
   await expect(sceneTile(page, 'Reasons')).toHaveClass(/is-in/)
 
   // The detailed form is still one link away, with the same draft.
@@ -588,14 +605,13 @@ test('the sample plays as a scrapbook, and its scenes can be redesigned, moved, 
   await pickScene(page, 'Red flags')
   await expect(sceneTile(page, 'Red flags')).toHaveClass(/is-playing/)
   await expect(film.locator('.shot.is-current')).toHaveAttribute('data-text', /Red flags/)
-  const design = page.locator('.scene-card .scene-what small')
+  const design = page.locator('.scene-panel .scene-design')
   const was = (await design.textContent())!
   expect(['Sticky notes', 'Checklist']).toContain(was)
   const songTime = (await audioState(page))!.songTime!
   await page.getByRole('button', { name: 'Another design for Red flags' }).click()
-  // What changed is said in the card, with a way back; choosing the scene again shows its design.
-  await expect(page.locator('.scene-undo')).toContainText('Red flags has another design.')
-  await pickScene(page, 'Red flags')
+  // What changed is said beside Undo, and the scene names its new design.
+  await expect(page.locator('.edit-note')).toHaveText('Red flags has another design.')
   await expect(design).toHaveText(was === 'Checklist' ? 'Sticky notes' : 'Checklist')
   await expect(film).toHaveAttribute('data-phase', 'playing')
   await expect(film.locator('.shot.is-current')).toHaveAttribute('data-text', /Red flags/)
@@ -618,11 +634,11 @@ test('the sample plays as a scrapbook, and its scenes can be redesigned, moved, 
   expect(await marks()).toHaveLength(7)
   await expect(sceneTile(page, 'The camera roll')).toHaveClass(/is-off/)
   // One tap takes the last change back, and the film carries on from that scene.
-  await expect(page.locator('.scene-undo')).toContainText('The camera roll left out.')
-  await page.locator('.scene-undo').getByRole('button', { name: 'Undo' }).click()
+  await expect(page.locator('.edit-note')).toHaveText('The camera roll left out.')
+  await undoButton(page).click()
   expect(await marks()).toHaveLength(8)
   await expect(film.locator('.shot.is-current')).toHaveAttribute('data-text', /The camera roll/)
-  await expect(page.locator('.scene-undo')).toHaveCount(0)
+  await expect(page.locator('.edit-note')).toHaveText('The camera roll left out. Undone.')
   await page.getByRole('button', { name: 'Leave out The camera roll' }).click()
   expect(await marks()).toHaveLength(7)
   await page.getByRole('button', { name: 'Put back The camera roll' }).click()
@@ -700,8 +716,8 @@ for (const [width, height] of [[1360, 800], [360, 740]]) {
     await expect(still.locator('.still-box[data-fit]')).toBeVisible()
     expect((await still.boundingBox())!.height, 'the still of the chosen scene has room').toBeGreaterThan(110)
     await expect(page.getByRole('button', { name: 'Play from here' })).toBeDisabled()
-    await expect(page.locator('.stage-still-foot')).toContainText('It starts when Kemi’s song is ready.')
-    expect((await page.locator('.edit-desk').boundingBox())!.height, 'the editor leaves the stage most of the screen').toBeLessThan(height * 0.55)
+    await expect(page.locator('.stage-foot')).toContainText('It starts when Kemi’s song is ready.')
+    await expect(page.locator('.film-song')).toContainText('Kemi’s song is being made')
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
     await closeEditor(page)
 
@@ -739,7 +755,7 @@ for (const [width, height] of [[1360, 800], [360, 740]]) {
     }
     await next.getByRole('link', { name: 'Change something' }).click()
     await expect(page).toHaveURL(/edit=1/)
-    await expect(page.locator('.edit-desk')).toBeVisible()
+    await expect(page.locator('.scene-nav')).toBeVisible()
   })
 }
 

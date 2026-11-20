@@ -4,25 +4,29 @@ import { Film } from '../film/Film'
 import type { FilmHandle, Phase } from '../film/Film'
 import { StudioHeader } from '../components/StudioHeader'
 import { useDraft } from '../components/draft'
-import { hasWords, SCENE_FIELDS, sceneAsk, SceneWords } from '../components/SceneWords'
+import { LookPanel, SceneNav, ScenePanel, SongBar } from '../components/editor'
+import type { CutChange } from '../components/editor'
+import { hasWords, SCENE_FIELDS } from '../components/SceneWords'
+import type { WordScene } from '../components/SceneWords'
+import { SongRoom } from '../components/SongRoom'
 import type { SongJob } from '../components/draft'
 import { Still } from '../film/Still'
 import { scenePosters } from '../film/previews'
 import { buildFilm } from '../film/timeline'
 import type { Shot } from '../film/timeline'
-import { canGenerate, generateStory, LOOKS, moveScene, nextDesign, sceneBoard, toggleScene } from '../story/generate'
-import type { BoardRow } from '../story/generate'
+import { canGenerate, generateStory, sceneBoard } from '../story/generate'
 import { newSeed } from '../story/rng'
-import { SAMPLE_INTAKE, SAMPLE_LYRICS, SAMPLE_NOTE, SAMPLE_SOUNDTRACK } from '../story/sample'
+import { SAMPLE_INTAKE, SAMPLE_NOTE, SAMPLE_SOUNDTRACK } from '../story/sample'
 import { isWorld } from '../story/types'
 import type { Cut, Intake, LookId, Story, WorldId } from '../story/types'
-import { designName, WORLDS, worldOf } from '../story/worlds'
 
 export const Route = createFileRoute('/preview')({
-  validateSearch: (search: Record<string, unknown>): { sample?: 1; style?: WorldId; edit?: 1 } => ({
+  validateSearch: (search: Record<string, unknown>): { sample?: 1; style?: WorldId; edit?: 1; song?: 1 } => ({
     ...(search.sample === 1 || search.sample === '1' ? { sample: 1 as const } : {}),
     // The film is watched first. Editing it is a second mode of the same page, so Back leaves it.
     ...(search.edit === 1 || search.edit === '1' ? { edit: 1 as const } : {}),
+    // The song has a room of its own inside the editor.
+    ...(search.song === 1 || search.song === '1' ? { song: 1 as const } : {}),
     // The sample can be opened as any kind of film, so a link can show one off.
     ...(isWorld(search.style) ? { style: search.style } : {}),
   }),
@@ -30,10 +34,19 @@ export const Route = createFileRoute('/preview')({
   component: Preview,
 })
 
+/** Something the sender did in the editor: what to say about it, and how to take it back. */
+interface Change {
+  label: string
+  undo: () => void
+}
+
 function Preview() {
-  const { sample, style, edit } = Route.useSearch()
-  const editing = edit === 1
-  const { intake, setIntake, seed, setSeed, song, job, songs, plan, startSong, playJobSong } = useDraft()
+  const search = Route.useSearch()
+  const { sample, style } = search
+  const editing = search.edit === 1
+  // The song's room is part of the editor.
+  const room = editing && search.song === 1
+  const { intake, setIntake, seed, setSeed, song, job, songs, plan, startSong, playJobSong, dismissJob } = useDraft()
   // The scene the sender last changed: the film carries on from there.
   const [cue, setCue] = useState<{ type: string; key: number }>()
   // Where the film is: whether it is playing, and on which scene.
@@ -49,22 +62,18 @@ function Preview() {
     () => (useSample ? { ...SAMPLE_INTAKE, look: sampleLook, world: sampleWorld, cut: sampleCut } : intake),
     [useSample, sampleLook, sampleWorld, sampleCut, intake],
   )
-  /** The scene whose words are open for writing, what that part of the draft was before, and the line being written. */
-  const [writing, setWriting] = useState<{ type: string; before: unknown; at: number } | null>(null)
-  // While words are written the film is rebuilt a moment behind the typing, so the typing stays quick. Every other change shows at once.
+  // While a field has the cursor the film is rebuilt a moment behind the typing, so the typing stays quick. Every other change shows at once.
+  const [typing, setTyping] = useState(false)
   const behind = useDeferredValue(source)
-  const built = writing ? behind : source
-  /** The last change made in the editor, so one tap takes it back. */
-  const [lastChange, setLastChange] = useState<SceneChange | null>(null)
-  const setCut = (cut: Cut | undefined, cueType?: string, change?: { label: string; cue?: string }) => {
-    const before = source.cut
-    setLastChange(change ? { label: change.label, undo: () => setCut(before, change.cue) } : null)
-    if (useSample) setSampleCut(cut)
-    else setIntake((c) => ({ ...c, cut }))
-    if (cueType) setCue({ type: cueType, key: Date.now() })
-  }
-  /** The version before the last "Try another version", so it can be had back. */
-  const [lastSeed, setLastSeed] = useState<number | null>(null)
+  const built = typing ? behind : source
+  /** The scene whose words are being changed, and what that part of the draft was before. */
+  const [writing, setWriting] = useState<{ type: WordScene; before: unknown } | null>(null)
+  /** The line of the scene being written, so the still shows that part of it. */
+  const [line, setLine] = useState<{ type: string; at: number }>()
+  /** What was done in the editor, oldest first, so Undo takes it back one step at a time. */
+  const [changes, setChanges] = useState<Change[]>([])
+  /** The last thing that happened, said beside Undo. */
+  const [note, setNote] = useState('')
   const story = useMemo<Story | null>(() => {
     if (!canGenerate(built)) return null
     // The sample says its people are invented in its own end credits, not in the header.
@@ -93,17 +102,26 @@ function Preview() {
   // The scene being edited. Opening the editor picks the scene on screen, or the first one that can be changed.
   const rows = useMemo(() => (story ? sceneBoard(built, story) : []), [built, story])
   const [picked, setPicked] = useState<string>()
-  const [tab, setTab] = useState<DeskTab>('scenes')
+  /** What the panel beside the still holds: the chosen scene, or the look of the whole film. */
+  const [side, setSide] = useState<'scene' | 'look'>('scene')
   useEffect(() => {
-    if (!editing) {
-      setTab('scenes')
-      setWriting(null)
-      return setPicked(undefined)
-    }
-    setLastChange(null)
+    setChanges([])
+    setNote('')
+    setWriting(null)
+    setTyping(false)
+    setLine(undefined)
+    setSide('scene')
+    if (!editing) return setPicked(undefined)
     setPicked((was) => was ?? (at.phase === 'playing' && rows.some((r) => r.type === at.scene) ? at.scene : (rows.find((r) => r.state === 'in' && !r.fixed) ?? rows[0])?.type))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editing])
+  // The song is heard by itself in its room, so the film goes quiet first.
+  useEffect(() => {
+    if (!room) return
+    film.current?.rewind()
+    setTyping(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [room])
   const selected = rows.find((r) => r.type === picked) ?? rows.find((r) => r.state === 'in' && !r.fixed) ?? rows[0]
   const shots = useMemo(() => (story && editing ? buildFilm(story).shots : []), [story, editing])
   const posters = useMemo(() => (story && editing ? scenePosters(story, shots) : new Map<string, Shot>()), [story, editing, shots])
@@ -129,54 +147,104 @@ function Preview() {
   }
 
   const world = story.world ?? 'screening'
-  // The words of a scene, changed where the film is. The film stops while they are written.
-  const openWords = (type: string) => {
-    if (!hasWords(type)) return
-    film.current?.rewind()
-    setLastChange(null)
-    setWriting({ type, before: intake[SCENE_FIELDS[type]], at: 0 })
-  }
-  const closeWords = () => {
-    if (!writing || !hasWords(writing.type)) return setWriting(null)
+
+  /** The words written since the scene's fields were first touched, as one change that can be taken back. */
+  const typed = (): Change | null => {
+    if (!writing) return null
     const field = SCENE_FIELDS[writing.type]
     const { before, type } = writing
-    setWriting(null)
     // Photos have their own way back, offered as each one is removed.
-    if (field === 'photos' || JSON.stringify(intake[field]) === JSON.stringify(before)) return
+    if (field === 'photos' || JSON.stringify(intake[field]) === JSON.stringify(before)) return null
     const name = rows.find((r) => r.type === type)?.name ?? 'The scene'
-    setLastChange({ label: `${name} changed.`, undo: () => setIntake((c) => ({ ...c, [field]: before })) })
+    return { label: `${name} changed.`, undo: () => setIntake((c) => ({ ...c, [field]: before })) }
+  }
+  /** Keep what was just done (and any words written before it) so it can be undone. */
+  const record = (change?: Change) => {
+    const added = [typed(), change].filter((c): c is Change => Boolean(c))
+    if (writing) setWriting(null)
+    if (!added.length) return
+    setChanges((list) => [...list, ...added].slice(-40))
+    setNote(added[added.length - 1].label)
+  }
+  const undo = () => {
+    // Words still being written are the newest change; before them, whatever was last kept.
+    const words = typed()
+    const last = words ?? changes[changes.length - 1]
+    if (!last) return
+    setWriting(null)
+    if (!words) setChanges((list) => list.slice(0, -1))
+    last.undo()
+    setNote(`${last.label} Undone.`)
+  }
+  const canUndo = changes.length > 0 || Boolean(typed())
+
+  const applyCut = (cut: Cut | undefined, cueType?: string) => {
+    if (useSample) setSampleCut(cut)
+    else setIntake((c) => ({ ...c, cut }))
+    if (cueType) setCue({ type: cueType, key: Date.now() })
+  }
+  const changeCut: CutChange = (cut, cueType, change) => {
+    const before = source.cut
+    applyCut(cut, cueType)
+    record(change ? { label: change.label, undo: () => applyCut(before, change.cue) } : undefined)
+  }
+  const applyLook = (look: Intake['look']) => (useSample ? setSampleLook(look as LookId) : setIntake((c) => ({ ...c, look })))
+  const applyWorld = (next: Intake['world']) => (useSample ? setSampleWorld(isWorld(next) ? next : 'screening') : setIntake((c) => ({ ...c, world: next })))
+  /** A scene's words, changed beside the still. What they were before the first change is kept for Undo. */
+  const writeWords: typeof setIntake = (update) => {
+    if (selected && hasWords(selected.type) && writing?.type !== selected.type) {
+      record()
+      setWriting({ type: selected.type, before: intake[SCENE_FIELDS[selected.type]] })
+    }
+    setIntake(update)
   }
   const select = (type: string) => {
-    if (writing) closeWords()
+    record()
     setPicked(type)
-    setLastChange(null)
+    setLine(undefined)
+    setSide('scene')
     // A film that is playing goes to the scene. One that isn't shows a still of it, and makes no sound until asked.
     if (at.phase === 'playing' && rows.find((r) => r.type === type)?.state === 'in') film.current?.playFrom(type)
   }
   const shuffle = () => {
-    setLastSeed(seed)
-    setLastChange(null)
+    const before = seed
     setSeed(newSeed())
+    record({ label: 'The film has another version.', undo: () => setSeed(before) })
   }
+
   // While editing, the stage is the film only while it plays. Otherwise it is a still of the chosen scene.
-  // On the other tabs it is always a scene that is in the film, so a change of look can be seen.
-  const shown = tab === 'scenes' || selected?.state === 'in' ? selected : (rows.find((r) => r.state === 'in' && !r.fixed) ?? rows[0])
-  const still = editing && (Boolean(writing) || at.phase !== 'playing') && shown
-  // While words are written, the still is the part of the scene they are in.
+  // While the look is open it is always a scene that is in the film, so a change of look can be seen.
+  const shown = side === 'scene' || selected?.state === 'in' ? selected : (rows.find((r) => r.state === 'in' && !r.fixed) ?? rows[0])
+  const playing = at.phase === 'playing'
+  const still = editing && !room && !playing && shown
+  // The still is the part of the scene being written.
   const stageShot = (() => {
     if (!shown) return undefined
-    const needle = writing && writing.type === shown.type ? writingNow(built, writing.type, writing.at) : ''
+    const needle = line && line.type === shown.type ? writingNow(built, line.type, line.at) : ''
     return (needle.length > 2 ? shots.find((s) => s.sceneType === shown.type && s.kind !== 'card' && s.text.includes(needle)) : undefined) ?? posters.get(shown.type)
   })()
-  const status = !useSample && job.state !== 'idle'
+  const inFilm = rows.filter((r) => r.state === 'in')
+  const status = !useSample && job.state !== 'idle' && !room
 
   return (
-    <div className={`preview-shell${editing ? ' is-editing' : ''}${editing && writing ? ' is-writing' : ''}`}>
+    <div className={`preview-shell${editing ? ' is-editing' : ''}${room ? ' is-song' : ''}`}>
       <StudioHeader tag={editing ? 'Editing' : undefined}>
         {editing ? (
-          <Link to="/preview" search={(was) => ({ ...was, edit: undefined })} replace className="button small primary">
-            Done
-          </Link>
+          <>
+            {!room && (
+              <>
+                <span className="edit-note" role="status">
+                  {note}
+                </span>
+                <button type="button" className="button small ghost undo-button" disabled={!canUndo} onClick={undo}>
+                  Undo
+                </button>
+              </>
+            )}
+            <Link to="/preview" search={(was) => ({ ...was, edit: undefined, song: undefined })} replace className="button small primary">
+              Done
+            </Link>
+          </>
         ) : (
           <>
             <Link to="/preview" search={(was) => ({ ...was, edit: 1 as const })} className="button small ghost">
@@ -195,7 +263,7 @@ function Preview() {
         )}
       </StudioHeader>
       <div className="preview-notes">
-        {status && <SongStatus job={job} name={story.recipient} onPlay={playJobSong} onRetry={() => startSong(intake, plan, true)} />}
+        {status && <SongStatus job={job} name={story.recipient} kept={Boolean(song)} onPlay={playJobSong} onRetry={() => startSong(intake, plan, true)} onDismiss={dismissJob} />}
       </div>
       <div className="preview-body">
         <Film
@@ -204,7 +272,7 @@ function Preview() {
           locked={locked}
           handle={film}
           onState={setAt}
-          covered={Boolean(still)}
+          covered={Boolean(still) || room}
           // The film has played through: the next step is offered where the sender is looking.
           ending={
             editing ? undefined : useSample ? (
@@ -226,23 +294,9 @@ function Preview() {
         {still && (
           <div className="stage-still">
             {shown.state === 'in' && stageShot ? (
-              <>
-                <div className="stage-still-frame">
-                  <Still look={story.look} world={world} content={{ kind: 'shot', shot: stageShot }} />
-                </div>
-                <p className="stage-still-foot">
-                  {writing ? (
-                    <span>A still from {shown.name}. It changes as you write.</span>
-                  ) : (
-                    <>
-                      <button type="button" className="button small primary" disabled={Boolean(locked)} onClick={() => film.current?.playFrom(shown.type)}>
-                        Play from here
-                      </button>
-                      <span>{locked ?? `A still from ${shown.name}. The film adds the motion and the song.`}</span>
-                    </>
-                  )}
-                </p>
-              </>
+              <div className="stage-still-frame">
+                <Still look={story.look} world={world} content={{ kind: 'shot', shot: stageShot }} />
+              </div>
             ) : (
               <p className="stage-still-empty">
                 <b>{shown.name}</b>
@@ -251,47 +305,94 @@ function Preview() {
             )}
           </div>
         )}
+        {editing && !room && shown && (
+          <p className="stage-foot">
+            {playing ? (
+              <button type="button" className="button small ghost" onClick={() => film.current?.rewind()}>
+                Stop
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="button small primary"
+                disabled={Boolean(locked) || shown.state !== 'in'}
+                onClick={() => {
+                  record()
+                  film.current?.playFrom(shown.type)
+                }}
+              >
+                <span className="glyph-play" aria-hidden="true" />
+                Play from here
+              </button>
+            )}
+            <span>
+              {locked ??
+                (playing ? (
+                  `Playing ${rows.find((r) => r.type === at.scene)?.name ?? 'the film'}.`
+                ) : shown.state === 'in' ? (
+                  <>
+                    Scene {inFilm.indexOf(shown) + 1} of {inFilm.length}.{!useSample && hasWords(shown.type) && side === 'scene' && <span className="wide-only"> What you type shows here as you write.</span>}
+                  </>
+                ) : (
+                  ''
+                ))}
+            </span>
+          </p>
+        )}
       </div>
-      {editing && selected && (
-        <EditDesk
-          intake={source}
-          story={story}
-          own={!useSample}
-          tab={tab}
-          onTab={(next) => {
-            if (next !== 'scenes') closeWords()
-            setTab(next)
-          }}
-          writing={writing?.type === selected.type}
-          onOpenWords={() => openWords(selected.type)}
-          onCloseWords={closeWords}
-          onWriting={(index) => setWriting((was) => (was ? { ...was, at: index } : was))}
-          setIntake={setIntake}
-          rows={rows}
-          posters={posters}
-          selected={selected}
-          playing={at.phase === 'playing' ? at.scene : undefined}
-          onSelect={select}
-          onCut={setCut}
-          lastChange={lastChange}
-          onUndo={() => {
-            const change = lastChange
-            setLastChange(null)
-            change?.undo()
-          }}
-          onLook={(look) => (useSample ? setSampleLook(look) : setIntake((c) => ({ ...c, look })))}
-          onWorld={(next) => (useSample ? setSampleWorld(next) : setIntake((c) => ({ ...c, world: next })))}
-          onShuffle={shuffle}
-          onUnshuffle={
-            lastSeed === null
-              ? undefined
-              : () => {
-                  setSeed(lastSeed)
-                  setLastSeed(null)
-                }
-          }
-        />
+      {editing && !room && selected && (
+        <>
+          <SceneNav
+            story={story}
+            rows={rows}
+            posters={posters}
+            selected={selected.type}
+            playing={playing ? at.scene : undefined}
+            onSelect={select}
+            lookOpen={side === 'look'}
+            onLook={() => {
+              record()
+              setSide((was) => (was === 'look' ? 'scene' : 'look'))
+            }}
+            onShuffle={shuffle}
+          />
+          {side === 'look' ? (
+            <LookPanel
+              story={story}
+              back={selected.name}
+              onClose={() => setSide('scene')}
+              onLook={(look) => {
+                const before = source.look
+                applyLook(look)
+                record({ label: 'The colours changed.', undo: () => applyLook(before) })
+              }}
+              onWorld={(next) => {
+                const before = source.world
+                applyWorld(next)
+                record({ label: 'The kind of film changed.', undo: () => applyWorld(before) })
+              }}
+            />
+          ) : (
+            <ScenePanel
+              intake={source}
+              story={story}
+              own={!useSample}
+              row={selected}
+              rows={rows}
+              setIntake={writeWords}
+              onLine={(index) => setLine({ type: selected.type, at: index })}
+              onTyping={(now) => {
+                setTyping(now)
+                // The film stops for the still, which follows the words.
+                if (now && window.__ltFilm?.phase() === 'playing') film.current?.rewind()
+              }}
+              onCut={changeCut}
+            />
+          )}
+          <SongBar sample={useSample} recipient={story.recipient} song={song} job={job} songs={songs} />
+        </>
       )}
+      {room && <SongRoom intake={source} sample={useSample} />}
     </div>
   )
 }
@@ -303,8 +404,21 @@ const SONG_STEPS = ['The words', 'The voice', 'On your film']
  * The bars are an estimate from how long each step usually takes, not a
  * measured percentage.
  */
-function SongStatus({ job, name, onPlay, onRetry }: { job: SongJob; name: string; onPlay: () => void; onRetry: () => void }) {
+function SongStatus({ job, name, kept, onPlay, onRetry, onDismiss }: { job: SongJob; name: string; /** The film already has a song, so this is another recording of it. */ kept: boolean; onPlay: () => void; onRetry: () => void; onDismiss: () => void }) {
   if (job.state === 'idle') return null
+  if (job.state === 'failed' && job.again && kept) {
+    return (
+      <section className="song-status is-failed" role="status">
+        <p className="song-status-words">
+          <b>The new recording didn’t come through.</b>
+          <span>{job.error} The film keeps the song it has.</span>
+        </p>
+        <button type="button" className="button small ghost" onClick={onDismiss}>
+          OK
+        </button>
+      </section>
+    )
+  }
   if (job.state === 'failed') {
     return (
       <section className="song-status is-failed" role="status">
@@ -319,6 +433,7 @@ function SongStatus({ job, name, onPlay, onRetry }: { job: SongJob; name: string
     )
   }
   const stage = job.state === 'writing' ? 0 : job.state === 'singing' ? 1 : 2
+  const again = 'again' in job && Boolean(job.again)
   return (
     <section className={`song-status is-${job.state}`} role="status">
       <span className="song-levels" aria-hidden="true">
@@ -335,10 +450,16 @@ function SongStatus({ job, name, onPlay, onRetry }: { job: SongJob; name: string
             <span>The film starts when its song is ready, in about a minute and a half.</span>
           </>
         )}
-        {job.state === 'singing' && (
+        {job.state === 'singing' && !job.again && (
           <>
             <b>The words are written. {name}’s song is being sung.</b>
             <span>About a minute more, then the film is ready to play.</span>
+          </>
+        )}
+        {job.state === 'singing' && job.again && (
+          <>
+            <b>A new recording of {name}’s song is being sung.</b>
+            <span>About a minute and a half. The film keeps the song it has until then.</span>
           </>
         )}
         {job.state === 'ready' && (
@@ -348,6 +469,7 @@ function SongStatus({ job, name, onPlay, onRetry }: { job: SongJob; name: string
           </>
         )}
       </p>
+      {!again && (
       <ol className="song-steps" aria-hidden="true">
         {SONG_STEPS.map((label, i) => (
           <li key={label} className={i < stage ? 'is-done' : i === stage ? 'is-now' : ''}>
@@ -358,6 +480,7 @@ function SongStatus({ job, name, onPlay, onRetry }: { job: SongJob; name: string
           </li>
         ))}
       </ol>
+      )}
       {job.state === 'ready' && (
         <button type="button" className="button small primary" onClick={onPlay}>
           Play the film with it
@@ -367,385 +490,10 @@ function SongStatus({ job, name, onPlay, onRetry }: { job: SongJob; name: string
   )
 }
 
-/** What the sender just did to a scene: what to say about it, and how to take it back. */
-interface SceneChange {
-  label: string
-  undo: () => void
-}
-
 /** The words on the line being written, to find the shot of the scene that shows them. */
 function writingNow(intake: Intake, type: string, at: number): string {
   if (type === 'redFlags') return (intake.habits[at] ?? '').trim()
   if (type === 'reasons') return (intake.reasons[at] ?? '').trim()
   if (type === 'memoryLane') return (intake.memories[at]?.title ?? '').trim()
   return ''
-}
-
-type CutChange = (cut: Cut | undefined, cue?: string, change?: { label: string; cue?: string }) => void
-
-type DeskTab = 'scenes' | 'look' | 'song'
-const DESK_TABS: Array<{ id: DeskTab; name: string }> = [
-  { id: 'scenes', name: 'Scenes' },
-  { id: 'look', name: 'Look' },
-  { id: 'song', name: 'Song' },
-]
-
-/**
- * The editor, under the film: its scenes in a row (tap one to change it), the
- * look of the whole film, and its song. Nothing here is needed to send a film;
- * anything the sender doesn't touch stays the studio's choice.
- */
-function EditDesk({
-  intake,
-  story,
-  own,
-  tab,
-  onTab: setTab,
-  writing,
-  onOpenWords,
-  onCloseWords,
-  onWriting,
-  setIntake,
-  rows,
-  posters,
-  selected,
-  playing,
-  onSelect,
-  onCut,
-  lastChange,
-  onUndo,
-  onLook,
-  onWorld,
-  onShuffle,
-  onUnshuffle,
-}: {
-  /** The details the film is built from (the sender's own, or the sample). */
-  intake: Intake
-  story: Story
-  own: boolean
-  tab: DeskTab
-  onTab: (tab: DeskTab) => void
-  /** The chosen scene's words are open for writing. */
-  writing: boolean
-  onOpenWords: () => void
-  onCloseWords: () => void
-  /** Which line of a list (or which memory) is being written. */
-  onWriting: (index: number) => void
-  setIntake: (update: (current: Intake) => Intake) => void
-  rows: BoardRow[]
-  posters: Map<string, Shot>
-  selected: BoardRow
-  /** The scene the film is on, while it plays. */
-  playing?: string
-  onSelect: (type: string) => void
-  onCut: CutChange
-  lastChange: SceneChange | null
-  onUndo: () => void
-  onLook: (look: LookId) => void
-  onWorld: (world: WorldId) => void
-  onShuffle: () => void
-  onUnshuffle?: () => void
-}) {
-  const tabs = useRef<HTMLDivElement>(null)
-  const step = (by: number) => {
-    const next = DESK_TABS[(DESK_TABS.findIndex((t) => t.id === tab) + by + DESK_TABS.length) % DESK_TABS.length]
-    setTab(next.id)
-    tabs.current?.querySelector<HTMLElement>(`#desk-tab-${next.id}`)?.focus()
-  }
-  return (
-    <section className={`edit-desk${writing ? ' is-writing' : ''}`} aria-label="Edit the film">
-      <div
-        ref={tabs}
-        className="desk-tabs"
-        role="tablist"
-        aria-label="What to change"
-        onKeyDown={(e) => {
-          if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return
-          // The arrow keys belong to the tabs here, not to the film above them.
-          e.stopPropagation()
-          step(e.key === 'ArrowRight' ? 1 : -1)
-        }}
-      >
-        {DESK_TABS.map((t) => (
-          <button key={t.id} type="button" role="tab" id={`desk-tab-${t.id}`} aria-selected={tab === t.id} aria-controls="desk-panel" tabIndex={tab === t.id ? 0 : -1} onClick={() => setTab(t.id)}>
-            {t.name}
-          </button>
-        ))}
-      </div>
-      <div id="desk-panel" className={`desk-panel is-${tab}`} role="tabpanel" aria-labelledby={`desk-tab-${tab}`}>
-        {tab === 'scenes' && (
-          <ScenesTab
-            intake={intake}
-            story={story}
-            own={own}
-            rows={rows}
-            posters={posters}
-            selected={selected}
-            playing={playing}
-            onSelect={onSelect}
-            onCut={onCut}
-            lastChange={lastChange}
-            onUndo={onUndo}
-            writing={writing}
-            onOpenWords={onOpenWords}
-            onCloseWords={onCloseWords}
-            onWriting={onWriting}
-            setIntake={setIntake}
-          />
-        )}
-        {tab === 'look' && <LookTab story={story} onLook={onLook} onWorld={onWorld} onShuffle={onShuffle} onUnshuffle={onUnshuffle} />}
-        {tab === 'song' && <SongTab intake={intake} sample={!own} />}
-      </div>
-    </section>
-  )
-}
-
-/** The film's scenes in order, then what was left out, then what could still go in. One is chosen; its changes sit right under the row. */
-function ScenesTab({
-  intake,
-  story,
-  own,
-  rows,
-  posters,
-  selected,
-  playing,
-  onSelect,
-  onCut,
-  lastChange,
-  onUndo,
-  writing,
-  onOpenWords,
-  onCloseWords,
-  onWriting,
-  setIntake,
-}: {
-  intake: Intake
-  story: Story
-  own: boolean
-  rows: BoardRow[]
-  posters: Map<string, Shot>
-  selected: BoardRow
-  playing?: string
-  onSelect: (type: string) => void
-  onCut: CutChange
-  lastChange: SceneChange | null
-  onUndo: () => void
-  writing: boolean
-  onOpenWords: () => void
-  onCloseWords: () => void
-  onWriting: (index: number) => void
-  setIntake: (update: (current: Intake) => Intake) => void
-}) {
-  const world = story.world ?? 'screening'
-  const cut = intake.cut
-  const movable = rows.filter((r) => r.state === 'in' && !r.fixed).map((r) => r.type)
-  const changed = Boolean(cut?.order?.length || cut?.off?.length || Object.keys(cut?.designs ?? {}).length)
-  const row = selected
-  const at = movable.indexOf(row.type)
-  const after = movable[at + 1] ?? 'wish'
-  const strip = useRef<HTMLOListElement>(null)
-  // The chosen scene stays in view as the row scrolls or its order changes.
-  useEffect(() => {
-    strip.current?.querySelector('[aria-pressed="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-  }, [row.type, rows])
-  return (
-    <>
-      <ol ref={strip} className="scene-strip">
-        {rows.map((r) => {
-          const poster = posters.get(r.type)
-          return (
-            <li key={r.type} className={`scene-tile is-${r.state}${playing === r.type ? ' is-playing' : ''}`}>
-              {/* The still holds the film's own buttons, so it sits beside the tile's button, which covers the whole tile. */}
-              {r.state === 'in' && poster ? (
-                <span className="scene-thumb">
-                  <Still look={story.look} world={world} content={{ kind: 'shot', shot: poster }} />
-                </span>
-              ) : (
-                <span className="scene-thumb is-empty" aria-hidden="true">
-                  {r.state === 'missing' ? '+' : ''}
-                </span>
-              )}
-              <button type="button" aria-pressed={r.type === row.type} onClick={() => onSelect(r.type)}>
-                <span className="scene-tile-name">{r.name}</span>
-                {r.state !== 'in' && <span className="visually-hidden">{r.state === 'off' ? ', left out' : ', not in the film yet'}</span>}
-              </button>
-            </li>
-          )
-        })}
-      </ol>
-      {writing && hasWords(row.type) ? (
-        <div className="scene-words">
-          <div className="scene-words-head">
-            <p className="scene-what">
-              <b>{row.name}</b>
-              <small>{sceneAsk(row.type, intake)}</small>
-            </p>
-            <button type="button" className="chip-button is-main" onClick={onCloseWords}>
-              Back to scenes
-            </button>
-          </div>
-          <SceneWords type={row.type} intake={intake} setIntake={setIntake} onWriting={onWriting} />
-        </div>
-      ) : (
-      <div className="scene-card">
-        {lastChange ? (
-          <p className="scene-undo" role="status">
-            <span>{lastChange.label}</span>
-            <button type="button" onClick={onUndo}>
-              Undo
-            </button>
-          </p>
-        ) : (
-          <p className="scene-what">
-            <b>{row.name}</b>
-            <small>
-              {row.state === 'missing' && `Not in the film yet. ${row.missing}.`}
-              {row.state === 'off' && 'Left out of the film.'}
-              {row.state === 'in' && (designName(world, row.type, row.design) ?? (row.fixed ? 'Always in the film.' : 'In the film.'))}
-            </small>
-          </p>
-        )}
-        <span className="scene-tools">
-          {own && hasWords(row.type) && (
-            <button type="button" className="chip-button is-main" aria-label={`${row.state === 'missing' ? 'Add' : row.type === 'cameraRoll' ? 'Change the photos in' : 'Edit the words in'} ${row.name}`} onClick={onOpenWords}>
-              {row.state === 'missing' ? 'Add it' : row.type === 'cameraRoll' ? 'Change photos' : 'Edit words'}
-            </button>
-          )}
-          {row.state === 'in' && row.designs.length > 1 && (
-            <button type="button" className="chip-button" aria-label={`Another design for ${row.name}`} onClick={() => onCut(nextDesign(story, cut, row.type), row.type, { label: `${row.name} has another design.`, cue: row.type })}>
-              Another design
-            </button>
-          )}
-          {row.state === 'in' && !row.fixed && (
-            <>
-              <button type="button" className="chip-button is-icon" aria-label={`Move ${row.name} earlier`} disabled={at <= 0} onClick={() => onCut(moveScene(story, cut, row.type, -1), row.type, { label: `${row.name} moved earlier.`, cue: row.type })}>
-                ←
-              </button>
-              <button type="button" className="chip-button is-icon" aria-label={`Move ${row.name} later`} disabled={at === movable.length - 1} onClick={() => onCut(moveScene(story, cut, row.type, 1), row.type, { label: `${row.name} moved later.`, cue: row.type })}>
-                →
-              </button>
-              <button type="button" className="chip-button" aria-label={`Leave out ${row.name}`} onClick={() => onCut(toggleScene(cut, row.type, false), after, { label: `${row.name} left out.`, cue: row.type })}>
-                Leave out
-              </button>
-            </>
-          )}
-          {row.state === 'off' && (
-            <button type="button" className="chip-button" aria-label={`Put back ${row.name}`} onClick={() => onCut(toggleScene(cut, row.type, true), row.type, { label: `${row.name} put back.`, cue: 'hello' })}>
-              Put back
-            </button>
-          )}
-        </span>
-        {(changed || own) && (
-          <span className="scene-more">
-            {changed && (
-              <button type="button" className="text-button" onClick={() => onCut(undefined, 'hello', { label: 'All scenes are back to the studio’s choices.', cue: 'hello' })}>
-                Reset all scenes
-              </button>
-            )}
-            {own && (
-              <Link to="/create" className="text-button">
-                Edit every detail
-              </Link>
-            )}
-          </span>
-        )}
-      </div>
-      )}
-    </>
-  )
-}
-
-/** The whole film's look: its kind, its colours, and a fresh draw of the studio's choices. */
-function LookTab({ story, onLook, onWorld, onShuffle, onUnshuffle }: { story: Story; onLook: (look: LookId) => void; onWorld: (world: WorldId) => void; onShuffle: () => void; onUnshuffle?: () => void }) {
-  const world = story.world ?? 'screening'
-  return (
-    <>
-      <fieldset className="adjust-group">
-        <legend>Kind of film</legend>
-        <div className="world-options">
-          {WORLDS.map((w) => (
-            <label key={w.id} className="world-option">
-              <input type="radio" name="preview-world" checked={world === w.id} onChange={() => onWorld(w.id)} />
-              <span>
-                <b>{w.name}</b>
-                <small>{w.blurb}</small>
-              </span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
-      <fieldset className="adjust-group">
-        <legend>Colours</legend>
-        <div className="adjust-options">
-          {LOOKS.map((l) => (
-            <label key={l.id} className="look-option" data-look={l.id} data-world={world}>
-              <input type="radio" name="preview-look" checked={story.look === l.id} onChange={() => onLook(l.id)} />
-              <span className="swatch" aria-hidden="true" />
-              {worldOf(world).looks[l.id]}
-            </label>
-          ))}
-        </div>
-      </fieldset>
-      <div className="adjust-group">
-        <p className="adjust-legend">A different take</p>
-        <p className="fine">The same words and photos, with the studio’s lines and designs drawn again.</p>
-        <div className="adjust-options">
-          <button type="button" className="chip-button" onClick={onShuffle}>
-            Try another version
-          </button>
-          {onUnshuffle && (
-            <button type="button" className="text-button" onClick={onUnshuffle}>
-              Back to the last version
-            </button>
-          )}
-        </div>
-      </div>
-    </>
-  )
-}
-
-/** The film's song: which take is on it, its words, and the way to change it. */
-function SongTab({ intake, sample }: { intake: Intake; sample: boolean }) {
-  const { song, setSong, takes } = useDraft()
-  const recipient = intake.recipient.trim()
-  const lyrics = sample ? SAMPLE_LYRICS : song?.lyrics
-  return (
-    <>
-      <div className="adjust-group">
-        <p className="adjust-legend">On this film</p>
-        {sample ? (
-          <>
-            <p className="song-now">“{SAMPLE_SOUNDTRACK.label}”, written and sung for this film.</p>
-            <p className="fine">Start your own and the studio writes a song like this about your person.</p>
-          </>
-        ) : (
-          <>
-            {takes.length > 1 ? (
-              <div className="adjust-options">
-                {takes.map((take, i) => (
-                  <label key={take.id} className="choice">
-                    <input type="radio" name="soundtrack" checked={song?.id === take.id} onChange={() => setSong(take)} />
-                    “{take.label}”, take {i + 1}
-                  </label>
-                ))}
-              </div>
-            ) : (
-              <p className="song-now">{song ? `“${song.label}”, written and sung for ${recipient}.` : `${recipient}’s song hasn’t been made yet.`}</p>
-            )}
-            <div className="song-maker">
-              <Link to="/song" className="chip-button is-main">
-                {takes.length ? 'Change the song' : `Write ${recipient}’s song`}
-              </Link>
-            </div>
-          </>
-        )}
-      </div>
-      {lyrics && (
-        <div className="adjust-group song-words">
-          <p className="adjust-legend">Its words</p>
-          <p className="song-lyrics">{lyrics}</p>
-        </div>
-      )}
-    </>
-  )
 }

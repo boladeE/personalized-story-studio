@@ -25,20 +25,19 @@ test('end to end: build, write and make a song, lock, send, recipient unlocks an
   await openEditor(page)
   await pickScene(page, 'Memory lane')
   await page.getByRole('button', { name: 'Another design for Memory lane' }).click()
-  await pickScene(page, 'Memory lane')
-  const memoryDesign = (await page.locator('.scene-card .scene-what small').textContent()) === 'Clipped cards' ? 'clipped' : 'taped'
+  const memoryDesign = (await page.locator('.scene-panel .scene-design').textContent()) === 'Clipped cards' ? 'clipped' : 'taped'
   await pickScene(page, 'The camera roll')
   await page.getByRole('button', { name: 'Leave out The camera roll' }).click()
   await expect(page.locator('.song-status')).toHaveCount(0, { timeout: live ? 260_000 : 15_000 })
-  await page.getByRole('tab', { name: 'Look' }).click()
+  await page.getByRole('button', { name: /^Look/ }).click()
   await page.getByRole('radio', { name: 'White card' }).check()
   await expect(film).toHaveAttribute('data-look', 'paper')
 
   // The song can be rewritten and sung again. Its words are the ones the studio wrote for the first take.
-  await page.getByRole('tab', { name: 'Song' }).click()
-  await page.getByRole('link', { name: 'Change the song' }).click()
-  await expect(page.getByRole('heading', { name: 'Zara’s song' })).toBeVisible()
+  await page.getByRole('link', { name: 'Hear it or change it' }).click()
+  await expect(page.locator('.songroom')).toContainText('Written and sung for Zara')
   await expect(page.getByText(/studio score/i)).toHaveCount(0)
+  await page.getByRole('button', { name: /Rewrite the words/ }).click()
   const sheet = page.getByLabel('Lyrics')
   await expect(sheet).toHaveValue(/Zara/, { timeout: live ? 90_000 : 5_000 })
   await expect(page.getByLabel('Song title')).not.toHaveValue('')
@@ -47,11 +46,12 @@ test('end to end: build, write and make a song, lock, send, recipient unlocks an
   const written = await sheet.inputValue()
   await sheet.fill(`${written}\nHappy birthday to you`)
   await expect(page.getByRole('alert')).toContainText('line from another song')
-  await expect(page.getByRole('button', { name: 'Make another take' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Sing these words' })).toBeDisabled()
   await sheet.fill(`${written}\nAnd yes, you can have my chips`)
   await expect(page.getByRole('alert')).toHaveCount(0)
 
-  // Pick a tune by ear.
+  // Pick a tune by ear. The changed words stay on the sheet, and the new tune sings them.
+  await page.getByRole('button', { name: /Change the sound/ }).click()
   const sample = page.waitForResponse((r) => r.url().endsWith('/tunes/highlife.mp3'))
   await page.getByRole('button', { name: 'Hear Highlife guitar' }).click()
   expect((await sample).status()).toBeLessThan(300)
@@ -60,15 +60,16 @@ test('end to end: build, write and make a song, lock, send, recipient unlocks an
 
   // Hear it sung: the approved words go to the music model as they are.
   const songRequest = page.waitForRequest((r) => r.url().endsWith('/api/music') && r.method() === 'POST')
-  await page.getByRole('button', { name: 'Make another take' }).click()
+  await page.getByRole('button', { name: 'Make it with this tune' }).click()
   const asked = (await songRequest).postDataJSON() as { vibe: string; details?: Record<string, unknown>; lyrics?: string }
   expect(asked.vibe).toBe('highlife')
   expect(asked.details).toMatchObject({ recipient: 'Zara', sender: 'Tobi' })
   expect(asked.lyrics).toContain('And yes, you can have my chips')
   expect(JSON.stringify(asked)).not.toContain('holding everything together')
   await expect(page.getByRole('radio', { name: 'Take 2, Highlife guitar' })).toBeChecked({ timeout: live ? 260_000 : 5_000 })
-  await expect(page.getByRole('button', { name: 'Make another take' })).toBeEnabled()
-  await page.getByRole('link', { name: 'Play the film with this song' }).click()
+  // The new recording is the film's song, and its words are the ones read here.
+  await expect(page.locator('.song-lyrics')).toContainText('And yes, you can have my chips')
+  await closeEditor(page)
   await startFilm(page)
   await expect.poll(async () => (await audioState(page))?.trackId).toBe('song')
   await openEditor(page, 'Song')

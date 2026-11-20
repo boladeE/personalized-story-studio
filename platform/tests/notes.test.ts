@@ -7,7 +7,7 @@ import { emptyIntake, SAMPLE_INTAKE } from '../src/story/sample'
 import { RELATIONSHIP_IDS } from '../src/story/types'
 import type { Intake } from '../src/story/types'
 import { parseIntake } from '../src/story/validate'
-import { lyricsBrief, lyricsPrompt, parseSongDetails, songDetails, vibeById, VIBES } from '../src/story/vibes'
+import { lyricParts, lyricsBrief, lyricsPrompt, parseSongDetails, songDetails, vibeById, VIBES } from '../src/story/vibes'
 
 process.env.MUSIC_PROVIDER = 'demo'
 const { sortBrief, sortNotes, sortProvider } = await import('../src/server/sort')
@@ -165,5 +165,24 @@ describe('the song recipe', () => {
 
   it('gives every style a full recipe and a tune to hear', () => {
     for (const vibe of VIBES) expect(vibe.genre && vibe.tempo && vibe.instruments && vibe.mood && vibe.prompt, vibe.id).toBeTruthy()
+  })
+})
+
+describe('a song’s words, laid out to read', () => {
+  it('splits them into their named parts, and never shows a part’s name as a sung line', () => {
+    const parts = lyricParts('[Verse]\nWake up today\nSee you right there\n\n[Pre-chorus]\nDon’t have to speak\n[Chorus]\nYou give me joy\nYou give me joy\n')
+    expect(parts.map((p) => p.label)).toEqual(['Verse', 'Pre-chorus', 'Chorus'])
+    expect(parts[0].lines).toEqual(['Wake up today', 'See you right there'])
+    expect(parts[2].lines).toEqual(['You give me joy', 'You give me joy'])
+    expect(parts.flatMap((p) => p.lines).some((line) => line.includes('['))).toBe(false)
+  })
+
+  it('treats a blank line as the start of an unnamed part, and drops parts with nothing sung', () => {
+    const parts = lyricParts('Meant to stay for one\nThen the weather turned\n\nThe rain can wait\n\n[Bridge]\n\n')
+    expect(parts).toEqual([
+      { label: '', lines: ['Meant to stay for one', 'Then the weather turned'] },
+      { label: '', lines: ['The rain can wait'] },
+    ])
+    expect(lyricParts('')).toEqual([])
   })
 })

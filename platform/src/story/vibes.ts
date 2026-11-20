@@ -520,3 +520,26 @@ export function lyricsPrompt(vibe: Vibe, d: SongDetails, lyrics: string, voice: 
     `Lyrics:\n${lyrics}`,
   ].join('\n')
 }
+
+/** A song's words in parts, for reading: each named part ([Verse], [Chorus]) or unnamed stanza, with its sung lines. */
+export function lyricParts(lyrics: string): Array<{ label: string; lines: string[] }> {
+  const parts: Array<{ label: string; lines: string[] }> = []
+  let part: { label: string; lines: string[] } | null = null
+  for (const raw of lyrics.split('\n')) {
+    const line = raw.trim()
+    const label = /^\[(.+)\]$/.exec(line)
+    if (label) {
+      part = { label: label[1].trim(), lines: [] }
+      parts.push(part)
+    } else if (!line) {
+      part = null
+    } else {
+      if (!part) {
+        part = { label: '', lines: [] }
+        parts.push(part)
+      }
+      part.lines.push(line)
+    }
+  }
+  return parts.filter((p) => p.lines.length > 0)
+}
