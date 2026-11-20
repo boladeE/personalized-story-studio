@@ -61,8 +61,8 @@ export function keepTheirWords(raw: unknown, source: string): SortedNotes {
   return { spotlight: text(r.spotlight, LIMITS.spotlight), memories, habits: lines(r.habits, LIMITS.habits), reasons: lines(r.reasons, LIMITS.reasons), wish: text(r.wish, LIMITS.wish) }
 }
 
-const HABIT = /\b(always|never|every time|every single|keeps?|says?|steals?|sends?|calls?|forgets?|insists?|refuses?|orders?|replies|leaves?)\b/i
-const REASON = /\b(because|love|kind|patient|funny|listens?|remembers?|shows? up|believes?|proud|grateful|thank)/i
+export const HABIT = /\b(always|never|every time|every single|keeps?|says?|steals?|sends?|calls?|forgets?|insists?|refuses?|orders?|replies|leaves?)\b/i
+export const REASON = /\b(because|love|kind|patient|funny|listens?|remembers?|shows? up|believes?|proud|grateful|thank)/i
 
 /**
  * Sorting without a model, for when it is switched off or doesn't answer:

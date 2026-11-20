@@ -14,7 +14,7 @@ import { canGenerate, LOOKS, sceneStatus } from '../story/generate'
 import type { SceneStatus } from '../story/generate'
 import { occasionOf, OCCASIONS } from '../story/occasions'
 import { newSeed } from '../story/rng'
-import { emptyIntake, SAMPLE_INTAKE } from '../story/sample'
+import { emptyIntake, SAMPLE_FIXED } from '../story/sample'
 import { isOccasion } from '../story/types'
 import type { Intake, Memory, Occasion } from '../story/types'
 import { LIMITS } from '../story/validate'
@@ -37,6 +37,8 @@ const STEPS: Array<{ id: StepId; name: string; scenes: string[] }> = [
   { id: 'look', name: 'Look', scenes: [] },
 ]
 const STEP_IDS = STEPS.map((s) => s.id)
+/** The steps of the older fixed scenes. */
+const OLDER_STEPS: StepId[] = ['spotlight', 'memories', 'habits', 'reasons']
 
 export const Route = createFileRoute('/create')({
   // `occasion` arrives from the home page's tickets; it is written into the draft and then dropped from the address.
@@ -79,10 +81,15 @@ function Create() {
   // An occasion picked on the home page shows at once, before it is saved to the draft below.
   const intake = useMemo(() => (asked && asked !== draft.occasion ? { ...draft, occasion: asked } : draft), [draft, asked])
   const occasion = occasionOf(intake.occasion)
-  const steps = useMemo(() => STEPS.map((s) => (s.id === 'wish' ? { ...s, name: occasion.ending.step } : s)), [occasion])
-  const stepId: StepId = stepParam ?? 'who'
-  const at = STEP_IDS.indexOf(stepId)
+  // A film with its own scenes has them changed beside the film, not here: this form keeps the steps every film has.
+  const outlined = Boolean(draft.outline)
+  const steps = useMemo(
+    () => STEPS.filter((s) => !outlined || !OLDER_STEPS.includes(s.id)).map((s) => (s.id === 'wish' ? { ...s, name: occasion.ending.step } : s)),
+    [occasion, outlined],
+  )
+  const at = Math.max(0, steps.findIndex((s) => s.id === (stepParam ?? 'who')))
   const step = steps[at]
+  const stepId: StepId = step.id
 
   useEffect(() => {
     if (!asked) return
@@ -100,7 +107,8 @@ function Create() {
 
   const set = <K extends keyof Intake>(key: K, value: Intake[K]) => setIntake((c) => ({ ...c, [key]: value }))
   const status = sceneStatus(intake)
-  const scene = (type: string) => status.find((s) => s.type === type) as SceneStatus
+  // A film with its own scenes has no "camera roll" by that name; its photos step is ready once it has a photo.
+  const scene = (type: string): SceneStatus => status.find((s) => s.type === type) ?? { type, name: 'Photos', description: '', missing: intake.photos.length ? null : 'Add a photo' }
   const readyCount = status.filter((s) => !s.missing).length
   const ready = canGenerate(intake)
   const them = intake.recipient.trim()
@@ -498,7 +506,7 @@ function Create() {
   return (
     <>
       <StudioHeader>
-        <button type="button" className="button small ghost" onClick={() => replaceDraft({ ...structuredClone(SAMPLE_INTAKE), occasion: intake.occasion }, 'Filled with the sample.')}>
+        <button type="button" className="button small ghost" onClick={() => replaceDraft({ ...structuredClone(SAMPLE_FIXED), occasion: intake.occasion }, 'Filled with the sample.')}>
           Fill with the sample
         </button>
         <button type="button" className="button small ghost" onClick={() => replaceDraft({ ...emptyIntake(), occasion: intake.occasion }, 'Draft cleared.')}>

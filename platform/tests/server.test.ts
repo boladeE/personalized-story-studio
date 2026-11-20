@@ -11,7 +11,7 @@ const music = await import('../src/server/music')
 const lyrics = await import('../src/server/lyrics')
 const vibes = await import('../src/story/vibes')
 const { parseIntake } = await import('../src/story/validate')
-const { SAMPLE_INTAKE } = await import('../src/story/sample')
+const { SAMPLE_FIXED } = await import('../src/story/sample')
 
 describe('gift lock', () => {
   it('accepts the answer however it is typed, and nothing else', () => {
@@ -88,31 +88,31 @@ describe('the lock on a gift', () => {
 
 describe('intake validation', () => {
   it('accepts the sample and rejects bad shapes', () => {
-    expect(parseIntake(SAMPLE_INTAKE).ok).toBe(true)
-    expect(parseIntake({ ...SAMPLE_INTAKE, sender: ' ' })).toEqual({ ok: false, error: 'Both names are needed' })
-    expect(parseIntake({ ...SAMPLE_INTAKE, letter: 'x'.repeat(7000) }).ok).toBe(false)
-    expect(parseIntake({ ...SAMPLE_INTAKE, look: 'neon' }).ok).toBe(false)
-    expect(parseIntake({ ...SAMPLE_INTAKE, world: 'opera' })).toEqual({ ok: false, error: 'Unknown kind of film' })
-    expect(parseIntake({ ...SAMPLE_INTAKE, photos: [{ id: '../x', caption: '' }] }).ok).toBe(false)
-    expect(parseIntake({ ...SAMPLE_INTAKE, memories: [{ id: 'm1', title: 'a', story: 'b', photoId: 'p-missing' }] }).ok).toBe(false)
+    expect(parseIntake(SAMPLE_FIXED).ok).toBe(true)
+    expect(parseIntake({ ...SAMPLE_FIXED, sender: ' ' })).toEqual({ ok: false, error: 'Both names are needed' })
+    expect(parseIntake({ ...SAMPLE_FIXED, letter: 'x'.repeat(7000) }).ok).toBe(false)
+    expect(parseIntake({ ...SAMPLE_FIXED, look: 'neon' }).ok).toBe(false)
+    expect(parseIntake({ ...SAMPLE_FIXED, world: 'opera' })).toEqual({ ok: false, error: 'Unknown kind of film' })
+    expect(parseIntake({ ...SAMPLE_FIXED, photos: [{ id: '../x', caption: '' }] }).ok).toBe(false)
+    expect(parseIntake({ ...SAMPLE_FIXED, memories: [{ id: 'm1', title: 'a', story: 'b', photoId: 'p-missing' }] }).ok).toBe(false)
   })
 
   it('keeps the kind of film and the sender’s own cut, and refuses a malformed one', () => {
     const cut = { order: ['reasons', 'spotlight'], off: ['cameraRoll'], designs: { redFlags: 'checklist' } }
-    const parsed = parseIntake({ ...SAMPLE_INTAKE, world: 'scrapbook', cut })
+    const parsed = parseIntake({ ...SAMPLE_FIXED, world: 'scrapbook', cut })
     expect(parsed.ok && parsed.intake.world).toBe('scrapbook')
     expect(parsed.ok && parsed.intake.cut).toEqual(cut)
     // Gifts made before worlds carry neither.
-    const plain = parseIntake(SAMPLE_INTAKE)
+    const plain = parseIntake(SAMPLE_FIXED)
     expect(plain.ok && 'world' in plain.intake).toBe(false)
     expect(plain.ok && 'cut' in plain.intake).toBe(false)
     for (const bad of [{ order: 'reasons' }, { off: [7] }, { designs: { redFlags: '<script>' } }, { order: Array(40).fill('reasons') }, ['reasons'], 'x']) {
-      expect(parseIntake({ ...SAMPLE_INTAKE, cut: bad }).ok, JSON.stringify(bad)).toBe(false)
+      expect(parseIntake({ ...SAMPLE_FIXED, cut: bad }).ok, JSON.stringify(bad)).toBe(false)
     }
   })
 
   it('drops photo sources sent by the browser', () => {
-    const parsed = parseIntake(SAMPLE_INTAKE)
+    const parsed = parseIntake(SAMPLE_FIXED)
     expect(parsed.ok && parsed.intake.photos.every((p) => p.src === '')).toBe(true)
   })
 })
@@ -166,7 +166,7 @@ describe('AI music', () => {
 
   it('writes a sung song only from the sender’s details, and an instrumental from none of them', () => {
     const vibe = vibes.vibeById('highlife')!
-    const details = vibes.songDetails(SAMPLE_INTAKE)!
+    const details = vibes.songDetails(SAMPLE_FIXED)!
     expect(details).toMatchObject({ recipient: 'Zara', sender: 'Tobi' })
     expect(details.reasons).toHaveLength(3)
     expect(details.habits).toHaveLength(3)
@@ -235,7 +235,7 @@ describe('AI music', () => {
   })
 
   it('briefs the lyric writer only from the sender’s details, in either tone, and steers it off the old birthday song', () => {
-    const details = vibes.songDetails(SAMPLE_INTAKE)!
+    const details = vibes.songDetails(SAMPLE_FIXED)!
     for (const tone of vibes.LYRIC_TONES) {
       const brief = vibes.lyricsBrief(details, tone)
       expect(brief).toContain('Tobi')
@@ -259,7 +259,7 @@ describe('AI music', () => {
   })
 
   it('asks the music model to sing the approved words exactly', () => {
-    const details = vibes.songDetails(SAMPLE_INTAKE)!
+    const details = vibes.songDetails(SAMPLE_FIXED)!
     const words = '[Verse]\nYou steal the duvet, ask why I’m cold\n\n[Chorus]\nHappy birthday, Zara'
     const prompt = vibes.lyricsPrompt(vibes.vibeById('highlife')!, details, words)
     expect(prompt).toContain('exactly as written')
@@ -290,7 +290,7 @@ describe('AI music', () => {
   it('keeps the approved words and title with a song made from them', async () => {
     const before = { ...process.env }
     process.env.MUSIC_PROVIDER = 'demo'
-    const details = vibes.songDetails(SAMPLE_INTAKE)!
+    const details = vibes.songDetails(SAMPLE_FIXED)!
     expect(lyrics.lyricsProvider()).toBe('demo')
     const words = await lyrics.writeLyrics(details)
     expect(words.lyrics).toContain('Happy birthday, Zara')

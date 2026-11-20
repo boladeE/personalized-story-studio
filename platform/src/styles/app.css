@@ -1228,6 +1228,52 @@ select:focus-visible {
   font-weight: 650;
   color: var(--muted);
 }
+/* How one of the film's own scenes is shown: a line, a list or a moment. */
+.scene-shape {
+  border: 0;
+  margin: 0 0 14px;
+  padding: 0;
+  min-width: 0;
+}
+.scene-shape legend {
+  padding: 0;
+  margin-bottom: 6px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--palm);
+}
+.scene-shape-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.scene-shape-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 14px 0 10px;
+  border: 1.5px solid #cfd5c8;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.scene-shape-option:has(input:checked) {
+  border-color: var(--palm);
+  box-shadow: inset 0 0 0 1px var(--palm);
+}
+.scene-shape-option:has(input:focus-visible) {
+  outline: 3px solid var(--hibiscus);
+  outline-offset: 2px;
+}
+.scene-shape-option input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--hibiscus);
+}
 .scene-words textarea,
 .scene-words input:not([type='radio']) {
   background: #fff;

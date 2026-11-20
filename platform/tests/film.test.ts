@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { buildFilm, DEFAULT_BPM, shotAt } from '../src/film/timeline'
 import { generateStory } from '../src/story/generate'
-import { emptyIntake, SAMPLE_INTAKE, SAMPLE_NOTE } from '../src/story/sample'
+import { emptyIntake, SAMPLE_FIXED, SAMPLE_NOTE } from '../src/story/sample'
 import { parseIntake } from '../src/story/validate'
 
-const screening = { ...SAMPLE_INTAKE, world: 'screening' as const }
+const screening = { ...SAMPLE_FIXED, world: 'screening' as const }
 const story = generateStory(screening, 7)
 const film = buildFilm(story)
 
@@ -33,12 +33,12 @@ describe('film timeline', () => {
   it('says everything the sender wrote, word for word', () => {
     const all = film.shots.map((s) => s.text).join('\n')
     const said = [
-      SAMPLE_INTAKE.spotlight,
-      SAMPLE_INTAKE.wish,
-      ...SAMPLE_INTAKE.habits,
-      ...SAMPLE_INTAKE.reasons,
-      ...SAMPLE_INTAKE.memories.flatMap((m) => [m.title, m.story]),
-      ...SAMPLE_INTAKE.letter.split(/\n+/),
+      SAMPLE_FIXED.spotlight,
+      SAMPLE_FIXED.wish,
+      ...SAMPLE_FIXED.habits,
+      ...SAMPLE_FIXED.reasons,
+      ...SAMPLE_FIXED.memories.flatMap((m) => [m.title, m.story]),
+      ...SAMPLE_FIXED.letter.split(/\n+/),
     ]
     for (const text of said.map((t) => t.trim()).filter(Boolean)) expect(all).toContain(text)
   })
@@ -106,11 +106,11 @@ describe('music', () => {
 })
 
 describe('the same story as a scrapbook', () => {
-  const album = buildFilm(generateStory({ ...SAMPLE_INTAKE, world: 'scrapbook', cut: { designs: { reasons: 'bunting', redFlags: 'stickies' } } }, 7))
+  const album = buildFilm(generateStory({ ...SAMPLE_FIXED, world: 'scrapbook', cut: { designs: { reasons: 'bunting', redFlags: 'stickies' } } }, 7))
 
   it('says everything the Screening says, word for word', () => {
     const all = album.shots.map((s) => s.text).join('\n')
-    const said = [SAMPLE_INTAKE.spotlight, SAMPLE_INTAKE.wish, ...SAMPLE_INTAKE.habits, ...SAMPLE_INTAKE.reasons, ...SAMPLE_INTAKE.memories.flatMap((m) => [m.title, m.story]), ...SAMPLE_INTAKE.letter.split(/\n+/)]
+    const said = [SAMPLE_FIXED.spotlight, SAMPLE_FIXED.wish, ...SAMPLE_FIXED.habits, ...SAMPLE_FIXED.reasons, ...SAMPLE_FIXED.memories.flatMap((m) => [m.title, m.story]), ...SAMPLE_FIXED.letter.split(/\n+/)]
     for (const text of said) expect(all).toContain(text.trim())
     expect(all).toContain('For Zara. From Tobi.')
   })
@@ -130,7 +130,7 @@ describe('the same story as a scrapbook', () => {
     expect(flags.every((s) => s.exit === 'cut' && s.sceneType === 'redFlags')).toBe(true)
     // The verdict lands on the page the flags are on, so it knows what they were.
     const verdict = album.shots[flags.at(-1)!.index + 1]
-    expect(verdict.kind === 'line' && verdict.items).toEqual(SAMPLE_INTAKE.habits)
+    expect(verdict.kind === 'line' && verdict.items).toEqual(SAMPLE_FIXED.habits)
   })
 
   it('still cuts on whole beats and waits at the candle', () => {
@@ -143,11 +143,11 @@ describe('the same story as a scrapbook', () => {
 })
 
 describe('the same story as a mixtape', () => {
-  const tape = buildFilm(generateStory({ ...SAMPLE_INTAKE, world: 'mixtape', cut: { designs: { reasons: 'liner', redFlags: 'tracklist' } } }, 7))
-  const loud = buildFilm(generateStory({ ...SAMPLE_INTAKE, world: 'mixtape', cut: { designs: { reasons: 'nowplaying', redFlags: 'shout' } } }, 7))
+  const tape = buildFilm(generateStory({ ...SAMPLE_FIXED, world: 'mixtape', cut: { designs: { reasons: 'liner', redFlags: 'tracklist' } } }, 7))
+  const loud = buildFilm(generateStory({ ...SAMPLE_FIXED, world: 'mixtape', cut: { designs: { reasons: 'nowplaying', redFlags: 'shout' } } }, 7))
 
   it('says everything the Screening says, word for word, in either set of designs', () => {
-    const said = [SAMPLE_INTAKE.spotlight, SAMPLE_INTAKE.wish, ...SAMPLE_INTAKE.habits, ...SAMPLE_INTAKE.reasons, ...SAMPLE_INTAKE.memories.flatMap((m) => [m.title, m.story]), ...SAMPLE_INTAKE.letter.split(/\n+/)]
+    const said = [SAMPLE_FIXED.spotlight, SAMPLE_FIXED.wish, ...SAMPLE_FIXED.habits, ...SAMPLE_FIXED.reasons, ...SAMPLE_FIXED.memories.flatMap((m) => [m.title, m.story]), ...SAMPLE_FIXED.letter.split(/\n+/)]
     for (const film of [tape, loud]) {
       const all = film.shots.map((s) => s.text).join('\n')
       for (const text of said) expect(all).toContain(text.trim())
@@ -169,7 +169,7 @@ describe('the same story as a mixtape', () => {
     expect(flags.every((s) => s.exit === 'cut' && s.design === 'tracklist')).toBe(true)
     // The verdict lands on the listing, so it knows what was on it.
     const verdict = tape.shots[flags.at(-1)!.index + 1]
-    expect(verdict.kind === 'line' && verdict.items).toEqual(SAMPLE_INTAKE.habits)
+    expect(verdict.kind === 'line' && verdict.items).toEqual(SAMPLE_FIXED.habits)
     // One reason to a screen fades between them; one flag to a screen cuts.
     expect(loud.shots.filter((s) => s.kind === 'reason').every((s) => s.exit === 'fade')).toBe(true)
     expect(loud.shots.filter((s) => s.kind === 'flag').every((s) => s.enter === 'cut' && s.exit === 'cut' && s.design === 'shout')).toBe(true)
@@ -185,14 +185,14 @@ describe('the same story as a mixtape', () => {
 })
 
 describe('an ending the sender chose', () => {
-  const asked = { ...SAMPLE_INTAKE, world: 'mixtape' as const, ending: { kind: 'question' as const, ask: 'Same again next year?' } }
-  const invited = { ...SAMPLE_INTAKE, world: 'scrapbook' as const, ending: { kind: 'invitation' as const, invite: 'Dinner, on me. This Saturday.', choices: ['The rooftop', 'Mama’s kitchen'] as [string, string] } }
+  const asked = { ...SAMPLE_FIXED, world: 'mixtape' as const, ending: { kind: 'question' as const, ask: 'Same again next year?' } }
+  const invited = { ...SAMPLE_FIXED, world: 'scrapbook' as const, ending: { kind: 'invitation' as const, invite: 'Dinner, on me. This Saturday.', choices: ['The rooftop', 'Mama’s kitchen'] as [string, string] } }
 
   it('ends on the sender’s question, waits for an answer, then shows their last line', () => {
     const film = buildFilm(generateStory(asked, 5))
     const [wish, reveal, credits] = film.shots.slice(-3)
     expect(wish).toMatchObject({ kind: 'wish', prop: 'question', title: 'Same again next year?', choices: ['Yes', 'Obviously'], hold: true })
-    expect(reveal).toMatchObject({ kind: 'reveal', words: SAMPLE_INTAKE.wish })
+    expect(reveal).toMatchObject({ kind: 'reveal', words: SAMPLE_FIXED.wish })
     expect(reveal.kind === 'reveal' && reveal.names).toBeUndefined()
     expect(credits.kind).toBe('credits')
     expect(generateStory(asked, 5).scenes.at(-1)?.name).toBe('The question')
@@ -207,17 +207,17 @@ describe('an ending the sender chose', () => {
   })
 
   it('falls back to the occasion’s own ending while the sender’s is unfinished', () => {
-    const half = buildFilm(generateStory({ ...SAMPLE_INTAKE, ending: { kind: 'invitation', invite: 'Dinner', choices: ['The rooftop', ''] } }, 5))
+    const half = buildFilm(generateStory({ ...SAMPLE_FIXED, ending: { kind: 'invitation', invite: 'Dinner', choices: ['The rooftop', ''] } }, 5))
     expect(half.shots.find((s) => s.kind === 'wish')).toMatchObject({ prop: 'candle' })
-    const blank = buildFilm(generateStory({ ...SAMPLE_INTAKE, ending: { kind: 'question', ask: '  ' } }, 5))
+    const blank = buildFilm(generateStory({ ...SAMPLE_FIXED, ending: { kind: 'question', ask: '  ' } }, 5))
     expect(blank.shots.find((s) => s.kind === 'wish')).toMatchObject({ prop: 'candle' })
   })
 
   it('travels with the gift, within its limits', () => {
-    const kept = parseIntake({ ...SAMPLE_INTAKE, ending: invited.ending })
+    const kept = parseIntake({ ...SAMPLE_FIXED, ending: invited.ending })
     expect(kept.ok && kept.intake.ending).toEqual(invited.ending)
-    expect(parseIntake({ ...SAMPLE_INTAKE, ending: { kind: 'question', ask: 'x'.repeat(400) } }).ok).toBe(false)
-    expect(parseIntake({ ...SAMPLE_INTAKE, ending: { kind: 'invitation', invite: 'Dinner', choices: ['One'] } }).ok).toBe(false)
-    expect(parseIntake({ ...SAMPLE_INTAKE, ending: { kind: 'fireworks' } }).ok).toBe(false)
+    expect(parseIntake({ ...SAMPLE_FIXED, ending: { kind: 'question', ask: 'x'.repeat(400) } }).ok).toBe(false)
+    expect(parseIntake({ ...SAMPLE_FIXED, ending: { kind: 'invitation', invite: 'Dinner', choices: ['One'] } }).ok).toBe(false)
+    expect(parseIntake({ ...SAMPLE_FIXED, ending: { kind: 'fireworks' } }).ok).toBe(false)
   })
 })

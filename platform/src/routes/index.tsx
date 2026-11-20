@@ -2,8 +2,8 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Film, FILM_HUSH, FILM_SOUND } from '../film/Film'
 import { Still } from '../film/Still'
-import { previewFor } from '../film/previews'
-import type { StepFocus, StepId } from '../film/previews'
+import { previewFor, scenePosters } from '../film/previews'
+import type { StepFocus } from '../film/previews'
 import { formatTime } from '../film/timeline'
 import { generateStory } from '../story/generate'
 import { OCCASIONS } from '../story/occasions'
@@ -23,21 +23,20 @@ export const Route = createFileRoute('/')({
   component: Home,
 })
 
-/** What goes into a film, shown as stills from the sample. `focus` picks which memory, habit or reason is on screen. */
-const SCENES: Array<{ step: StepId; name: string; gives: string; focus?: Partial<StepFocus> }> = [
-  { step: 'who', name: 'The invitation', gives: 'A ticket with their name on it. They tap it, and the film and the music start.' },
-  { step: 'spotlight', name: 'The main character', gives: 'Their best photo, and what you love about how they are.' },
-  { step: 'memories', name: 'Memory lane', gives: 'Your memories, one at a time, each with its own photo.', focus: { memory: 1 } },
-  { step: 'habits', name: 'Red flags', gives: 'Their funniest habits, filed as very serious red flags.', focus: { habit: 1 } },
-  { step: 'reasons', name: 'Reasons', gives: 'Why it’s them, revealed one by one.' },
-  { step: 'photos', name: 'The camera roll', gives: 'A spread of your photos with their captions.' },
-  { step: 'letter', name: 'A letter', gives: 'Your own letter, set like a real one.' },
-  { step: 'wish', name: 'The last line', gives: 'A candle to blow out or a note to open, then your final words.' },
-]
+/** What each kind of scene is, said under a still of the sample's. The scenes themselves are the sample's own. */
+const GIVES: Record<string, string> = {
+  hello: 'Every film opens with their name and a line from you.',
+  line: 'One line that deserves a screen to itself.',
+  list: 'Things that belong together, one after another.',
+  moment: 'Something that happened, told beside its photo.',
+  photos: 'The photos no other scene used, with their captions.',
+  letter: 'Your own letter, set like a real one. Only if you write one.',
+  wish: 'The ending you chose, then your last line.',
+}
 
 const STEPS = [
   { name: 'Tell', text: 'A few taps, a few photos and a few sentences about them, in your own words.' },
-  { name: 'Watch', text: 'The studio sorts your words into scenes and the film plays straight away. Shuffle it, or add a letter and more scenes.' },
+  { name: 'Watch', text: 'The studio writes the film’s scenes from your words, and it plays straight away. Rename a scene, add one of your own, or try another version.' },
   { name: 'Hear their song', text: 'Pick a style and a voice. A song about them arrives in about a minute, and you can change any line.' },
   { name: 'Send', text: 'Lock it with a question only they can answer, then share one private link.' },
 ]
@@ -75,6 +74,14 @@ function Home() {
   // The hero is the product itself: the fictional sample, ready to play.
   const sample = useMemo(() => ({ ...generateStory({ ...SAMPLE_INTAKE, look: 'screening', world: 'screening' }, 20261113), soundtrack: SAMPLE_SOUNDTRACK, note: SAMPLE_NOTE }), [])
   const rain = SAMPLE_INTAKE.memories[1]
+  // The sample's own scenes, each as the still that shows it best.
+  const inside = useMemo(() => {
+    const posters = scenePosters(sample)
+    return sample.scenes.flatMap((scene) => {
+      const shot = posters.get(scene.type)
+      return shot ? [{ id: scene.id, name: scene.name, shot, gives: GIVES[scene.layout ?? scene.type] ?? '' }] : []
+    })
+  }, [sample])
   return (
     <div className="home-shell">
       <header className="studio-header home-header">
@@ -180,14 +187,17 @@ function Home() {
 
         <section id="inside" className="home-section band band-wine" aria-labelledby="inside-title">
           <div className="section-intro">
-            <h2 id="inside-title">What goes into the film</h2>
-            <p>Each scene is built from something you tell us. Skip one and the film simply leaves it out.</p>
+            <h2 id="inside-title">Scenes written for one person</h2>
+            <p>
+              There is no set list of scenes. The studio reads what you write and decides what your film’s scenes are. These are {SAMPLE_INTAKE.recipient}’s, made from what {SAMPLE_INTAKE.sender} wrote. Yours
+              will be different.
+            </p>
           </div>
           <ol className="contact-sheet">
-            {SCENES.map((scene) => (
-              <li key={scene.step}>
+            {inside.map((scene) => (
+              <li key={scene.id}>
                 <div className="contact-frame">
-                  <Still {...previewFor(scene.step, SAMPLE_INTAKE, { ...FOCUS, ...scene.focus }, 'screening')} />
+                  <Still look="screening" world="screening" content={{ kind: 'shot', shot: scene.shot }} />
                 </div>
                 <h3>{scene.name}</h3>
                 <p>{scene.gives}</p>

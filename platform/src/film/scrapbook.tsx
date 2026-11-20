@@ -104,13 +104,13 @@ export function PageBody({ shot, actions, leaving }: { shot: Shot; actions: Shot
       )
     case 'line':
       if (shot.items?.length && shot.sceneType === 'redFlags') {
-        return shot.design === 'checklist' ? <Checklist items={shot.items} shown={shot.items.length} name={shot.sceneName} verdict={shot.title} /> : <Stickies items={shot.items} shown={shot.items.length} name={shot.sceneName} stamp={shot.title} />
+        return shot.design === 'checklist' ? <Checklist items={shot.items} shown={shot.items.length} name={shot.sceneName} verdict={shot.title} flag /> : <Stickies items={shot.items} shown={shot.items.length} name={shot.sceneName} stamp={shot.title} flag />
       }
       return <LinePage shot={shot} />
     case 'photo':
       return <PhotoPage shot={shot} />
     case 'flag':
-      return shot.design === 'checklist' ? <Checklist items={shot.all} shown={shot.n} name={shot.sceneName} fresh /> : <Stickies items={shot.all} shown={shot.n} name={shot.sceneName} fresh />
+      return shot.design === 'checklist' ? <Checklist items={shot.all} shown={shot.n} name={shot.sceneName} fresh flag={shot.sceneType === 'redFlags'} /> : <Stickies items={shot.all} shown={shot.n} name={shot.sceneName} fresh flag={shot.sceneType === 'redFlags'} />
     case 'reason':
       return shot.design === 'cards' ? <ReasonCards shot={shot} /> : <Bunting shot={shot} />
     case 'montage':
@@ -282,7 +282,7 @@ function PhotoPage({ shot }: { shot: Of<'photo'> }) {
             <Img photo={photo} />
             <Clip />
           </figure>
-          <p className="sb-typed sb-count">{shot.kicker}</p>
+          {shot.kicker && <p className="sb-typed sb-count">{shot.kicker}</p>}
           {head}
           {shot.body && (
             <p className="sb-typed sb-card-body sb-in" style={vars({ '--at': `${after.toFixed(2)}s` })}>
@@ -340,9 +340,11 @@ function PhotoPage({ shot }: { shot: Of<'photo'> }) {
     <div ref={ref} className={`sb-photo is-${design} layout-${shot.layout}${long}`} aria-hidden="true">
       {print}
       <div className="sb-words">
-        <p className={`sb-typed ${design === 'taped' ? 'sb-count' : 'sb-label'} sb-in`} style={vars({ '--at': '0.75s' })}>
-          {shot.kicker}
-        </p>
+        {shot.kicker && (
+          <p className={`sb-typed ${design === 'taped' ? 'sb-count' : 'sb-label'} sb-in`} style={vars({ '--at': '0.75s' })}>
+            {shot.kicker}
+          </p>
+        )}
         {head}
         {design === 'corners' && (
           <svg className="sb-arrow" viewBox="0 0 120 50" style={vars({ '--at': `${after.toFixed(2)}s` })}>
@@ -373,12 +375,12 @@ const GRID: Record<number, [number, number, number, number]> = {
 }
 
 /** The red flags as sticky notes slapped onto the page one at a time, and a rubber stamp for the verdict. */
-function Stickies({ items, shown, name, fresh = false, stamp }: { items: string[]; shown: number; name: string; fresh?: boolean; stamp?: string }) {
+function Stickies({ items, shown, name, fresh = false, stamp, flag = false }: { items: string[]; shown: number; name: string; fresh?: boolean; stamp?: string; /** The older "Red flags" scene, which is the only one that flies a flag. */ flag?: boolean }) {
   const [cols, rows, tallCols, tallRows] = GRID[Math.min(items.length, 7)] ?? GRID[7]
   return (
     <div className="sb-flags is-stickies" aria-hidden="true">
       <p className="sb-flags-head">
-        <FlagIcon />
+        {flag && <FlagIcon />}
         <span className="sb-hand">{name}</span>
         <span className="sb-typed">
           {shown} of {items.length}
@@ -407,7 +409,7 @@ const PAD_SIZES = [
 ]
 
 /** The red flags as a list on a legal pad, each one ticked off, with the verdict written underneath and circled. */
-function Checklist({ items, shown, name, fresh = false, verdict }: { items: string[]; shown: number; name: string; fresh?: boolean; verdict?: string }) {
+function Checklist({ items, shown, name, fresh = false, verdict, flag = false }: { items: string[]; shown: number; name: string; fresh?: boolean; verdict?: string; flag?: boolean }) {
   // The biggest handwriting whose lines still fit the pad: its height holds about [lines], each about [letters] wide.
   const density = PAD_SIZES.findIndex(([lines, letters]) => 3.8 + items.reduce((sum, text) => sum + Math.ceil(text.length / letters), 0) <= lines)
   // If the list still outgrows the pad (a narrow screen), it moves up by whole lines so the newest is always in view.
@@ -432,7 +434,7 @@ function Checklist({ items, shown, name, fresh = false, verdict }: { items: stri
       <div className={`sb-pad fit-${density < 0 ? PAD_SIZES.length - 1 : density}`}>
         <i className="sb-binder" />
         <h3 className="sb-hand">
-          <FlagIcon />
+          {flag && <FlagIcon />}
           {name}
         </h3>
         <div className="sb-pad-list" ref={sheet}>
@@ -519,9 +521,11 @@ function ReasonCards({ shot }: { shot: Of<'reason'> }) {
 function MontageHead({ shot }: { shot: Of<'montage'> }) {
   return (
     <div className="sb-montage-head">
-      <p className="sb-label sb-typed sb-in" style={vars({ '--at': '0.45s' })}>
-        {shot.kicker}
-      </p>
+      {shot.kicker && (
+        <p className="sb-label sb-typed sb-in" style={vars({ '--at': '0.45s' })}>
+          {shot.kicker}
+        </p>
+      )}
       <Type as="h2" text={shot.title} className="sb-hand" by="char" delay={0.6} step={40} />
     </div>
   )

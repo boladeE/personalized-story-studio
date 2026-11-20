@@ -3,12 +3,9 @@ import { cleanDirection, cleanStoredDirection, directionLine, directLocally, DIR
 import type { DirectionBrief } from '../src/story/direction'
 import { generateStory } from '../src/story/generate'
 import { emptyNotes } from '../src/story/notes'
-import { SAMPLE_INTAKE } from '../src/story/sample'
+import { SAMPLE_FIXED } from '../src/story/sample'
 import type { Direction } from '../src/story/types'
 import { parseIntake } from '../src/story/validate'
-
-process.env.MUSIC_PROVIDER = 'demo'
-const { completeDirection, direct, directBrief } = await import('../src/server/direct')
 
 const brief = (over: Partial<DirectionBrief['notes']> = {}, rest: Partial<DirectionBrief> = {}): DirectionBrief => ({
   occasion: 'birthday',
@@ -62,41 +59,11 @@ describe('what a director may say', () => {
     expect(cleanDirection(null)).toBeNull()
     expect(cleanDirection({ world: 'screening' }, DIRECTED_WORLDS)).toBeNull()
   })
-
-  it('fills in what a model left out from the rules, so every scene has a design and a place', () => {
-    const plan = completeDirection({ world: 'mixtape', look: 'paper', designs: { redFlags: 'tracklist' }, order: ['reasons'], because: 'teasing' }, TEASING)!
-    expect(plan.designs).toMatchObject({ redFlags: 'tracklist', reasons: 'nowplaying', spotlight: 'poster' })
-    expect([...plan.order].sort()).toEqual(['cameraRoll', 'letter', 'memoryLane', 'reasons', 'redFlags', 'spotlight'])
-    // A model that picks a different kind of film from the rule still gets every scene designed for the film it picked.
-    const other = completeDirection({ world: 'scrapbook', look: 'garden', designs: { spotlight: 'polaroid' }, order: [], because: 'tender' }, TEASING)!
-    expect(other.designs).toEqual({ spotlight: 'polaroid', memoryLane: 'taped', redFlags: 'stickies', reasons: 'bunting', cameraRoll: 'pile' })
-    expect(completeDirection({ world: 'screening' }, TEASING)).toBeNull()
-  })
-
-  it('keeps the introduction first and the letter last, wherever a model puts them', () => {
-    const plan = completeDirection({ world: 'scrapbook', look: 'garden', designs: {}, order: ['redFlags', 'letter', 'memoryLane', 'reasons', 'spotlight', 'cameraRoll'], because: 'tender' }, TEASING)!
-    expect(plan.order).toEqual(['spotlight', 'redFlags', 'memoryLane', 'reasons', 'cameraRoll', 'letter'])
-  })
-
-  it('tells the model what the studio has and what was written, and never a letter or a photo', () => {
-    const text = directBrief({ ...TEASING, letter: true, photos: 5 })
-    expect(text).toContain('mixtape ("The Mixtape")')
-    expect(text).toContain('tracklist ("Track list")')
-    expect(text).toContain('Steals the duvet')
-    expect(text).toContain('Photos: 5. A letter: yes.')
-    expect(text).not.toContain('screening ("The Screening")')
-  })
-
-  it('directs by rule when the model is off', async () => {
-    const { direction, by } = await direct(TEASING)
-    expect(by).toBe('rule')
-    expect(direction).toEqual(directLocally(TEASING))
-  })
 })
 
 describe('a directed film', () => {
   const direction: Direction = { seed: 11, world: 'mixtape', look: 'garden', designs: { redFlags: 'tracklist', reasons: 'liner' }, order: ['letter', 'redFlags', 'reasons', 'memoryLane', 'cameraRoll', 'spotlight'], because: 'teasing' }
-  const intake = { ...SAMPLE_INTAKE, look: 'surprise' as const, world: undefined, direction }
+  const intake = { ...SAMPLE_FIXED, look: 'surprise' as const, world: undefined, direction }
   const middle = (seed: number, from = intake) => generateStory(from, seed).scenes.map((s) => s.type).filter((t) => !['ticket', 'hello', 'wish'].includes(t))
 
   it('is made the way the studio directed, for the version it directed', () => {
@@ -108,12 +75,12 @@ describe('a directed film', () => {
   })
 
   it('says the same words whichever way it is directed', () => {
-    const said = (seed: number, from: typeof intake | typeof SAMPLE_INTAKE) => generateStory(from, seed).scenes.flatMap((s) => s.frames.flatMap((f) => ('text' in f ? [f.text] : [])))
-    expect(said(11, intake).sort()).toEqual(said(11, { ...SAMPLE_INTAKE, look: 'surprise' }).sort())
+    const said = (seed: number, from: typeof intake | typeof SAMPLE_FIXED) => generateStory(from, seed).scenes.flatMap((s) => s.frames.flatMap((f) => ('text' in f ? [f.text] : [])))
+    expect(said(11, intake).sort()).toEqual(said(11, { ...SAMPLE_FIXED, look: 'surprise' }).sort())
   })
 
   it('is drawn afresh for another version', () => {
-    const drawn = (seed: number) => generateStory({ ...SAMPLE_INTAKE, look: 'surprise', world: undefined }, seed)
+    const drawn = (seed: number) => generateStory({ ...SAMPLE_FIXED, look: 'surprise', world: undefined }, seed)
     for (const seed of [3, 12, 99]) {
       expect(generateStory(intake, seed).world).toBe(drawn(seed).world)
       expect(generateStory(intake, seed).look).toBe(drawn(seed).look)
@@ -128,9 +95,9 @@ describe('a directed film', () => {
   })
 
   it('travels with the gift, and anything in it the studio does not know is dropped', () => {
-    const stored = parseIntake({ ...SAMPLE_INTAKE, direction: { ...direction, designs: { ...direction.designs, redFlags: 'laser' }, note: 'x' } })
+    const stored = parseIntake({ ...SAMPLE_FIXED, direction: { ...direction, designs: { ...direction.designs, redFlags: 'laser' }, note: 'x' } })
     expect(stored.ok && stored.intake.direction).toEqual({ ...direction, designs: { reasons: 'liner' } })
-    const bad = parseIntake({ ...SAMPLE_INTAKE, direction: { world: 'hologram', seed: 1 } })
+    const bad = parseIntake({ ...SAMPLE_FIXED, direction: { world: 'hologram', seed: 1 } })
     expect(bad.ok && 'direction' in bad.intake).toBe(false)
     expect(cleanStoredDirection({ ...direction, seed: 'soon' })).toBeNull()
   })

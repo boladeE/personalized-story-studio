@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { canGenerate, generateStory, moveScene, nextDesign, sceneBoard, sceneStatus, toggleScene } from '../src/story/generate'
 import { designsFor, WORLDS } from '../src/story/worlds'
 import { SCENES } from '../src/story/library'
-import { emptyIntake, SAMPLE_INTAKE } from '../src/story/sample'
+import { emptyIntake, SAMPLE_FIXED } from '../src/story/sample'
 import type { Frame, Intake, Story } from '../src/story/types'
 
 const minimal = (): Intake => ({ ...emptyIntake(), sender: 'Ada', recipient: 'Kemi' })
@@ -11,7 +11,7 @@ const frameText = (f: Frame): string => JSON.stringify(f)
 
 describe('generateStory', () => {
   it('rebuilds the identical story from the same intake and seed', () => {
-    expect(generateStory(SAMPLE_INTAKE, 42)).toEqual(generateStory(SAMPLE_INTAKE, 42))
+    expect(generateStory(SAMPLE_FIXED, 42)).toEqual(generateStory(SAMPLE_FIXED, 42))
   })
 
   it('needs both names', () => {
@@ -27,7 +27,7 @@ describe('generateStory', () => {
   })
 
   it('uses every scene the sample can fill, opening with the ticket and closing with the wish', () => {
-    const story = generateStory(SAMPLE_INTAKE, 3)
+    const story = generateStory(SAMPLE_FIXED, 3)
     expect(types(story)[0]).toBe('ticket')
     expect(types(story).at(-1)).toBe('wish')
     expect(new Set(types(story))).toEqual(new Set(Object.keys(SCENES)))
@@ -42,40 +42,40 @@ describe('generateStory', () => {
   })
 
   it('puts the sender’s words into the story verbatim', () => {
-    const text = generateStory(SAMPLE_INTAKE, 5).scenes.flatMap((s) => s.frames.map(frameText)).join('\n')
-    for (const value of [SAMPLE_INTAKE.spotlight, ...SAMPLE_INTAKE.habits, ...SAMPLE_INTAKE.reasons, SAMPLE_INTAKE.wish]) {
+    const text = generateStory(SAMPLE_FIXED, 5).scenes.flatMap((s) => s.frames.map(frameText)).join('\n')
+    for (const value of [SAMPLE_FIXED.spotlight, ...SAMPLE_FIXED.habits, ...SAMPLE_FIXED.reasons, SAMPLE_FIXED.wish]) {
       expect(text).toContain(JSON.stringify(value).slice(1, -1))
     }
-    for (const memory of SAMPLE_INTAKE.memories) expect(text).toContain(JSON.stringify(memory.story).slice(1, -1))
+    for (const memory of SAMPLE_FIXED.memories) expect(text).toContain(JSON.stringify(memory.story).slice(1, -1))
   })
 
   it('honours the photo chosen for each memory', () => {
-    const lane = generateStory(SAMPLE_INTAKE, 9).scenes.find((s) => s.type === 'memoryLane')!
+    const lane = generateStory(SAMPLE_FIXED, 9).scenes.find((s) => s.type === 'memoryLane')!
     const photos = lane.frames.flatMap((f) => (f.kind === 'photo' ? [f.photo.id] : []))
-    expect(photos).toEqual(SAMPLE_INTAKE.memories.map((m) => m.photoId))
+    expect(photos).toEqual(SAMPLE_FIXED.memories.map((m) => m.photoId))
   })
 
   it('does not reuse a memory’s photo for the spotlight', () => {
     for (let seed = 0; seed < 40; seed++) {
-      const spot = generateStory(SAMPLE_INTAKE, seed).scenes.find((s) => s.type === 'spotlight')!.frames[0]
+      const spot = generateStory(SAMPLE_FIXED, seed).scenes.find((s) => s.type === 'spotlight')!.frames[0]
       expect(spot.kind).toBe('photo')
-      if (spot.kind === 'photo') expect(SAMPLE_INTAKE.memories.map((m) => m.photoId)).not.toContain(spot.photo.id)
+      if (spot.kind === 'photo') expect(SAMPLE_FIXED.memories.map((m) => m.photoId)).not.toContain(spot.photo.id)
     }
   })
 
   it('varies with the seed (Shuffle) while keeping the same content', () => {
-    const stories = Array.from({ length: 30 }, (_, seed) => generateStory(SAMPLE_INTAKE, seed))
+    const stories = Array.from({ length: 30 }, (_, seed) => generateStory(SAMPLE_FIXED, seed))
     expect(new Set(stories.map((s) => types(s).join())).size).toBeGreaterThan(1)
     expect(new Set(stories.map((s) => s.look)).size).toBe(3)
     expect(new Set(stories.map((s) => types(s).slice().sort().join())).size).toBe(1)
   })
 
   it('respects a chosen look', () => {
-    expect(generateStory({ ...SAMPLE_INTAKE, look: 'paper' }, 1).look).toBe('paper')
+    expect(generateStory({ ...SAMPLE_FIXED, look: 'paper' }, 1).look).toBe('paper')
   })
 
   it('draws the kind of film and each scene’s design from the seed, and keeps what the sender chose', () => {
-    const stories = Array.from({ length: 40 }, (_, seed) => generateStory(SAMPLE_INTAKE, seed))
+    const stories = Array.from({ length: 40 }, (_, seed) => generateStory(SAMPLE_FIXED, seed))
     expect(new Set(stories.map((s) => s.world))).toEqual(new Set(WORLDS.map((w) => w.id)))
     for (const story of stories) {
       for (const scene of story.scenes) {
@@ -88,7 +88,7 @@ describe('generateStory', () => {
     const cuts = new Set(stories.map((s) => [s.world, ...s.scenes.map((sc) => `${sc.type}:${sc.design ?? ''}`)].join()))
     expect(cuts.size).toBeGreaterThan(15)
     for (const seed of [1, 2, 3, 4, 5, 6]) {
-      const chosen = generateStory({ ...SAMPLE_INTAKE, world: 'scrapbook', cut: { designs: { redFlags: 'checklist', reasons: 'nonsense' } } }, seed)
+      const chosen = generateStory({ ...SAMPLE_FIXED, world: 'scrapbook', cut: { designs: { redFlags: 'checklist', reasons: 'nonsense' } } }, seed)
       expect(chosen.world).toBe('scrapbook')
       expect(chosen.scenes.find((s) => s.type === 'redFlags')!.design).toBe('checklist')
       // A design this kind of film doesn't have is ignored, not broken.
@@ -99,14 +99,14 @@ describe('generateStory', () => {
   it('choosing the kind of film or a design changes nothing else', () => {
     const strip = (s: Story) => ({ ...s, world: undefined, scenes: s.scenes.map((sc) => ({ ...sc, design: undefined })) })
     for (const seed of [3, 8, 21]) {
-      const base = generateStory({ ...SAMPLE_INTAKE, world: 'screening' }, seed)
-      const album = generateStory({ ...SAMPLE_INTAKE, world: 'scrapbook', cut: { designs: { cameraRoll: 'strip' } } }, seed)
+      const base = generateStory({ ...SAMPLE_FIXED, world: 'screening' }, seed)
+      const album = generateStory({ ...SAMPLE_FIXED, world: 'scrapbook', cut: { designs: { cameraRoll: 'strip' } } }, seed)
       expect(strip(album)).toEqual(strip(base))
     }
   })
 
   it('lets the sender move a scene, leave one out and put it back', () => {
-    const intake: Intake = { ...SAMPLE_INTAKE, world: 'scrapbook' }
+    const intake: Intake = { ...SAMPLE_FIXED, world: 'scrapbook' }
     const story = generateStory(intake, 5)
     const middle = (s: Story) => types(s).filter((t) => !['ticket', 'hello', 'wish'].includes(t))
     const before = middle(story)
@@ -130,14 +130,14 @@ describe('generateStory', () => {
   })
 
   it('puts a scene the sender fills in later after the one it normally follows', () => {
-    const early: Intake = { ...SAMPLE_INTAKE, world: 'screening', letter: '', cut: { order: ['reasons', 'spotlight', 'memoryLane', 'redFlags', 'cameraRoll'] } }
-    const later = generateStory({ ...early, letter: SAMPLE_INTAKE.letter }, 9)
+    const early: Intake = { ...SAMPLE_FIXED, world: 'screening', letter: '', cut: { order: ['reasons', 'spotlight', 'memoryLane', 'redFlags', 'cameraRoll'] } }
+    const later = generateStory({ ...early, letter: SAMPLE_FIXED.letter }, 9)
     expect(types(later).slice(-2)).toEqual(['letter', 'wish'])
     expect(types(later).slice(2, 4)).toEqual(['reasons', 'spotlight'])
   })
 
   it('steps a scene through its designs and lists the film for the editor', () => {
-    const intake: Intake = { ...SAMPLE_INTAKE, world: 'scrapbook' }
+    const intake: Intake = { ...SAMPLE_FIXED, world: 'scrapbook' }
     const story = generateStory(intake, 2)
     const first = story.scenes.find((s) => s.type === 'memoryLane')!.design
     const cut = nextDesign(story, undefined, 'memoryLane')

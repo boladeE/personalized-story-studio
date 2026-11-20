@@ -1,8 +1,9 @@
 import { sceneLabel, SCENES, SKELETONS } from './library'
 import type { BuildContext } from './library'
+import { chapterLines, chapterMissing, chapterName, outlineOf } from './outline'
 import { createRng } from './rng'
-import type { Cut, Intake, LookId, Photo, Scene, Story, WorldId } from './types'
-import { designsFor, WORLDS } from './worlds'
+import type { Chapter, Cut, Frame, Intake, LookId, Photo, PhotoLayout, Scene, SceneLayout, Story, WorldId } from './types'
+import { designKey, designsFor, WORLDS } from './worlds'
 import type { DesignDef } from './worlds'
 
 export const LOOKS: Array<{ id: LookId; name: string }> = [
@@ -18,8 +19,13 @@ export interface SceneStatus {
   missing: string | null
 }
 
-/** Which scenes this intake can fill, in skeleton order. Drives the storyboard. */
+/** Which scenes this intake can fill, in the studio's order. Drives the storyboard. */
 export function sceneStatus(intake: Intake): SceneStatus[] {
+  const outline = outlineOf(intake)
+  if (outline) {
+    const fixed = (type: string) => ({ type, ...sceneLabel(SCENES[type], intake), missing: SCENES[type].missing(intake) })
+    return [fixed('ticket'), fixed('hello'), ...outline.map((c) => ({ type: c.id, name: chapterName(c), description: '', missing: chapterMissing(c, intake) })), fixed('letter'), fixed('wish')]
+  }
   return skeletonFor(intake).flatMap((slot) =>
     slot.candidates.map((type) => {
       const def = SCENES[type]
@@ -55,6 +61,38 @@ function arrange(types: string[], cut: Cut | undefined): string[] {
   })
   let next = 0
   return kept.map((type) => (isFixed(type) ? type : middle[next++]))
+}
+
+const sameStart = (name: string, text: string) => text.toLowerCase().startsWith(name.toLowerCase().replace(/[.!?…]+$/, ''))
+
+/** An outlined scene's frames: the sender's words, under the scene's own name, in its layout. */
+function chapterFrames(chapter: Chapter, ctx: BuildContext, loud: boolean): Frame[] {
+  const name = chapterName(chapter)
+  const lines = chapterLines(chapter)
+  switch (chapter.layout) {
+    case 'line': {
+      const [text] = lines
+      if (!text) return []
+      // A line short enough to shout fills the screen under the scene's name; a longer one is read under it.
+      if (text.length > 90) return [{ kind: 'title', kicker: '', title: name, body: text }]
+      return [{ kind: 'title', kicker: sameStart(name, text) ? '' : name, title: text }]
+    }
+    case 'list':
+      return lines.map<Frame>((text, index) => ({ kind: 'item', marker: loud ? 'loud' : 'calm', kicker: name, text, index, total: lines.length }))
+    case 'moment': {
+      const body = lines.join(' ')
+      if (!body) return []
+      const photo = (chapter.photoId && ctx.photoById(chapter.photoId)) || ctx.takePhoto()
+      // A telling with no name of its own, or one that opens with its name, is titled by its first sentence, said once.
+      const [opening, ...after] = body.split(/(?<=[.!?])\s+/)
+      const words = (!chapter.name.trim() || sameStart(name, body)) && opening.length <= 90 ? { kicker: '', title: opening, ...(after.length ? { body: after.join(' ') } : {}) } : { kicker: '', title: name, body }
+      return [photo ? { kind: 'photo', photo, layout: ctx.rng.pick<PhotoLayout>(['left', 'right']), ...words } : { kind: 'title', ...words }]
+    }
+    case 'photos': {
+      const photos = ctx.unusedPhotos().slice(0, 6)
+      return photos.length ? [{ kind: 'montage', kicker: '', title: name, photos }] : []
+    }
+  }
 }
 
 /**
@@ -110,6 +148,53 @@ export function generateStory(intake: Intake, seed: number): Story {
   // Scenes are built in the studio's order, so moving or dropping one doesn't change the others.
   const built = new Map<string, Omit<Scene, 'id'>>()
   const order: string[] = []
+  const fixed = (type: string) => {
+    const def = SCENES[type]
+    if (def.missing(intake) !== null) return
+    const frames = def.build(ctx)
+    if (!frames.length) return
+    order.push(type)
+    built.set(type, { type, name: sceneLabel(def, intake).name, mood: def.mood, frames })
+  }
+
+  const outline = outlineOf(intake)
+  if (outline) {
+    // The film's own scenes. Each draws its design in turn, and two scenes of a kind that follow
+    // each other don't share one while another is free.
+    const last = new Map<SceneLayout, string>()
+    const drawn = new Map<string, string>()
+    for (const chapter of outline) {
+      const options = designsFor(world, chapter.layout)
+      const roll = direct.next()
+      if (!options.length) continue
+      const suited = chapter.layout === 'list' ? options.filter((d) => Boolean(d.loud) === (chapter.mood === 'playful')) : options
+      const at = Math.floor(roll * suited.length)
+      const pick = suited[at].id === last.get(chapter.layout) ? suited[(at + 1) % suited.length] : suited[at]
+      const own = options.find((d) => d.id === intake.cut?.designs?.[chapter.id])
+      drawn.set(chapter.id, (own ?? pick).id)
+      last.set(chapter.layout, (own ?? pick).id)
+    }
+    fixed('ticket')
+    fixed('hello')
+    // Moments are told beside photos, so they take theirs before the scene that shows the rest.
+    const frames = new Map<string, Frame[]>()
+    const loud = (c: Chapter) => {
+      const design = designsFor(world, 'list').find((d) => d.id === drawn.get(c.id))
+      return design ? Boolean(design.loud) : c.mood === 'playful'
+    }
+    for (const chapter of outline) if (chapter.layout !== 'photos') frames.set(chapter.id, chapterFrames(chapter, ctx, loud(chapter)))
+    for (const chapter of outline) if (chapter.layout === 'photos') frames.set(chapter.id, chapterFrames(chapter, ctx, false))
+    for (const chapter of outline) {
+      const made = frames.get(chapter.id) ?? []
+      if (!made.length) continue
+      order.push(chapter.id)
+      built.set(chapter.id, { type: chapter.id, name: chapterName(chapter), mood: chapter.mood, layout: chapter.layout, ...(drawn.has(chapter.id) ? { design: drawn.get(chapter.id) } : {}), frames: made })
+    }
+    fixed('letter')
+    fixed('wish')
+    const scenes = arrange(order, intake.cut).map((type, index) => ({ id: `${type}-${index}`, ...built.get(type)! }))
+    return { occasion: intake.occasion, seed, look, world, sender: intake.sender.trim(), recipient: intake.recipient.trim(), scenes }
+  }
 
   for (const slot of skeletonFor(intake)) {
     const fillable = slot.candidates.filter((type) => SCENES[type].missing(intake) === null)
@@ -136,6 +221,8 @@ export interface BoardRow {
   missing: string | null
   /** Opening and ending: always in, always in place. */
   fixed: boolean
+  /** Set on a scene of the film's outline. */
+  layout?: SceneLayout
   design?: string
   designs: DesignDef[]
 }
@@ -144,6 +231,7 @@ export interface BoardRow {
 export function sceneBoard(intake: Intake, story: Story): BoardRow[] {
   const status = sceneStatus(intake).filter((s) => s.type !== 'ticket')
   const label = (type: string) => status.find((s) => s.type === type)?.name ?? type
+  const layouts = new Map((outlineOf(intake) ?? []).map((c) => [c.id, c.layout]))
   const inFilm = story.scenes.filter((s) => s.type !== 'ticket')
   const rows: BoardRow[] = inFilm.map((scene) => ({
     type: scene.type,
@@ -151,13 +239,14 @@ export function sceneBoard(intake: Intake, story: Story): BoardRow[] {
     state: 'in',
     missing: null,
     fixed: isFixed(scene.type),
+    ...(scene.layout ? { layout: scene.layout } : {}),
     design: scene.design,
-    designs: designsFor(story.world, scene.type),
+    designs: designsFor(story.world, designKey(scene)),
   }))
   const shown = new Set(inFilm.map((s) => s.type))
   for (const s of status) {
     if (shown.has(s.type)) continue
-    rows.push({ type: s.type, name: label(s.type), state: s.missing ? 'missing' : 'off', missing: s.missing, fixed: false, designs: [] })
+    rows.push({ type: s.type, name: label(s.type), state: s.missing ? 'missing' : 'off', missing: s.missing, fixed: false, ...(layouts.has(s.type) ? { layout: layouts.get(s.type) } : {}), designs: [] })
   }
   return rows
 }
@@ -174,8 +263,8 @@ export function moveScene(story: Story, cut: Cut | undefined, type: string, by: 
 
 /** The cut after switching a scene to the next of its designs. */
 export function nextDesign(story: Story, cut: Cut | undefined, type: string): Cut {
-  const options = designsFor(story.world, type)
   const scene = story.scenes.find((s) => s.type === type)
+  const options = scene ? designsFor(story.world, designKey(scene)) : []
   if (options.length < 2 || !scene) return cut ?? {}
   const at = options.findIndex((d) => d.id === scene.design)
   return { ...cut, designs: { ...cut?.designs, [type]: options[(at + 1) % options.length].id } }

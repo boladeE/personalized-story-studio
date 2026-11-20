@@ -3,8 +3,12 @@ import type { Intake, Soundtrack } from './types'
 /** What the sample film says under its end credits, so nobody takes its people for real customers. */
 export const SAMPLE_NOTE = 'Zara and Tobi are fictional. Their photos and song were made for this sample.'
 
-/** Fictional sample intake (Zara and Tobi, generated photos), reused from the v2 demo. */
-export const SAMPLE_INTAKE: Intake = {
+/**
+ * The fictional sample (Zara and Tobi, generated photos, reused from the v2 demo), told in the
+ * studio's older fixed scenes. The detailed form fills itself in from this, and it stands for the
+ * films made before a film had scenes of its own.
+ */
+export const SAMPLE_FIXED: Intake = {
   occasion: 'birthday',
   sender: 'Tobi',
   recipient: 'Zara',
@@ -54,6 +58,38 @@ export const SAMPLE_INTAKE: Intake = {
     'I know I make a joke when I’m trying to say something properly. So let me try without one.\n\nYou don’t have to be the one holding everything together today. Let me look after you for a change.\n\nI’m glad you walked into that games night. I’m even glad you accused me of cheating.',
   wish: 'More afternoons that run late. More of your hand in mine on the way home. And yes, you can have my chips.',
   look: 'surprise',
+}
+
+/**
+ * The sample as the studio makes films now: the same words and photos, in scenes that exist
+ * because of what Tobi wrote about Zara. No other film has these scenes.
+ */
+export const SAMPLE_INTAKE: Intake = {
+  ...SAMPLE_FIXED,
+  outline: [
+    { id: 'face', name: 'Your whole face', layout: 'moment', mood: 'warm', lines: ['You laugh with your whole face when you forget I’m taking a picture.'], photoId: 'p-laughing' },
+    { id: 'hey', name: 'One word', layout: 'line', mood: 'warm', lines: ['You can spot my mood from one “hey.”'] },
+    { id: 'says', name: 'Things you say', layout: 'list', mood: 'playful', lines: [...SAMPLE_FIXED.habits] },
+    {
+      id: 'games',
+      name: 'Games night',
+      layout: 'moment',
+      mood: 'playful',
+      lines: ['You called me a cheat. You said nobody could be that lucky, then made me shuffle again while you watched my hands.'],
+      photoId: 'p-selfie',
+    },
+    {
+      id: 'rain',
+      name: 'The rain can wait',
+      layout: 'moment',
+      mood: 'tender',
+      lines: ['We were meant to stay for one drink. Then the rain started, and you moved your chair closer so I could hear your gist.'],
+      photoId: 'p-cafe',
+    },
+    { id: 'water', name: 'One more minute', layout: 'moment', mood: 'tender', lines: ['That evening by the water, our shoes were full of sand. You kept saying “one more minute” every time the sky changed.'], photoId: 'p-beach' },
+    { id: 'small', name: 'The small things', layout: 'list', mood: 'tender', lines: [...SAMPLE_FIXED.reasons] },
+    { id: 'roll', name: 'Caught on camera', layout: 'photos', mood: 'warm', lines: [] },
+  ],
 }
 
 /**

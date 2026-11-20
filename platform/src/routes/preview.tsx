@@ -7,7 +7,6 @@ import { useDraft } from '../components/draft'
 import { LookPanel, SceneNav, ScenePanel, SongBar } from '../components/editor'
 import type { CutChange } from '../components/editor'
 import { hasWords, SCENE_FIELDS } from '../components/SceneWords'
-import type { WordScene } from '../components/SceneWords'
 import { SongRoom } from '../components/SongRoom'
 import type { SongJob } from '../components/draft'
 import { Still } from '../film/Still'
@@ -16,6 +15,7 @@ import { buildFilm } from '../film/timeline'
 import type { Shot } from '../film/timeline'
 import { directionLine } from '../story/direction'
 import { canGenerate, generateStory, sceneBoard } from '../story/generate'
+import { blankChapter, outlineOf } from '../story/outline'
 import { newSeed } from '../story/rng'
 import { SAMPLE_INTAKE, SAMPLE_NOTE, SAMPLE_SOUNDTRACK } from '../story/sample'
 import { isWorld } from '../story/types'
@@ -68,7 +68,7 @@ function Preview() {
   const behind = useDeferredValue(source)
   const built = typing ? behind : source
   /** The scene whose words are being changed, and what that part of the draft was before. */
-  const [writing, setWriting] = useState<{ type: WordScene; before: unknown } | null>(null)
+  const [writing, setWriting] = useState<{ type: string; field: keyof Intake; before: unknown } | null>(null)
   /** The line of the scene being written, so the still shows that part of it. */
   const [line, setLine] = useState<{ type: string; at: number }>()
   /** What was done in the editor, oldest first, so Undo takes it back one step at a time. */
@@ -152,8 +152,7 @@ function Preview() {
   /** The words written since the scene's fields were first touched, as one change that can be taken back. */
   const typed = (): Change | null => {
     if (!writing) return null
-    const field = SCENE_FIELDS[writing.type]
-    const { before, type } = writing
+    const { before, type, field } = writing
     // Photos have their own way back, offered as each one is removed.
     if (field === 'photos' || JSON.stringify(intake[field]) === JSON.stringify(before)) return null
     const name = rows.find((r) => r.type === type)?.name ?? 'The scene'
@@ -193,11 +192,22 @@ function Preview() {
   const applyWorld = (next: Intake['world']) => (useSample ? setSampleWorld(isWorld(next) ? next : 'screening') : setIntake((c) => ({ ...c, world: next })))
   /** A scene's words, changed beside the still. What they were before the first change is kept for Undo. */
   const writeWords: typeof setIntake = (update) => {
-    if (selected && hasWords(selected.type) && writing?.type !== selected.type) {
+    const field = selected && fieldOf(selected)
+    if (selected && field && writing?.type !== selected.type) {
       record()
-      setWriting({ type: selected.type, before: intake[SCENE_FIELDS[selected.type]] })
+      setWriting({ type: selected.type, field, before: intake[field] })
     }
     setIntake(update)
+  }
+  /** A scene of the sender's own, added after the film's others and opened for writing. */
+  const addScene = () => {
+    const before = intake.outline
+    const fresh = blankChapter((outlineOf(intake) ?? []).map((c) => c.id))
+    setIntake((c) => ({ ...c, outline: [...(outlineOf(c) ?? []), fresh] }))
+    record({ label: 'A new scene was added.', undo: () => setIntake((c) => ({ ...c, outline: before })) })
+    setPicked(fresh.id)
+    setLine(undefined)
+    setSide('scene')
   }
   const select = (type: string) => {
     record()
@@ -335,7 +345,7 @@ function Preview() {
                   `Playing ${rows.find((r) => r.type === at.scene)?.name ?? 'the film'}.`
                 ) : shown.state === 'in' ? (
                   <>
-                    Scene {inFilm.indexOf(shown) + 1} of {inFilm.length}.{!useSample && hasWords(shown.type) && side === 'scene' && <span className="wide-only"> What you type shows here as you write.</span>}
+                    Scene {inFilm.indexOf(shown) + 1} of {inFilm.length}.{!useSample && fieldOf(shown) && side === 'scene' && <span className="wide-only"> What you type shows here as you write.</span>}
                   </>
                 ) : (
                   ''
@@ -359,6 +369,7 @@ function Preview() {
               setSide((was) => (was === 'look' ? 'scene' : 'look'))
             }}
             onShuffle={shuffle}
+            onAdd={!useSample && intake.outline ? addScene : undefined}
           />
           {side === 'look' ? (
             <LookPanel
@@ -495,8 +506,13 @@ function SongStatus({ job, name, kept, onPlay, onRetry, onDismiss }: { job: Song
   )
 }
 
+/** The part of the draft a scene's words are written in: one of the older scenes' own fields, or the film's outline. */
+const fieldOf = (row: { type: string; layout?: string }): keyof Intake | null => (hasWords(row.type) ? SCENE_FIELDS[row.type] : row.layout ? 'outline' : null)
+
 /** The words on the line being written, to find the shot of the scene that shows them. */
 function writingNow(intake: Intake, type: string, at: number): string {
+  const chapter = intake.outline?.find((c) => c.id === type)
+  if (chapter) return (chapter.lines[at] ?? '').trim()
   if (type === 'redFlags') return (intake.habits[at] ?? '').trim()
   if (type === 'reasons') return (intake.reasons[at] ?? '').trim()
   if (type === 'memoryLane') return (intake.memories[at]?.title ?? '').trim()

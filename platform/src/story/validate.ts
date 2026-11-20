@@ -1,6 +1,7 @@
 import { cleanStoredDirection } from './direction'
 import { isOccasion, isRelationship, isWorld } from './types'
-import type { Cut, EndingChoice, Intake, LookId } from './types'
+import { SCENE_LAYOUTS } from './types'
+import type { Chapter, Cut, EndingChoice, Intake, LookId, Mood } from './types'
 
 /**
  * Server-side check of a sender's intake. Everything arrives from the browser,
@@ -87,6 +88,34 @@ function parseEnding(raw: unknown): EndingChoice | null {
   throw new IntakeError('Unknown ending')
 }
 
+const MAX_SCENES = 12
+const MOODS: Mood[] = ['warm', 'playful', 'tender', 'glow']
+
+/** A film's own scenes, as the sender left them: shapes and lengths only. A scene with nothing in it yet is harmless. */
+function parseOutline(raw: unknown): Chapter[] | undefined {
+  if (raw === undefined || raw === null) return undefined
+  const items = list(raw, 'Scenes')
+  if (items.length > MAX_SCENES) throw new IntakeError(`Up to ${MAX_SCENES} scenes`)
+  const ids = new Set<string>()
+  return items.map((item, i) => {
+    const r = (item && typeof item === 'object' ? item : {}) as Record<string, unknown>
+    const layout = SCENE_LAYOUTS.find((l) => l === r.layout)
+    const mood = MOODS.find((m) => m === r.mood)
+    if (typeof r.id !== 'string' || !NAME_RE.test(r.id) || ids.has(r.id) || !layout || !mood) throw new IntakeError(`Scene ${i + 1} is not valid`)
+    ids.add(r.id)
+    const lines = list(r.lines, `Scene ${i + 1}`)
+    if (lines.length > 12) throw new IntakeError(`Scene ${i + 1} has too many lines`)
+    return {
+      id: r.id,
+      name: text(r.name, 60, `Scene ${i + 1}’s name`),
+      layout,
+      mood,
+      lines: lines.map((l) => text(l, layout === 'moment' ? LIMITS.memoryStory : LIMITS.listItem, `Scene ${i + 1}`)),
+      ...(r.photoId ? { photoId: id(r.photoId, `Scene ${i + 1}’s photo`) } : {}),
+    }
+  })
+}
+
 export function parseIntake(raw: unknown): { ok: true; intake: Intake } | { ok: false; error: string } {
   try {
     if (!raw || typeof raw !== 'object') throw new IntakeError('Missing story details')
@@ -126,6 +155,7 @@ export function parseIntake(raw: unknown): { ok: true; intake: Intake } | { ok: 
     const cut = parseCut(r.cut)
     const direction = r.direction === undefined ? null : cleanStoredDirection(r.direction)
     const ending = parseEnding(r.ending)
+    const outline = parseOutline(r.outline)
 
     const intake: Intake = {
       occasion: r.occasion,
@@ -145,6 +175,7 @@ export function parseIntake(raw: unknown): { ok: true; intake: Intake } | { ok: 
       // The studio's own choices travel with the gift; anything in them it doesn't recognise is dropped.
       ...(direction ? { direction } : {}),
       ...(ending ? { ending } : {}),
+      ...(outline ? { outline } : {}),
     }
     if (!intake.sender.trim() || !intake.recipient.trim()) throw new IntakeError('Both names are needed')
     return { ok: true, intake }

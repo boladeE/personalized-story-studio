@@ -4,7 +4,8 @@ import { isTheirWords } from '../src/story/notes'
 
 process.env.MUSIC_PROVIDER = 'demo'
 const { followups, followupBrief } = await import('../src/server/followups')
-const { sortBrief, sortNotes } = await import('../src/server/sort')
+const { outlineBrief, outlineFilm } = await import('../src/server/outline')
+const asked = (answered: Parameters<typeof outlineBrief>[0]['answered'] = []) => ({ text: NOTE, sender: 'Tobi', recipient: 'Zara', answered, occasion: 'birthday' as const, photos: 0, letter: false })
 
 const NOTE =
   'Moving day. The lift broke, and you carried the sofa up five floors arguing about the angle. You always steal the duvet, then ask why I am cold. You never finish your tea. I love you because you remember the small things I mention once.'
@@ -69,8 +70,10 @@ describe('answers go into the film as the sender’s own words', () => {
     expect(notes.habits[0]).toBe('You always steal the duvet, then ask why I am cold. “You run hot anyway.” Every time.')
     expect(notes.habits[1]).toBe('You never finish your tea.')
     expect(notes.memories[0].story).toContain('We ate noodles on the floor because the table was still in the van.')
-    // With the model off, the server sorts the same way.
-    expect((await sortNotes(NOTE, 'Tobi', 'Zara', answered)).notes).toEqual(notes)
+    // With the model off, the server outlines the film from the same sorting: the answer is in the scene it was about.
+    const { outline, by } = await outlineFilm(asked(answered))
+    expect(by).toBe('rule')
+    expect(outline.flatMap((c) => c.lines)).toContain(notes.habits[0])
   })
 
   it('never lets a question, or anything else the sender did not write, into the film', () => {
@@ -82,10 +85,10 @@ describe('answers go into the film as the sender’s own words', () => {
     expect(pieces.join(' ')).not.toContain('bring it up')
   })
 
-  it('tells the sorting model the answers are the sender’s words and the questions are not', () => {
-    const brief = sortBrief(NOTE, 'Tobi', 'Zara', answered)
+  it('tells the outlining model the answers are the sender’s words and the questions are not', () => {
+    const brief = outlineBrief(asked(answered))
     expect(brief).toContain('“You run hot anyway.” Every time.')
     expect(brief).toContain('must never appear')
-    expect(sortBrief(NOTE, 'Tobi', 'Zara')).not.toContain('was then asked')
+    expect(outlineBrief(asked())).not.toContain('was then asked')
   })
 })

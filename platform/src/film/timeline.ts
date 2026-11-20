@@ -39,7 +39,8 @@ export type Shot = ShotBase &
     | { kind: 'photo'; photo: Photo; kicker: string; title: string; body?: string; layout: PhotoLayout }
     /** `all`: every item in the scene, for designs that build a list up one at a time. */
     | { kind: 'flag'; label: string; text: string; n: number; total: number; all: string[] }
-    | { kind: 'reason'; text: string; n: number; total: number; all: string[] }
+    /** `label`: the scene's own name, when the list is an outlined scene's and not the older "Reasons". */
+    | { kind: 'reason'; text: string; n: number; total: number; all: string[]; label?: string }
     | { kind: 'montage'; kicker: string; title: string; photos: Photo[] }
     | { kind: 'letter'; greeting: string; paragraphs: string[]; signoff: string }
     /** `choices`: the answers the viewer picks from, when the ending is the sender's question or invitation. */
@@ -95,8 +96,9 @@ export function buildFilm(story: Story): Film {
     const builds = album || ['docket', 'ledger', 'tracklist', 'liner'].includes(scene.design ?? '')
     let itemsSeen = 0
 
-    // Chapters between the opening and the ending get a numbered title card.
-    const isChapter = scene.type !== 'hello' && scene.type !== 'wish'
+    // Scenes between the opening and the ending get a numbered title card. An outlined scene that is
+    // a single screen carries its own name, so only its lists are announced.
+    const isChapter = scene.type !== 'hello' && scene.type !== 'wish' && (!scene.layout || scene.layout === 'list')
     if (isChapter) {
       drafts.push({ kind: 'card', number: `Scene ${ORDINALS[numbered] ?? numbered + 1}`, title: scene.name, seconds: 3, enter: 'type', exit: 'fade' })
       numbered++
@@ -162,10 +164,10 @@ export function buildFilm(story: Story): Film {
         case 'item': {
           itemsSeen++
           const last = frame.index === frame.total - 1
-          if (frame.marker === 'flag') {
+          if (frame.marker === 'flag' || frame.marker === 'loud') {
             drafts.push({ kind: 'flag', label: frame.kicker, text: frame.text, n: frame.index + 1, total: frame.total, all: listed, seconds: read(words(frame.text), 2.4) + 0.6, enter: 'cut', exit: 'cut' })
           } else {
-            drafts.push({ kind: 'reason', text: frame.text, n: frame.index + 1, total: frame.total, all: listed, seconds: read(words(frame.text)) + 0.8, enter: 'type', exit: builds && !last ? 'cut' : 'fade' })
+            drafts.push({ kind: 'reason', text: frame.text, n: frame.index + 1, total: frame.total, all: listed, ...(frame.marker === 'calm' ? { label: frame.kicker } : {}), seconds: read(words(frame.text)) + 0.8, enter: 'type', exit: builds && !last ? 'cut' : 'fade' })
           }
           break
         }
@@ -251,7 +253,7 @@ function spoken(shot: Record<string, unknown>): string {
     case 'flag':
       return `${shot.label} ${shot.n} of ${shot.total}. ${shot.text}`
     case 'reason':
-      return `Reason ${shot.n} of ${shot.total}. ${shot.text}`
+      return `${shot.label ?? 'Reason'} ${shot.n} of ${shot.total}. ${shot.text}`
     case 'reveal':
       return String(shot.words)
     case 'credits':

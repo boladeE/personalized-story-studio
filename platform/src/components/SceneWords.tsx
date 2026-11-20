@@ -1,7 +1,8 @@
 import { useRef } from 'react'
 import { occasionOf } from '../story/occasions'
+import { OUTLINE_LIMITS, outlineOf, withChapter } from '../story/outline'
 import { endingOf } from '../story/types'
-import type { Intake, Memory } from '../story/types'
+import type { Chapter, Intake, Memory, SceneLayout } from '../story/types'
 import { LIMITS } from '../story/validate'
 import { Cross, Field, GrowingText, ListEditor, oneLine } from './fields'
 import { usePhotos } from './photos'
@@ -124,6 +125,99 @@ export function SceneWords({
 }
 
 type Setter = <K extends keyof Intake>(key: K, value: Intake[K]) => void
+
+/** What a scene of the film's own asks of the sender, in a line. */
+export function chapterAsk(layout: SceneLayout, intake: Intake): string {
+  const them = intake.recipient.trim() || 'them'
+  switch (layout) {
+    case 'line':
+      return 'One line, on a screen of its own.'
+    case 'list':
+      return 'Each line gets its turn on screen. Two or more.'
+    case 'moment':
+      return 'Something that happened, the way you’d tell a friend.'
+    case 'photos':
+      return `The photos of ${them} that no other scene shows.`
+  }
+}
+
+const SHAPES: Array<{ id: Exclude<SceneLayout, 'photos'>; name: string }> = [
+  { id: 'line', name: 'One line' },
+  { id: 'list', name: 'A list' },
+  { id: 'moment', name: 'A moment' },
+]
+
+/**
+ * One of the film's own scenes, for changing beside the still: what it is
+ * called, how it is shown, and its words. A scene the studio wrote from the
+ * sender's note and a scene the sender adds are changed the same way.
+ */
+export function ChapterWords({
+  chapter,
+  intake,
+  setIntake,
+  onWriting,
+}: {
+  chapter: Chapter
+  intake: Intake
+  setIntake: (update: (current: Intake) => Intake) => void
+  onWriting: (index: number) => void
+}) {
+  const set: Setter = (key, value) => setIntake((c) => ({ ...c, [key]: value }))
+  const change = (patch: Partial<Chapter>) => setIntake((c) => ({ ...c, outline: withChapter(outlineOf(c) ?? [], chapter.id, patch) }))
+  const lines = chapter.lines.length ? chapter.lines : ['']
+  return (
+    <>
+      <Field label="Scene name">{(id) => <input id={id} maxLength={OUTLINE_LIMITS.name} value={chapter.name} onChange={(e) => change({ name: oneLine(e.target.value) })} />}</Field>
+      {chapter.layout !== 'photos' && (
+        <fieldset className="scene-shape">
+          <legend>Shown as</legend>
+          <div className="scene-shape-row">
+            {SHAPES.map((shape) => (
+              <label key={shape.id} className="scene-shape-option">
+                <input type="radio" name={`shape-${chapter.id}`} checked={chapter.layout === shape.id} onChange={() => change({ layout: shape.id })} />
+                {shape.name}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
+      {chapter.layout === 'line' && (
+        <Field label="The line">
+          {(id) => <textarea id={id} rows={2} maxLength={OUTLINE_LIMITS.line} value={lines[0]} onChange={(e) => change({ lines: [oneLine(e.target.value), ...lines.slice(1)] })} />}
+        </Field>
+      )}
+      {chapter.layout === 'list' && <ListEditor label="Line" values={lines} max={OUTLINE_LIMITS.lines} onChange={(v) => change({ lines: v })} onActive={onWriting} />}
+      {chapter.layout === 'moment' && (
+        <>
+          <Field label="What happened">{(id) => <textarea id={id} rows={4} maxLength={LIMITS.memoryStory} value={lines.join(' ')} onChange={(e) => change({ lines: [e.target.value] })} />}</Field>
+          {intake.photos.length > 0 && (
+            <fieldset className="photo-pick">
+              <legend>Photo for this scene</legend>
+              <div className="photo-pick-row">
+                <label className="pick pick-auto">
+                  <input type="radio" name={`scene-photo-${chapter.id}`} checked={!chapter.photoId} onChange={() => change({ photoId: undefined })} />
+                  <span>Let the studio choose</span>
+                </label>
+                {intake.photos.map((p, n) => (
+                  <label key={p.id} className="pick">
+                    <input type="radio" name={`scene-photo-${chapter.id}`} checked={chapter.photoId === p.id} onChange={() => change({ photoId: p.id })} />
+                    <img src={p.src} alt="" />
+                    <span className="visually-hidden">
+                      Photo {n + 1}
+                      {p.caption ? `: ${p.caption}` : ''}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          )}
+        </>
+      )}
+      {chapter.layout === 'photos' && <Roll intake={intake} set={set} />}
+    </>
+  )
+}
 
 function Memories({ intake, set, onWriting }: { intake: Intake; set: Setter; onWriting: (index: number) => void }) {
   const update = (id: string, patch: Partial<Memory>) => set('memories', intake.memories.map((m) => (m.id === id ? { ...m, ...patch } : m)))

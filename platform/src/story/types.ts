@@ -1,9 +1,13 @@
 /**
  * The story format: Story -> Scenes -> Frames.
  *
- * Scene types are designed by people (see library.ts). The generator only
- * chooses which scenes to use, in what order and with which variants, and pours
- * the sender's own words and photos into them. It never invents facts.
+ * A film's scenes are written for that film from what its sender wrote (its
+ * outline: see Chapter and outline.ts). Only the opening, the letter and the
+ * ending are the same kind of scene in every film. Whatever names the scenes,
+ * the words in them are the sender's own; the studio never invents facts.
+ *
+ * Films made before outlines, and films made in the detailed form, are told in
+ * the studio's older fixed scenes (library.ts).
  */
 
 /** What a film can be made for. The wording each one changes lives in occasions.ts. */
@@ -49,6 +53,27 @@ export interface Memory {
   photoId: string
 }
 
+/** How a scene written for one film is laid out. These few layouts are the only fixed thing about such a scene. */
+export const SCENE_LAYOUTS = ['line', 'list', 'moment', 'photos'] as const
+export type SceneLayout = (typeof SCENE_LAYOUTS)[number]
+
+/**
+ * One scene of a film's outline: a scene that exists because of what this
+ * sender wrote, with a name of its own. `lines` are the sender's words:
+ * a `line` shows the first by itself, a `list` shows each in turn, a `moment`
+ * tells them as one passage beside a photo, and `photos` has none (it shows
+ * the photos no other scene used).
+ */
+export interface Chapter {
+  id: string
+  name: string
+  layout: SceneLayout
+  mood: Mood
+  lines: string[]
+  /** The photo a moment is told beside, if the sender picked one. */
+  photoId?: string
+}
+
 /** Why the studio chose a kind of film: one of a fixed set of reasons it can say to the sender. */
 export const DIRECTION_REASONS = ['teasing', 'memories', 'photos', 'tender', 'short'] as const
 export type DirectionReason = (typeof DIRECTION_REASONS)[number]
@@ -90,6 +115,11 @@ export interface Intake {
   direction?: Direction
   /** How the sender wants the film to end. Unset, it ends the way its occasion does (a candle or a sealed note). */
   ending?: EndingChoice
+  /**
+   * The film's own scenes, between the opening and the letter. When set, they are the film:
+   * `spotlight`, `memories`, `habits` and `reasons` above are not used.
+   */
+  outline?: Chapter[]
 }
 
 /**
@@ -118,7 +148,8 @@ export type Frame =
   | { kind: 'ticket'; recipient: string; occasion: string }
   | { kind: 'title'; kicker: string; title: string; body?: string }
   | { kind: 'photo'; photo: Photo; kicker: string; title: string; body?: string; layout: PhotoLayout }
-  | { kind: 'item'; kicker: string; text: string; index: number; total: number; marker: 'flag' | 'reason' }
+  /** `flag` and `reason` are the older fixed scenes' items. `loud` and `calm` are an outlined scene's, drawn the same two ways under the scene's own name. */
+  | { kind: 'item'; kicker: string; text: string; index: number; total: number; marker: 'flag' | 'reason' | 'loud' | 'calm' }
   | { kind: 'montage'; kicker: string; title: string; photos: Photo[] }
   | { kind: 'letter'; title: string; paragraphs: string[]; signoff: string }
   /** The film's last beat: something to do (blow out a candle, open a note), then the sender's last line. */
@@ -128,9 +159,12 @@ export type Mood = 'warm' | 'playful' | 'tender' | 'glow'
 
 export interface Scene {
   id: string
+  /** A fixed scene's kind (`hello`, `letter`, `wish`, …), or an outlined scene's own id. */
   type: string
   name: string
   mood: Mood
+  /** Set on a scene that came from the film's outline. */
+  layout?: SceneLayout
   /** Which of the world's designs this scene is drawn in. Gifts stored before designs existed carry none. */
   design?: string
   frames: Frame[]

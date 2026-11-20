@@ -1,3 +1,4 @@
+import { notesOf, outlineOf } from './outline'
 import { occasionOf } from './occasions'
 import { isRomantic, relationshipOf } from './relationships'
 import { isOccasion, isRelationship } from './types'
@@ -151,6 +152,12 @@ export function parseSongDetails(raw: unknown): SongDetails | null {
 
 /** The parts of an intake a song is written from. */
 export function songDetails(intake: Intake): SongDetails | null {
+  // A film with its own scenes is sung from them: what happened, what they do, what is loved.
+  const outline = outlineOf(intake)
+  if (outline) {
+    const told = notesOf(outline.filter((c) => !(intake.cut?.off ?? []).includes(c.id)))
+    return parseSongDetails({ occasion: intake.occasion, relationship: intake.relationship, recipient: intake.recipient, sender: intake.sender, reasons: told.reasons, habits: told.habits, moments: told.memories.map((m) => m.story), wish: intake.wish })
+  }
   return parseSongDetails({
     occasion: intake.occasion,
     relationship: intake.relationship,

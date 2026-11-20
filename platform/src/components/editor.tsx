@@ -5,10 +5,11 @@ import type { Shot } from '../film/timeline'
 import { LOOKS, moveScene, nextDesign, toggleScene } from '../story/generate'
 import type { BoardRow } from '../story/generate'
 import { SAMPLE_SOUNDTRACK } from '../story/sample'
+import { outlineOf } from '../story/outline'
 import type { Cut, Intake, LookId, Story, WorldId } from '../story/types'
-import { designName, WORLDS, worldOf } from '../story/worlds'
+import { WORLDS, worldOf } from '../story/worlds'
 import type { DraftSong, SongJob } from './draft'
-import { hasWords, sceneAsk, SceneWords } from './SceneWords'
+import { chapterAsk, ChapterWords, hasWords, sceneAsk, SceneWords } from './SceneWords'
 
 /**
  * The editor around the film: the chosen scene's words, open beside the still
@@ -51,7 +52,9 @@ export function ScenePanel({
   const at = movable.indexOf(row.type)
   const after = movable[at + 1] ?? 'wish'
   const words = hasWords(row.type) ? row.type : null
-  const design = row.state === 'in' ? designName(world, row.type, row.design) : undefined
+  // One of the film's own scenes: its name, its shape and its words are all the sender's to change.
+  const chapter = row.layout ? (outlineOf(intake) ?? []).find((c) => c.id === row.type) : undefined
+  const design = row.state === 'in' ? row.designs.find((d) => d.id === row.design)?.name : undefined
   const isField = (target: EventTarget) => target instanceof HTMLTextAreaElement || (target instanceof HTMLInputElement && target.type !== 'radio' && target.type !== 'file')
 
   return (
@@ -61,7 +64,7 @@ export function ScenePanel({
         <p>
           {row.state === 'missing' && `Not in the film yet. ${row.missing}.`}
           {row.state === 'off' && 'Left out of the film.'}
-          {row.state === 'in' && (own && words ? sceneAsk(words, intake) : row.fixed ? 'Always in the film.' : 'In the film.')}
+          {row.state === 'in' && (own && words ? sceneAsk(words, intake) : own && chapter ? chapterAsk(chapter.layout, intake) : row.fixed ? 'Always in the film.' : 'In the film.')}
         </p>
       </header>
 
@@ -70,10 +73,15 @@ export function ScenePanel({
           <SceneWords type={words} intake={intake} setIntake={setIntake} onWriting={onLine} />
         </div>
       )}
-      {own && !words && (
+      {own && chapter && row.state !== 'off' && (
+        <div className="scene-words" onFocus={(e) => isField(e.target) && onTyping(true)} onBlur={(e) => isField(e.target) && onTyping(false)}>
+          <ChapterWords chapter={chapter} intake={intake} setIntake={setIntake} onWriting={onLine} />
+        </div>
+      )}
+      {own && !words && !chapter && (
         <p className="scene-panel-note">This scene is made from both names and the occasion. To change those, use “Edit every detail” below.</p>
       )}
-      {!own && words && <p className="scene-panel-note">This is the sample’s film, so its words stay as they are. In your own film, this is where you change them.</p>}
+      {!own && (words || chapter) && <p className="scene-panel-note">This is the sample’s film, so its words stay as they are. In your own film, this is where you change them.</p>}
 
       <div className="scene-actions">
         <p className="scene-actions-head">
@@ -111,6 +119,11 @@ export function ScenePanel({
             {changed && (
               <button type="button" className="text-button" onClick={() => onCut(undefined, 'hello', { label: 'All scenes are back to the studio’s choices.', cue: 'hello' })}>
                 Reset all scenes
+              </button>
+            )}
+            {own && chapter && row.state !== 'in' && (
+              <button type="button" className="text-button" onClick={() => setIntake((c) => ({ ...c, outline: (outlineOf(c) ?? []).filter((x) => x.id !== chapter.id) }))}>
+                Remove this scene
               </button>
             )}
             {own && (
@@ -179,7 +192,10 @@ export function SceneNav({
   lookOpen,
   onLook,
   onShuffle,
+  onAdd,
 }: {
+  /** Add a scene of the sender's own. Offered on a film that has its own scenes. */
+  onAdd?: () => void
   story: Story
   rows: BoardRow[]
   posters: Map<string, Shot>
@@ -232,6 +248,16 @@ export function SceneNav({
             </li>
           )
         })}
+        {onAdd && (
+          <li className="scene-tile is-add">
+            <span className="scene-thumb is-empty" aria-hidden="true">
+              +
+            </span>
+            <button type="button" onClick={onAdd}>
+              <span className="scene-tile-name">Add a scene</span>
+            </button>
+          </li>
+        )}
       </ol>
     </nav>
   )

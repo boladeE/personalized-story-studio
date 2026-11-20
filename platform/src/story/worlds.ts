@@ -11,6 +11,8 @@ import type { LookId, WorldId } from './types'
 export interface DesignDef {
   id: string
   name: string
+  /** A list design that shouts: it suits a playful list. The others suit a tender one. */
+  loud?: true
 }
 
 export interface WorldDef {
@@ -20,9 +22,14 @@ export interface WorldDef {
   blurb: string
   /** What the three colourways are called here. */
   looks: Record<LookId, string>
-  /** The designs each scene type can be drawn in. A scene type that isn't listed has a single design. */
+  /**
+   * The designs each kind of scene can be drawn in, by a fixed scene's type or an outlined scene's
+   * layout (`list`, `moment`, `photos`). A kind that isn't listed has a single design.
+   */
   designs: Record<string, DesignDef[]>
 }
+
+const loud = (id: string, name: string): DesignDef => ({ id, name, loud: true })
 
 export const WORLDS: WorldDef[] = [
   {
@@ -39,6 +46,7 @@ export const WORLDS: WorldDef[] = [
         { id: 'numeral', name: 'Big numbers' },
         { id: 'ledger', name: 'Running list' },
       ],
+      list: [loud('slam', 'Loud cards'), loud('docket', 'Roll call'), { id: 'numeral', name: 'Big numbers' }, { id: 'ledger', name: 'Running list' }],
     },
   },
   {
@@ -67,6 +75,17 @@ export const WORLDS: WorldDef[] = [
         { id: 'pile', name: 'Loose prints' },
         { id: 'strip', name: 'Contact sheet' },
       ],
+      list: [loud('stickies', 'Sticky notes'), loud('checklist', 'Checklist'), { id: 'bunting', name: 'Tags on a string' }, { id: 'cards', name: 'Index cards' }],
+      moment: [
+        { id: 'taped', name: 'Taped print' },
+        { id: 'polaroid', name: 'Polaroid' },
+        { id: 'clipped', name: 'Clipped card' },
+        { id: 'corners', name: 'Photo corners' },
+      ],
+      photos: [
+        { id: 'pile', name: 'Loose prints' },
+        { id: 'strip', name: 'Contact sheet' },
+      ],
     },
   },
   {
@@ -91,14 +110,22 @@ export const WORLDS: WorldDef[] = [
         { id: 'nowplaying', name: 'Now playing' },
         { id: 'liner', name: 'Liner notes' },
       ],
+      list: [loud('shout', 'Loud tracks'), loud('tracklist', 'Track list'), { id: 'nowplaying', name: 'Now playing' }, { id: 'liner', name: 'Liner notes' }],
+      moment: [
+        { id: 'cover', name: 'Cover art' },
+        { id: 'poster', name: 'Poster' },
+      ],
     },
   },
 ]
 
 export const worldOf = (id: WorldId | undefined): WorldDef => WORLDS.find((w) => w.id === id) ?? WORLDS[0]
 
-/** The designs a scene type has in a world. Empty when it has only the one. */
+/** The designs a kind of scene (a fixed scene's type, or an outlined scene's layout) has in a world. Empty when it has only the one. */
 export const designsFor = (world: WorldId | undefined, sceneType: string): DesignDef[] => worldOf(world).designs[sceneType] ?? []
+
+/** What a scene's designs are listed under: its layout when it came from an outline, otherwise its type. */
+export const designKey = (scene: { type: string; layout?: string }) => scene.layout ?? scene.type
 
 export const designName = (world: WorldId | undefined, sceneType: string, design: string | undefined) =>
   designsFor(world, sceneType).find((d) => d.id === design)?.name

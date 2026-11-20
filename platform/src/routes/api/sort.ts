@@ -1,20 +1,18 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { direct } from '../../server/direct'
-import { allowSort, sortNotes } from '../../server/sort'
+import { outlineByRule, outlineFilm } from '../../server/outline'
+import { allowSort } from '../../server/sort'
 import { json } from '../../server/store'
-import { directLocally } from '../../story/direction'
-import { cleanAnswers, sortLocallyWithAnswers } from '../../story/followups'
+import { cleanAnswers } from '../../story/followups'
 import type { Answered } from '../../story/followups'
 import { NOTES_LIMIT } from '../../story/notes'
-import type { SortedNotes } from '../../story/notes'
 import { isOccasion, isRelationship } from '../../story/types'
 import type { Occasion, Relationship } from '../../story/types'
 import { LIMITS } from '../../story/validate'
 
 /**
- * Sort what a sender wrote about someone into the film's scenes, and direct the film from it: the kind of
- * film, its colours, each scene's design and their order. Only their own words come back; the direction
- * names only things the studio has. The letter and the photos are never sent, only whether there are any.
+ * Outline a film from what a sender wrote about someone: the scenes this film has, what each is called,
+ * which of their words go in each, and the kind of film and colours that suit it. Only their own words
+ * come back inside the scenes. The letter and the photos are never sent, only whether there are any.
  */
 export const Route = createFileRoute('/api/sort')({
   server: {
@@ -44,15 +42,9 @@ export const Route = createFileRoute('/api/sort')({
         if (!text) return json({ error: 'Write a little about them first.' }, { status: 400 })
         if (text.length > NOTES_LIMIT) return json({ error: `That’s more than fits (up to ${NOTES_LIMIT} characters).` }, { status: 400 })
         const client = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local'
-        // Past the hourly cap the words are still sorted, by rule on this server.
-        const brief = (notes: SortedNotes) => ({ occasion, relationship, recipient, notes, photos, letter })
-        if (!allowSort(client)) {
-          const notes = sortLocallyWithAnswers(text, answers)
-          return json({ notes, by: 'rule', direction: directLocally(brief(notes)), directedBy: 'rule' })
-        }
-        const sorted = await sortNotes(text, sender, recipient, answers)
-        const directed = await direct(brief(sorted.notes))
-        return json({ ...sorted, direction: directed.direction, directedBy: directed.by })
+        const brief = { text, sender, recipient, answered: answers, occasion, relationship, photos, letter }
+        // Past the hourly cap the film is still outlined, by rule on this server.
+        return json(allowSort(client) ? await outlineFilm(brief) : outlineByRule(brief))
       },
     },
   },

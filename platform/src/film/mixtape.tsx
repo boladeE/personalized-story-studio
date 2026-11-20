@@ -95,9 +95,9 @@ export function MixBody({ shot, actions, leaving }: { shot: Shot; actions: ShotA
     case 'photo':
       return <PhotoTrack shot={shot} />
     case 'flag':
-      return shot.design === 'tracklist' ? <TrackList id={shot.id} label={shot.label} items={shot.all} shown={shot.n} side="B" fresh flag /> : <Shout shot={shot} />
+      return shot.design === 'tracklist' ? <TrackList id={shot.id} label={shot.label} items={shot.all} shown={shot.n} side="B" fresh flag={shot.sceneType === 'redFlags'} /> : <Shout shot={shot} />
     case 'reason':
-      return shot.design === 'liner' ? <TrackList id={shot.id} label="Reasons" items={shot.all} shown={shot.n} side="A" fresh /> : <NowPlaying shot={shot} />
+      return shot.design === 'liner' ? <TrackList id={shot.id} label={shot.label ?? 'Reasons'} items={shot.all} shown={shot.n} side="A" fresh /> : <NowPlaying shot={shot} />
     case 'montage':
       return <Covers shot={shot} />
     case 'letter':
@@ -255,9 +255,11 @@ function PhotoTrack({ shot }: { shot: Of<'photo'> }) {
         {photo.caption && design === 'cover' && <figcaption className="mx-mono">{photo.caption}</figcaption>}
       </figure>
       <div ref={ref} className={`mx-scene mx-words${length > 420 ? ' is-epic' : length > 200 ? ' is-long' : ''}`}>
-        <p className="mx-mono mx-tag mx-in" style={vars({ '--at': '0.45s' })}>
-          {shot.kicker}
-        </p>
+        {shot.kicker && (
+          <p className="mx-mono mx-tag mx-in" style={vars({ '--at': '0.45s' })}>
+            {shot.kicker}
+          </p>
+        )}
         <Type as="h2" text={shot.title} className={`mx-caps mx-head ${fit(shot.title, [14, 26, 44, 70])}`} by="char" delay={0.6} step={30} />
         {shot.body && (
           <p className="mx-prose mx-in" style={vars({ '--at': `${after.toFixed(2)}s` })}>
@@ -280,7 +282,7 @@ function Shout({ shot }: { shot: Of<'flag'> }) {
   return (
     <div ref={ref} className="mx-scene mx-shout" data-tone={(shot.n - 1) % 4} aria-hidden="true">
       <p className="mx-mono mx-tag">
-        <FlagIcon />
+        {shot.sceneType === 'redFlags' && <FlagIcon />}
         {shot.label} · {pad(shot.n)}/{pad(shot.total)}
       </p>
       <Type as="h2" text={shot.text} className={`mx-caps mx-head ${fit(shot.text, [20, 44, 76, 120])}`} by="word" delay={0.05} step={75} />
@@ -338,9 +340,11 @@ function Covers({ shot }: { shot: Of<'montage'> }) {
   return (
     <div className="mx-montage" aria-hidden="true">
       <div className="mx-montage-head">
-        <p className="mx-mono mx-tag mx-in" style={vars({ '--at': '0.1s' })}>
-          {shot.kicker}
-        </p>
+        {shot.kicker && (
+          <p className="mx-mono mx-tag mx-in" style={vars({ '--at': '0.1s' })}>
+            {shot.kicker}
+          </p>
+        )}
         <Type as="h2" text={shot.title} className={`mx-caps mx-head ${fit(shot.title, [12, 22, 34])}`} by="char" delay={0.2} step={30} />
       </div>
       <ul className="mx-covers" data-count={count} style={vars({ '--cols': cols, '--rows': Math.ceil(count / cols), '--cols-tall': Math.min(count, 2), '--rows-tall': Math.ceil(count / Math.min(count, 2)) })}>

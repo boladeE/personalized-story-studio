@@ -7,21 +7,22 @@ import { Working } from '../components/Working'
 import { usePhotos } from '../components/photos'
 import { cleanDirection, directLocally, DIRECTED_WORLDS } from '../story/direction'
 import type { DirectionPlan } from '../story/direction'
-import { cleanAnswers, cleanFollowups, FOLLOWUP_LIMITS, followupsLocally, sortLocallyWithAnswers, withAnswers } from '../story/followups'
+import { cleanAnswers, cleanFollowups, FOLLOWUP_LIMITS, followupsLocally, withAnswers } from '../story/followups'
 import { canGenerate } from '../story/generate'
-import { applyNotes, keepTheirWords, NOTES_LIMIT } from '../story/notes'
+import { isTheirWords, NOTES_LIMIT } from '../story/notes'
+import { cleanOutline, notesOf, outlineByWords } from '../story/outline'
 import { occasionOf, OCCASIONS } from '../story/occasions'
 import { RELATIONSHIPS } from '../story/relationships'
 import { newSeed } from '../story/rng'
 import { endingOf, isOccasion } from '../story/types'
-import type { EndingChoice, Occasion } from '../story/types'
+import type { Chapter, EndingChoice, Occasion } from '../story/types'
 import { LIMITS } from '../story/validate'
 import { vibeById, VIBES, VOICES } from '../story/vibes'
 
 /**
  * The short way to make a film: three taps, two names, how it should end, some
  * photos and one box of the sender's own words. The studio reads the words and asks up to
- * three short questions about them, sorts everything into scenes, directs the
+ * three short questions about them, writes the film's own scenes from them, directs the
  * film and plays it at the end; everything else can be added from the preview.
  */
 
@@ -126,7 +127,7 @@ function Start() {
       return { ...c, ending: { kind: 'invitation', invite: part.invite ?? was.invite, choices: [part.first ?? was.choices[0], part.second ?? was.choices[1]] } }
     })
 
-  /** Sort the sender's words into scenes, have the film directed from them, build it, and start the song behind it. */
+  /** Have the film's scenes written from the sender's words, build it, and start the song behind it. */
   const finish = async () => {
     if (!canGenerate(intake)) return go('names')
     let draft = intake
@@ -136,23 +137,27 @@ function Start() {
     const answers = cleanAnswers(questions)
     const written = withAnswers(text, answers)
     if (text && written !== sortedFrom) {
-      setBusy(`Sorting your words into ${name}’s scenes…`)
-      let notes
+      setBusy(`Writing ${name}’s scenes from your words…`)
+      let outline: Chapter[] = []
+      let wish = ''
       let directed: DirectionPlan | null = null
       const facts = { occasion: intake.occasion, relationship: intake.relationship, photos: intake.photos.length, letter: intake.letter.trim().length >= 40 }
       try {
         const response = await fetch('/api/sort', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text, sender: me, recipient: them, ...facts, answers }) })
-        const body = (await response.json()) as { notes?: unknown; direction?: unknown }
-        if (!response.ok || !body.notes) throw new Error('sort failed')
-        // Checked again here: only the sender's own words go into the film.
-        notes = keepTheirWords(body.notes, written)
-        // And the direction can only name a kind of film, colours and designs the studio has.
+        const body = (await response.json()) as { outline?: unknown; wish?: unknown; direction?: unknown }
+        if (!response.ok) throw new Error('outline failed')
+        // Checked again here: whatever the scenes are called, only the sender's own words go inside them.
+        outline = cleanOutline(body.outline, { source: written, photos: intake.photos.length })
+        if (!outline.some((c) => c.layout !== 'photos')) throw new Error('no scenes')
+        wish = typeof body.wish === 'string' && isTheirWords(body.wish, written) ? body.wish.trim().slice(0, LIMITS.wish) : ''
+        // And the direction can only name a kind of film and colours the studio has.
         directed = cleanDirection(body.direction, DIRECTED_WORLDS)
       } catch {
-        notes = sortLocallyWithAnswers(text, answers)
+        outline = outlineByWords(text, answers, them)
       }
-      directed ??= directLocally({ ...facts, recipient: them, notes })
-      draft = { ...applyNotes(intake, notes), direction: { ...directed, seed } }
+      directed ??= directLocally({ ...facts, recipient: them, notes: notesOf(outline, wish) })
+      // New scenes: any cut the sender made of the last ones no longer applies.
+      draft = { ...intake, outline, wish: wish || intake.wish, cut: undefined, direction: { ...directed, designs: {}, order: [], seed } }
       setIntake(() => draft)
       setSortedFrom(written)
     } else if (intake.direction) {
@@ -364,7 +369,7 @@ function Start() {
     },
     about: {
       question: `Tell us about ${name}.`,
-      hint: 'A few sentences in your own words. We sort them into the film’s scenes; nothing is added.',
+      hint: 'A few sentences in your own words. The film’s scenes are made from them; nothing is added.',
       canNext: about.trim().length >= ENOUGH,
       body: (
         <>
@@ -381,7 +386,7 @@ function Start() {
                 ? 'A sentence or two more and there’s enough for a film.'
                 : 'That’s enough for a film. Add more if it comes to you.'}
           </p>
-          <p className="fine">Your words are sorted into scenes by one of Google’s AI models. It only moves your words; it doesn’t write any.</p>
+          <p className="fine">One of Google’s AI models reads this and decides what the film’s scenes are and what to call them. The words inside each scene stay yours, and you can rename any scene.</p>
         </>
       ),
     },

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { previewFor } from '../src/film/previews'
-import { emptyIntake, SAMPLE_INTAKE } from '../src/story/sample'
+import { emptyIntake, SAMPLE_FIXED } from '../src/story/sample'
 
 const focus = { memory: 0, habit: 0, reason: 0 }
 const shotOf = (p: ReturnType<typeof previewFor>) => (p.content.kind === 'shot' ? p.content.shot : null)
@@ -14,11 +14,11 @@ describe('scene previews while writing', () => {
   })
 
   it('puts the sender’s own words in the scene', () => {
-    const habits = shotOf(previewFor('habits', SAMPLE_INTAKE, { ...focus, habit: 1 }))
-    expect(habits).toMatchObject({ kind: 'flag', text: SAMPLE_INTAKE.habits[1], n: 2, total: 4 })
-    const memory = shotOf(previewFor('memories', SAMPLE_INTAKE, { ...focus, memory: 2 }))
+    const habits = shotOf(previewFor('habits', SAMPLE_FIXED, { ...focus, habit: 1 }))
+    expect(habits).toMatchObject({ kind: 'flag', text: SAMPLE_FIXED.habits[1], n: 2, total: 4 })
+    const memory = shotOf(previewFor('memories', SAMPLE_FIXED, { ...focus, memory: 2 }))
     expect(memory).toMatchObject({ kind: 'photo', title: 'That evening by the water.', photo: { id: 'p-beach' } })
-    expect(previewFor('who', SAMPLE_INTAKE, focus)).toMatchObject({ ghost: false, content: { kind: 'ticket', recipient: 'Zara' } })
+    expect(previewFor('who', SAMPLE_FIXED, focus)).toMatchObject({ ghost: false, content: { kind: 'ticket', recipient: 'Zara' } })
   })
 
   it('falls back to the last written row when the focused one is empty', () => {

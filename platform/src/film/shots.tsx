@@ -156,7 +156,7 @@ function ShotBody({ shot, actions, leaving }: { shot: Shot; actions: ShotActions
           </p>
           <div className="flag-main">
             <p className="flag-label">
-              <FlagIcon />
+              {shot.sceneType === 'redFlags' && <FlagIcon />}
               {shot.label}
             </p>
             <Type text={shot.text} className={`slam${shot.text.length > 60 ? ' is-long' : ''}`} by="word" delay={0.12} step={85} />
@@ -184,7 +184,7 @@ function ShotBody({ shot, actions, leaving }: { shot: Shot; actions: ShotActions
       return (
         <div className="montage" aria-hidden="true">
           <div className="montage-head">
-            <Type text={shot.kicker} className="kicker" by="word" step={70} />
+            {shot.kicker && <Type text={shot.kicker} className="kicker" by="word" step={70} />}
             <Type as="h2" text={shot.title} className="slam" by="word" delay={0.15} step={90} />
           </div>
           <ul className="deal" data-count={count}>
@@ -300,7 +300,7 @@ function Plate({ shot }: { shot: Extract<Shot, { kind: 'photo' }> }) {
         {shot.photo.caption && <figcaption>{shot.photo.caption}</figcaption>}
       </figure>
       <div className="words">
-        <Type text={shot.kicker} className="kicker" by="word" delay={0.5} step={70} />
+        {shot.kicker && <Type text={shot.kicker} className="kicker" by="word" delay={0.5} step={70} />}
         <Type as="h2" text={shot.title} className={`headline${shot.title.length > 30 ? ' is-long' : ''}`} delay={0.75} />
         {shot.body && <Type text={shot.body} className="sub" by="word" delay={1.35 + seconds(shot.title, 0.1)} step={60} />}
       </div>
@@ -329,7 +329,7 @@ function Roll({ shot }: { shot: Extract<Shot, { kind: 'flag' | 'reason' }> }) {
     <div className={`roll-list ${flag ? 'is-docket' : 'is-ledger'}`} aria-hidden="true">
       {flag && (
         <p className="flag-label">
-          <FlagIcon />
+          {shot.sceneType === 'redFlags' && <FlagIcon />}
           {shot.label}
         </p>
       )}

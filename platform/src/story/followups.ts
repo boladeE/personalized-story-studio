@@ -81,7 +81,7 @@ export function cleanAnswers(raw: unknown): Answered[] {
 /** Everything the sender wrote: their note, then their answers. What "their own words" is checked against. */
 export const withAnswers = (about: string, answered: Answered[]) => [about.trim(), ...answered.map((a) => a.answer.trim()).filter(Boolean)].join('\n')
 
-const overlap = (a: string, b: string) => {
+export const overlap = (a: string, b: string) => {
   const words = (t: string) => new Set((t.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).filter((w) => w.length > 3))
   const [x, y] = [words(a), words(b)]
   let shared = 0

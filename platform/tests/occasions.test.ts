@@ -3,14 +3,14 @@ import { previewFor } from '../src/film/previews'
 import { buildFilm } from '../src/film/timeline'
 import { generateStory, sceneStatus } from '../src/story/generate'
 import { occasionOf, OCCASIONS } from '../src/story/occasions'
-import { emptyIntake, SAMPLE_INTAKE } from '../src/story/sample'
+import { emptyIntake, SAMPLE_FIXED } from '../src/story/sample'
 import { OCCASION_IDS } from '../src/story/types'
 import type { Intake, Occasion } from '../src/story/types'
 import { parseIntake } from '../src/story/validate'
 import { lyricsBrief, lyricsPrompt, parseSongDetails, songDetails, songPrompt, sungPrompt, VIBES } from '../src/story/vibes'
 import { demoLyrics } from '../src/server/lyrics'
 
-const sampleFor = (occasion: Occasion): Intake => ({ ...SAMPLE_INTAKE, occasion })
+const sampleFor = (occasion: Occasion): Intake => ({ ...SAMPLE_FIXED, occasion })
 const others = OCCASION_IDS.filter((id) => id !== 'birthday')
 
 describe('occasions', () => {
@@ -67,7 +67,7 @@ describe('occasions', () => {
   })
 
   it('a gift stored before occasions existed still ends on its candle', () => {
-    const story = generateStory(SAMPLE_INTAKE, 9)
+    const story = generateStory(SAMPLE_FIXED, 9)
     const old = structuredClone(story)
     for (const scene of old.scenes) for (const frame of scene.frames) if (frame.kind === 'wish') (delete frame.prop, delete frame.action)
     expect(buildFilm(old).shots.find((s) => s.kind === 'wish')).toMatchObject({ prop: 'candle', action: 'Blow out the candle' })
@@ -78,8 +78,8 @@ describe('occasions', () => {
       const parsed = parseIntake(sampleFor(id))
       expect(parsed.ok && parsed.intake.occasion).toBe(id)
     }
-    expect(parseIntake({ ...SAMPLE_INTAKE, occasion: 'carnival' })).toEqual({ ok: false, error: 'Unknown occasion' })
-    expect(parseIntake({ ...SAMPLE_INTAKE, occasion: undefined }).ok).toBe(false)
+    expect(parseIntake({ ...SAMPLE_FIXED, occasion: 'carnival' })).toEqual({ ok: false, error: 'Unknown occasion' })
+    expect(parseIntake({ ...SAMPLE_FIXED, occasion: undefined }).ok).toBe(false)
   })
 })
 
@@ -105,7 +105,7 @@ describe('songs for an occasion', () => {
       }
     }
     // The birthday brief is the one that was tuned by ear; it carries no such note.
-    expect(lyricsBrief(songDetails(SAMPLE_INTAKE)!, 'smooth')).not.toContain('The example was written for a birthday')
+    expect(lyricsBrief(songDetails(SAMPLE_FIXED)!, 'smooth')).not.toContain('The example was written for a birthday')
   })
 
   it('tells the music model what it is singing or scoring', () => {
@@ -124,6 +124,6 @@ describe('songs for an occasion', () => {
   it('writes placeholder words for the occasion too', () => {
     expect(demoLyrics(songDetails(sampleFor('missing-you'))!).lyrics).toContain('I miss you, Zara')
     expect(demoLyrics(songDetails(sampleFor('just-because'))!).lyrics).toContain('This one is for Zara')
-    expect(demoLyrics(songDetails(SAMPLE_INTAKE)!).lyrics).toContain('Happy birthday, Zara')
+    expect(demoLyrics(songDetails(SAMPLE_FIXED)!).lyrics).toContain('Happy birthday, Zara')
   })
 })
