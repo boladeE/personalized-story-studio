@@ -840,6 +840,15 @@ select:focus-visible {
 :is(.look-option, .look-button)[data-world='scrapbook'][data-look='paper'] .swatch {
   background: radial-gradient(circle at 35% 35%, #c22a59 0 25%, #f7f3ea 26%);
 }
+:is(.look-option, .look-button)[data-world='mixtape'][data-look='screening'] .swatch {
+  background: radial-gradient(circle at 35% 35%, #ffd23f 0 25%, #101a3a 26%);
+}
+:is(.look-option, .look-button)[data-world='mixtape'][data-look='garden'] .swatch {
+  background: radial-gradient(circle at 35% 35%, #ff8a3d 0 25%, #2a0f2e 26%);
+}
+:is(.look-option, .look-button)[data-world='mixtape'][data-look='paper'] .swatch {
+  background: radial-gradient(circle at 35% 35%, #d1431f 0 25%, #f4ead4 26%);
+}
 
 .chip-button {
   display: inline-flex;

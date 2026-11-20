@@ -39,7 +39,7 @@ export async function pickScene(page: Page, name: string) {
 }
 
 /** Pick the kind of film. A new film's kind is drawn from its seed, so tests that need one choose it. */
-export async function chooseStyle(page: Page, name: 'The Screening' | 'The Scrapbook') {
+export async function chooseStyle(page: Page, name: 'The Screening' | 'The Scrapbook' | 'The Mixtape') {
   await openEditor(page, 'Look')
   await page.getByRole('radio', { name: new RegExp(`^${name}`) }).check()
   await closeEditor(page)

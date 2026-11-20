@@ -77,8 +77,10 @@ export function buildFilm(story: Story): Film {
   let numbered = 0
   let opened = false
   const world = story.world ?? 'screening'
-  // An album turns a page between shots; only the Screening cuts hard on the beat.
+  // An album turns a page between shots; the Screening and the Mixtape cut hard on the beat.
   const album = world === 'scrapbook'
+  // The album and the mixtape put the whole opening on one page.
+  const onePage = album || world === 'mixtape'
 
   story.scenes.forEach((scene, sceneIndex) => {
     if (scene.type === 'ticket') return
@@ -88,7 +90,7 @@ export function buildFilm(story: Story): Film {
     const drafts: Draft[] = []
     const listed = scene.frames.flatMap((f) => (f.kind === 'item' ? [f.text] : []))
     // Designs that build a list keep the page and add to it, so there is no transition between items.
-    const builds = album || scene.design === 'docket' || scene.design === 'ledger'
+    const builds = album || ['docket', 'ledger', 'tracklist', 'liner'].includes(scene.design ?? '')
     let itemsSeen = 0
 
     // Chapters between the opening and the ending get a numbered title card.
@@ -106,8 +108,8 @@ export function buildFilm(story: Story): Film {
           if (!opened) {
             // The film's first words: a dedication that turns to dust and re-forms as their name.
             opened = true
-            if (album) {
-              // The album's title page carries the dedication, their name and the opening line together.
+            if (onePage) {
+              // The album's title page (and the tape's first track) carries the dedication, their name and the opening line together.
               drafts.push({
                 kind: 'name',
                 name: story.recipient,

@@ -240,7 +240,7 @@ test('with reduced motion the film skips the countdown and still plays', async (
 
 for (const [width, height] of [[360, 740], [768, 900], [1360, 800]]) {
   test(`nothing spills off screen at ${width}px`, async ({ page }) => {
-    test.setTimeout(180_000)
+    test.setTimeout(260_000)
     await page.setViewportSize({ width, height })
     // Every screen of the short flow.
     for (const step of ['who', 'names', 'occasion', 'photos', 'about', 'song']) {
@@ -269,9 +269,9 @@ for (const [width, height] of [[360, 740], [768, 900], [1360, 800]]) {
       expect(await page.evaluate(() => document.documentElement.scrollWidth), `the ${step} step is wider than the screen`).toBeLessThanOrEqual(width)
     }
     await page.getByRole('button', { name: 'Build the story' }).click()
-    // Every shot of both kinds of film, in both designs of each scene.
-    for (const pass of ['The Screening', 'The Scrapbook', 'The Scrapbook again'] as const) {
-    if (pass === 'The Scrapbook again') {
+    // Every shot of every kind of film, in both designs of each scene.
+    for (const pass of ['The Screening', 'The Scrapbook', 'again', 'The Mixtape', 'again'] as const) {
+    if (pass === 'again') {
       // The editor fits too: every scene's words and changes, the look, the row's head and the song's bar.
       await openEditor(page)
       const tiles = page.locator('.scene-tile.is-in > button')
@@ -298,7 +298,7 @@ for (const [width, height] of [[360, 740], [768, 900], [1360, 800]]) {
       await page.waitForTimeout(350)
       const fit = await page.evaluate(() => {
         const frame = document.querySelector('.film-frame')!.getBoundingClientRect()
-        const spill = Array.from(document.querySelectorAll<HTMLElement>('.shot.is-current .type, .shot.is-current .sb-hand, .shot.is-current .sb-typed, .shot.is-current .blow, .shot.is-current .again'))
+        const spill = Array.from(document.querySelectorAll<HTMLElement>('.shot.is-current .type, .shot.is-current .sb-hand, .shot.is-current .sb-typed, .shot.is-current .mx-caps, .shot.is-current .mx-mono, .shot.is-current .mx-prose, .shot.is-current .blow, .shot.is-current .again'))
           // Something still waiting to arrive is not on screen yet.
           .filter((el) => el.checkVisibility({ checkOpacity: true }))
           .map((el) => el.getBoundingClientRect())
@@ -570,13 +570,47 @@ test('on the home page the sample’s song and the film take turns', async ({ pa
   expect(errors).toEqual([])
 })
 
+test('the sample plays as a mixtape: a tape to press play on, tracks for scenes, and the song with it', async ({ page }) => {
+  test.setTimeout(90_000)
+  const errors = trackErrors(page)
+  await open(page, '/')
+  await page.locator('#kinds .kind').filter({ hasText: 'The Mixtape' }).click()
+  await expect(page).toHaveURL(/\/preview\?sample=1&style=mixtape$/)
+  const film = page.locator('.preview-body > .film')
+  await expect(film).toHaveAttribute('data-world', 'mixtape')
+  // The opening is the tape itself, with their name on its label.
+  await expect(film.locator('.mx-tape-name')).toHaveText('Zara')
+  await expect(page.getByRole('button', { name: 'A mixtape made for Zara. Tap to begin' })).toBeVisible()
+  await startFilm(page)
+  await expect.poll(async () => (await audioState(page))?.trackId, { timeout: 15_000 }).toBe('song')
+  // Track one is the dedication, their name and the opening line together.
+  const first = await filmState(page)
+  expect(first.kind).toBe('name')
+  expect(first.text).toContain('For Zara. From Tobi.')
+  // Every scene after it is a numbered track, and the whole story is told.
+  const shots = await walk(page, (shot) => shot.kind === 'wish')
+  const said = shots.map((s) => s.text).join(' ')
+  for (const line of ['You called me a cheat.', 'Sends an eleven-minute voice note called “quick gist”', 'You remember the small things I mention once, in passing']) expect(said).toContain(line)
+  expect(shots.filter((s) => s.kind === 'card').length).toBeGreaterThanOrEqual(5)
+  await expect(film.locator('.shot.is-current .mx-wish')).toBeVisible()
+  // Its colours have their own names, and switching them changes nothing else.
+  await openEditor(page, 'Look')
+  await expect(page.getByRole('radio', { name: /^The Mixtape/ })).toBeChecked()
+  await page.getByRole('radio', { name: 'Sunset' }).check()
+  await expect(film).toHaveAttribute('data-look', 'garden')
+  await page.getByRole('radio', { name: 'Midnight' }).check()
+  await expect(film).toHaveAttribute('data-look', 'screening')
+  await closeEditor(page)
+  expect(errors).toEqual([])
+})
+
 test('the sample plays as a scrapbook, and its scenes can be redesigned, moved, left out and put back', async ({ page }) => {
   test.setTimeout(120_000)
   const errors = trackErrors(page)
   await open(page, '/')
-  // The home page shows both kinds of film and links to the sample in each.
+  // The home page shows every kind of film and links to the sample in each.
   const kinds = page.locator('#kinds .kind')
-  await expect(kinds).toHaveCount(2)
+  await expect(kinds).toHaveCount(3)
   await kinds.filter({ hasText: 'The Scrapbook' }).click()
   await expect(page).toHaveURL(/\/preview\?sample=1&style=scrapbook$/)
   const film = page.locator('.preview-body > .film')

@@ -18,7 +18,7 @@ import type { Shot } from './timeline'
 type Of<K extends Shot['kind']> = Extract<Shot, { kind: K }>
 
 /** A size step for words that must fit a fixed piece of paper. */
-function fit(text: string, steps: number[]): string {
+export function fit(text: string, steps: number[]): string {
   const at = steps.findIndex((max) => text.length <= max)
   return `fit-${at < 0 ? steps.length : at}`
 }

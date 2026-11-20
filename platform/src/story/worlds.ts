@@ -69,6 +69,30 @@ export const WORLDS: WorldDef[] = [
       ],
     },
   },
+  {
+    id: 'mixtape',
+    name: 'The Mixtape',
+    blurb: 'A tape made for one person: tracks, tall type, and their name on the label.',
+    looks: { screening: 'Midnight', garden: 'Sunset', paper: 'Daylight' },
+    designs: {
+      spotlight: [
+        { id: 'cover', name: 'Cover art' },
+        { id: 'poster', name: 'Poster' },
+      ],
+      memoryLane: [
+        { id: 'cover', name: 'Cover art' },
+        { id: 'poster', name: 'Poster' },
+      ],
+      redFlags: [
+        { id: 'shout', name: 'Loud tracks' },
+        { id: 'tracklist', name: 'Track list' },
+      ],
+      reasons: [
+        { id: 'nowplaying', name: 'Now playing' },
+        { id: 'liner', name: 'Liner notes' },
+      ],
+    },
+  },
 ]
 
 export const worldOf = (id: WorldId | undefined): WorldDef => WORLDS.find((w) => w.id === id) ?? WORLDS[0]

@@ -81,12 +81,27 @@ const ALBUM: Record<LookId, { palette: Palette; light: boolean }> = {
   paper: { light: true, palette: { a: '#174a3b', b: '#1f5a48', c: '#f2c26b', ink: '#1f2a44', soft: 'rgba(31,42,68,.78)', accent: '#c22a59' } },
 }
 
+/** The mixtape's colourways: one flat colour under everything, cream type, and two loud inks. The stylesheet holds the rest. */
+const TAPE: Record<LookId, { palette: Palette; light: boolean }> = {
+  // Midnight: navy, coral and yellow.
+  screening: { light: false, palette: { a: '#0a1128', b: '#101a3a', c: '#ff6b57', ink: '#fdf6e3', soft: 'rgba(253,246,227,.8)', accent: '#ffd23f' } },
+  // Sunset: plum, tangerine and gold.
+  garden: { light: false, palette: { a: '#1c0a20', b: '#2a0f2e', c: '#ff8a3d', ink: '#fff3e0', soft: 'rgba(255,243,224,.82)', accent: '#ffcf5c' } },
+  // Daylight: cream, navy ink and red.
+  paper: { light: true, palette: { a: '#e9dcc0', b: '#f4ead4', c: '#c8401c', ink: '#14213d', soft: 'rgba(20,33,61,.78)', accent: '#c8401c' } },
+}
+
+/** Worlds drawn on flat stock, not smoke: one palette whatever the mood. */
+const FLAT: Partial<Record<WorldId, Record<LookId, { palette: Palette; light: boolean }>>> = { scrapbook: ALBUM, mixtape: TAPE }
+
 export const paletteFor = (look: LookId, mood: Mood, world: WorldId = 'screening'): Palette =>
-  world === 'scrapbook' ? ALBUM[look].palette : LOOKS[look].moods[mood === 'playful' ? 'warm' : mood]
+  FLAT[world]?.[look].palette ?? LOOKS[look].moods[mood === 'playful' ? 'warm' : mood]
 export const loudFor = (look: LookId, n: number): Loud => LOOKS[look].loud[((n % 4) + 4) % 4]
 /** The dark loud colour of a look: the table the camera-roll prints are dealt onto. */
 export const tableFor = (look: LookId): Loud => LOOKS[look].loud[look === 'screening' ? 2 : 1]
-export const isLight = (look: LookId, world: WorldId = 'screening') => (world === 'scrapbook' ? ALBUM[look].light : LOOKS[look].light)
+export const isLight = (look: LookId, world: WorldId = 'screening') => FLAT[world]?.[look].light ?? LOOKS[look].light
+/** The class a world's film carries, for its stylesheet. The Screening is the base and has none. */
+export const worldClass = (world: WorldId = 'screening') => (world === 'scrapbook' ? ' sb' : world === 'mixtape' ? ' mx' : '')
 
 export function hexToRgb(hex: string): [number, number, number] {
   const n = parseInt(hex.slice(1), 16)

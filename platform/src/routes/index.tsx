@@ -154,10 +154,10 @@ function Home() {
 
         <section id="kinds" className="home-section" aria-labelledby="kinds-title">
           <div className="section-intro">
-            <h2 id="kinds-title">The same story, told two ways.</h2>
+            <h2 id="kinds-title">The same story, told three ways.</h2>
             <p>
-              Your photos and words can become a night at the pictures or a handmade album. The studio picks one to start with. You can
-              switch, give any scene another design, move it or leave it out.
+              Your photos and words can become a night at the pictures, a handmade album or a mixtape. The studio picks one to start with.
+              You can switch, give any scene another design, move it or leave it out.
             </p>
           </div>
           <ul className="kinds">
@@ -165,7 +165,7 @@ function Home() {
               <li key={world.id}>
                 <Link to="/preview" search={{ sample: 1, style: world.id }} className="kind">
                   <span className="kind-frame">
-                    <Still {...previewFor(world.id === 'scrapbook' ? 'memories' : 'who', SAMPLE_INTAKE, { ...FOCUS, memory: 1 }, world.id === 'scrapbook' ? 'paper' : 'screening')} world={world.id} />
+                    <Still {...previewFor(world.id === 'screening' ? 'who' : 'memories', SAMPLE_INTAKE, { ...FOCUS, memory: 1 }, world.id === 'scrapbook' ? 'paper' : 'screening')} world={world.id} />
                   </span>
                   <span className="kind-words">
                     <b>{world.name}</b>

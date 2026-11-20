@@ -140,3 +140,45 @@ describe('the same story as a scrapbook', () => {
     expect(album.shots.map((s) => s.kind).slice(-3)).toEqual(['wish', 'reveal', 'credits'])
   })
 })
+
+describe('the same story as a mixtape', () => {
+  const tape = buildFilm(generateStory({ ...SAMPLE_INTAKE, world: 'mixtape', cut: { designs: { reasons: 'liner', redFlags: 'tracklist' } } }, 7))
+  const loud = buildFilm(generateStory({ ...SAMPLE_INTAKE, world: 'mixtape', cut: { designs: { reasons: 'nowplaying', redFlags: 'shout' } } }, 7))
+
+  it('says everything the Screening says, word for word, in either set of designs', () => {
+    const said = [SAMPLE_INTAKE.spotlight, SAMPLE_INTAKE.wish, ...SAMPLE_INTAKE.habits, ...SAMPLE_INTAKE.reasons, ...SAMPLE_INTAKE.memories.flatMap((m) => [m.title, m.story]), ...SAMPLE_INTAKE.letter.split(/\n+/)]
+    for (const film of [tape, loud]) {
+      const all = film.shots.map((s) => s.text).join('\n')
+      for (const text of said) expect(all).toContain(text.trim())
+      expect(all).toContain('For Zara. From Tobi.')
+    }
+  })
+
+  it('opens on one track that carries the dedication, their name and the opening line', () => {
+    const [first, second] = tape.shots
+    expect(first).toMatchObject({ kind: 'name', name: 'Zara', kicker: 'For Zara. From Tobi.' })
+    expect(second.kind).toBe('card')
+  })
+
+  it('keeps the track listing on screen while it builds, and cuts between loud tracks', () => {
+    const listed = tape.shots.filter((s) => s.kind === 'reason')
+    expect(listed.map((s) => s.exit)).toEqual(['cut', 'cut', 'fade'])
+    expect(listed.every((s) => s.design === 'liner')).toBe(true)
+    const flags = tape.shots.filter((s) => s.kind === 'flag')
+    expect(flags.every((s) => s.exit === 'cut' && s.design === 'tracklist')).toBe(true)
+    // The verdict lands on the listing, so it knows what was on it.
+    const verdict = tape.shots[flags.at(-1)!.index + 1]
+    expect(verdict.kind === 'line' && verdict.items).toEqual(SAMPLE_INTAKE.habits)
+    // One reason to a screen fades between them; one flag to a screen cuts.
+    expect(loud.shots.filter((s) => s.kind === 'reason').every((s) => s.exit === 'fade')).toBe(true)
+    expect(loud.shots.filter((s) => s.kind === 'flag').every((s) => s.enter === 'cut' && s.exit === 'cut' && s.design === 'shout')).toBe(true)
+  })
+
+  it('still cuts on whole beats and waits at the candle', () => {
+    for (const shot of tape.shots) {
+      const beats = shot.duration / (60 / DEFAULT_BPM)
+      expect(Math.abs(beats - Math.round(beats))).toBeLessThan(1e-6)
+    }
+    expect(tape.shots.map((s) => s.kind).slice(-3)).toEqual(['wish', 'reveal', 'credits'])
+  })
+})

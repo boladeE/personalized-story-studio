@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import type { CSSProperties, ElementType, ReactNode } from 'react'
 import type { WorldId } from '../story/types'
+import { MixBody } from './mixtape'
 import { PageBody } from './scrapbook'
 import type { Shot } from './timeline'
 
@@ -94,7 +95,13 @@ export function ShotView({ shot, state, loud, actions, world = 'screening' }: { 
       data-text={shot.text}
       style={style}
     >
-      {world === 'scrapbook' ? <PageBody shot={shot} actions={actions} leaving={state === 'leaving'} /> : <ShotBody shot={shot} actions={actions} leaving={state === 'leaving'} />}
+      {world === 'scrapbook' ? (
+        <PageBody shot={shot} actions={actions} leaving={state === 'leaving'} />
+      ) : world === 'mixtape' ? (
+        <MixBody shot={shot} actions={actions} leaving={state === 'leaving'} />
+      ) : (
+        <ShotBody shot={shot} actions={actions} leaving={state === 'leaving'} />
+      )}
     </section>
   )
 }

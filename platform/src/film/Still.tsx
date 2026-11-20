@@ -2,7 +2,8 @@ import { useLayoutEffect, useRef } from 'react'
 import type { CSSProperties } from 'react'
 import type { LookId, WorldId } from '../story/types'
 import { TicketArt } from './Film'
-import { isLight, loudFor, paletteFor, tableFor } from './looks'
+import { isLight, loudFor, paletteFor, tableFor, worldClass } from './looks'
+import { CassetteArt } from './mixtape'
 import { CoverArt } from './scrapbook'
 import { ShotView } from './shots'
 import type { Shot } from './timeline'
@@ -38,8 +39,9 @@ export function Still({ look, content, ghost = false, world = 'screening' }: { l
   const shot = content.kind === 'shot' ? content.shot : null
   const mood = shot?.mood ?? 'warm'
   const album = world === 'scrapbook'
+  const flat = world !== 'screening'
   const palette = paletteFor(look, mood, world)
-  const loud = album || !shot || shot.mood !== 'playful' ? null : shot.kind === 'flag' ? loudFor(look, shot.design === 'docket' ? 0 : shot.n - 1) : shot.kind === 'montage' ? tableFor(look) : null
+  const loud = flat || !shot || shot.mood !== 'playful' ? null : shot.kind === 'flag' ? loudFor(look, shot.design === 'docket' ? 0 : shot.n - 1) : shot.kind === 'montage' ? tableFor(look) : null
   const style = {
     '--f-a': palette.a,
     '--f-b': palette.b,
@@ -55,7 +57,7 @@ export function Still({ look, content, ghost = false, world = 'screening' }: { l
   return (
     <div ref={box} className="still-box" aria-hidden="true" inert>
       <div
-        className={`film still${album ? ' sb' : ''}${isLight(look, world) ? ' is-light' : ''}${ghost ? ' is-ghost' : ''}`}
+        className={`film still${worldClass(world)}${isLight(look, world) ? ' is-light' : ''}${ghost ? ' is-ghost' : ''}`}
         data-look={look}
         data-world={world}
         data-phase={shot ? 'playing' : 'ticket'}
@@ -70,8 +72,14 @@ export function Still({ look, content, ghost = false, world = 'screening' }: { l
         <div className="film-bar top" />
         <div className="film-bar bottom" />
         {content.kind === 'ticket' && (
-          <div className={`opening${album ? ' sb-opening' : ''}`}>
-            {album ? <CoverArt recipient={content.recipient} occasion={content.occasion} /> : <TicketArt recipient={content.recipient} occasion={content.occasion} />}
+          <div className={`opening${album ? ' sb-opening' : world === 'mixtape' ? ' mx-opening' : ''}`}>
+            {album ? (
+              <CoverArt recipient={content.recipient} occasion={content.occasion} />
+            ) : world === 'mixtape' ? (
+              <CassetteArt recipient={content.recipient} occasion={content.occasion} />
+            ) : (
+              <TicketArt recipient={content.recipient} occasion={content.occasion} />
+            )}
           </div>
         )}
       </div>

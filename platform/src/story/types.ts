@@ -19,7 +19,7 @@ export const isRelationship = (value: unknown): value is Relationship => (RELATI
 export type LookId = 'screening' | 'garden' | 'paper'
 
 /** The kind of film: a design family with its own opening, pages and scene designs. See worlds.ts. */
-export const WORLD_IDS = ['screening', 'scrapbook'] as const
+export const WORLD_IDS = ['screening', 'scrapbook', 'mixtape'] as const
 export type WorldId = (typeof WORLD_IDS)[number]
 export const isWorld = (value: unknown): value is WorldId => (WORLD_IDS as readonly unknown[]).includes(value)
 

@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode, RefObject } from 'react'
 import { AudioEngine } from '../components/audio-engine'
-import type { Story } from '../story/types'
+import type { Story, WorldId } from '../story/types'
 import { Backdrop } from './backdrop'
-import { isLight, loudFor, paletteFor, tableFor } from './looks'
+import { isLight, loudFor, paletteFor, tableFor, worldClass } from './looks'
 import { Particles } from './particles'
+import { CassetteArt } from './mixtape'
 import { CoverArt } from './scrapbook'
 import { Icon, ShotView } from './shots'
 import { buildFilm, formatTime, shotAt } from './timeline'
@@ -69,6 +70,8 @@ export function Film({
   const film = useMemo(() => buildFilm(story), [story])
   const world = story.world ?? 'screening'
   const album = world === 'scrapbook'
+  // The album and the mixtape are drawn on flat stock: no smoke, no dust, and no loud cards of the Screening's.
+  const flat = world !== 'screening'
   const [phase, setPhase] = useState<Phase>('ticket')
   const [count, setCount] = useState(0)
   const [index, setIndex] = useState(0)
@@ -112,7 +115,7 @@ export function Film({
   const loudOf = useCallback(
     (s: Shot) => {
       // Loud colour cards are the Screening's; an album stays on its page.
-      if (album || s.mood !== 'playful') return null
+      if (flat || s.mood !== 'playful') return null
       // A list that builds keeps one colour under it.
       if (s.kind === 'flag') return loudFor(story.look, s.design === 'docket' ? 0 : s.n - 1)
       // Prints need a dark table under them.
@@ -120,7 +123,7 @@ export function Film({
       if (s.kind === 'card' || s.kind === 'line') return loudFor(story.look, s.index)
       return null
     },
-    [story.look, album],
+    [story.look, flat],
   )
 
   /* ---------- engines ---------- */
@@ -158,9 +161,9 @@ export function Film({
   // An album has no dust in the air.
   const dustDensity = useRef(1)
   useEffect(() => {
-    dustDensity.current = album ? 0 : 1
+    dustDensity.current = flat ? 0 : 1
     particles.current?.dust(dustDensity.current)
-  }, [album])
+  }, [flat])
 
   const clearTimers = () => {
     timers.current.forEach((id) => window.clearTimeout(id))
@@ -360,6 +363,8 @@ export function Film({
     }
     // The album's cover opens onto its first page.
     if (album) return later(1500, play)
+    // The cassette clicks into the deck and the reels take up the slack.
+    if (world === 'mixtape') return later(1700, play)
     // The ticket tears, then a film leader counts in.
     const beat = 780
     ;[3, 2, 1].forEach((n, i) =>
@@ -369,7 +374,7 @@ export function Film({
       }),
     )
     later(1250 + 3 * beat, play)
-  }, [songSrc, album])
+  }, [songSrc, album, world])
 
   // Asked for by the page around the film: straight to a scene, with no opening.
   const playFrom = useCallback(
@@ -543,7 +548,7 @@ export function Film({
   return (
     <div
       ref={root}
-      className={`film${album ? ' sb' : ''}${paused ? ' is-paused' : ''}${idle && phase === 'playing' && !paused && !waiting ? ' is-idle' : ''}${light ? ' is-light' : ''}`}
+      className={`film${worldClass(world)}${paused ? ' is-paused' : ''}${idle && phase === 'playing' && !paused && !waiting ? ' is-idle' : ''}${light ? ' is-light' : ''}`}
       data-look={story.look}
       data-world={world}
       data-phase={phase}
@@ -581,7 +586,7 @@ export function Film({
         </p>
       )}
 
-      {!started && <Opening recipient={story.recipient} occasion={ticketLabel(story)} torn={phase === 'leader'} count={count} onBegin={begin} onSkip={() => skipOpening.current?.()} album={album} locked={locked} />}
+      {!started && <Opening recipient={story.recipient} occasion={ticketLabel(story)} torn={phase === 'leader'} count={count} onBegin={begin} onSkip={() => skipOpening.current?.()} world={world} locked={locked} />}
 
       <p className="visually-hidden" role="status" aria-live="polite">
         {started ? shot.text : ''}
@@ -647,7 +652,7 @@ function ticketLabel(story: Story) {
   return 'Your birthday'
 }
 
-function Opening({ recipient, occasion, torn, count, onBegin, onSkip, album, locked }: { recipient: string; occasion: string; torn: boolean; count: number; onBegin: () => void; onSkip: () => void; album: boolean; locked?: string }) {
+function Opening({ recipient, occasion, torn, count, onBegin, onSkip, world, locked }: { recipient: string; occasion: string; torn: boolean; count: number; onBegin: () => void; onSkip: () => void; world: WorldId; locked?: string }) {
   const hint = locked ?? 'Sound on, if you can. It plays by itself.'
   const tilt = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.pointerType !== 'mouse' || torn) return
@@ -657,7 +662,16 @@ function Opening({ recipient, occasion, torn, count, onBegin, onSkip, album, loc
     event.currentTarget.style.setProperty('--ry', `${(x * 14).toFixed(2)}deg`)
     event.currentTarget.style.setProperty('--rx', `${(-y * 10).toFixed(2)}deg`)
   }
-  if (album) {
+  if (world === 'mixtape') {
+    return (
+      <div className={`opening mx-opening${torn ? ' is-torn' : ''}${locked ? ' is-locked' : ''}`}>
+        <button type="button" className="ticket-hit" onClick={torn ? onSkip : onBegin} disabled={Boolean(locked)} aria-label={locked ? `A mixtape made for ${recipient}. ${locked}` : torn ? 'Skip the opening' : `A mixtape made for ${recipient}. Tap to begin`} />
+        <CassetteArt recipient={recipient} occasion={occasion} />
+        <p className="opening-hint">{hint}</p>
+      </div>
+    )
+  }
+  if (world === 'scrapbook') {
     return (
       <div className={`opening sb-opening${torn ? ' is-torn' : ''}${locked ? ' is-locked' : ''}`}>
         <button type="button" className="ticket-hit" onClick={torn ? onSkip : onBegin} disabled={Boolean(locked)} aria-label={locked ? `A book made for ${recipient}. ${locked}` : torn ? 'Skip the opening' : `A book made for ${recipient}. Tap to open`} />

@@ -1,0 +1,842 @@
+/* ==========================================================================
+   The Mixtape: the film as a tape made for one person.
+   Every scene is a track. Words are tall capitals on one flat colour, the
+   small print is typewritten like an inlay card, photos are cover art and
+   lists are track listings. Nothing drifts: things snap in, wipe across and
+   cut on the beat, the way a deck works.
+   Everything here is scoped to `.film.mx`; sizes are container units so the
+   tape scales with the film's own box. The typewriter and handwriting faces
+   are declared in scrapbook.css.
+   ========================================================================== */
+
+/* Midnight: navy, coral and yellow. */
+.film.mx {
+  --caps: var(--sans);
+  --mono: 'Courier Prime', 'Courier New', ui-monospace, monospace;
+  --hand: 'Caveat', 'Segoe Print', 'Bradley Hand', cursive;
+  --mx-bg: #101a3a;
+  --mx-bg-2: #0a1128;
+  --mx-hot: #ff6b57;
+  --mx-on-hot: #101a3a;
+  --mx-pop: #ffd23f;
+  --mx-on-pop: #101a3a;
+  --mx-paper: #fff3d6;
+  --mx-paper-ink: #101a3a;
+  --mx-line: rgba(253, 246, 227, 0.13);
+  background: linear-gradient(var(--mx-line) 1px, transparent 1px) 0 0 / 100% clamp(20px, 6.5cqh, 46px), var(--mx-bg);
+}
+/* Sunset: plum, tangerine and gold. */
+.film.mx[data-look='garden'] {
+  --mx-bg: #2a0f2e;
+  --mx-bg-2: #1c0a20;
+  --mx-hot: #ff8a3d;
+  --mx-on-hot: #2a0f2e;
+  --mx-pop: #ffcf5c;
+  --mx-on-pop: #2a0f2e;
+  --mx-paper: #fff0dc;
+  --mx-paper-ink: #2a0f2e;
+  --mx-line: rgba(255, 243, 224, 0.13);
+}
+/* Daylight: cream, navy ink, red and teal. */
+.film.mx[data-look='paper'] {
+  --mx-bg: #f4ead4;
+  --mx-bg-2: #14213d;
+  --mx-hot: #0f6e7a;
+  --mx-on-hot: #ffffff;
+  --mx-pop: #d1431f;
+  --mx-on-pop: #ffffff;
+  --mx-paper: #ffffff;
+  --mx-paper-ink: #14213d;
+  --mx-line: rgba(20, 33, 61, 0.13);
+}
+
+.film.mx .film-haze,
+.film.mx .film-glow,
+.film.mx .film-bar,
+.film.mx .film-flash,
+.film.mx .film-vignette {
+  display: none;
+}
+.film.mx .film-grain {
+  opacity: 0.07;
+}
+
+/* ---------- A track ---------- */
+
+.film.mx .shot {
+  isolation: isolate;
+  padding: clamp(14px, 5cqh, 48px) clamp(18px, 6cqw, 96px);
+  color: var(--f-ink);
+}
+.film.mx .shot.is-current {
+  animation: mx-in 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+/* A list that builds stays where it is: only its newest line arrives. */
+.film.mx .shot.is-current:has(.mx-list, .mx-shout) {
+  animation: none;
+}
+.film.mx .shot.is-leaving {
+  animation: mx-out 0.32s cubic-bezier(0.6, 0, 0.9, 0.4) both;
+}
+.film.mx .shot-wish.is-leaving {
+  animation-duration: 0.9s;
+  animation-delay: 1.1s;
+}
+@keyframes mx-in {
+  from { opacity: 0; transform: translateX(4%); }
+}
+@keyframes mx-out {
+  to { opacity: 0; transform: translateX(-5%); }
+}
+@keyframes mx-fade {
+  from { opacity: 0; transform: translateY(6px); }
+}
+@keyframes mx-wipe {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@keyframes mx-run {
+  from { transform: scaleX(0); }
+}
+@keyframes mx-spin {
+  to { rotate: 1turn; }
+}
+
+/* Tall capitals, the inlay card's typewriter, and how they arrive. */
+.mx-caps {
+  margin: 0;
+  font-family: var(--caps);
+  font-weight: 800;
+  font-stretch: 75%;
+  line-height: 0.9;
+  letter-spacing: 0.002em;
+  text-transform: uppercase;
+}
+.mx-mono {
+  margin: 0;
+  font: 400 clamp(11.5px, min(1.5cqw, 2.8cqh), 16px) / 1.4 var(--mono);
+}
+.mx-tag {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--f-accent);
+}
+.mx-tag .flag-icon {
+  width: 1.1em;
+  height: 1.1em;
+}
+.film.mx .type-char .ch {
+  animation: mx-ch 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  animation-delay: calc(var(--d, 0ms) + var(--i) * var(--step, 26ms));
+}
+.film.mx .type-word .w {
+  animation: mx-w 0.26s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+  animation-delay: calc(var(--d, 0ms) + var(--i) * var(--step, 70ms));
+}
+/* The film's base type starts invisible, so each of these ends by saying it is there. */
+@keyframes mx-ch {
+  from { opacity: 0; transform: translateY(0.3em) scaleY(1.25); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes mx-w {
+  from { opacity: 0; transform: scale(1.16); }
+  to { opacity: 1; transform: none; }
+}
+.mx-in {
+  animation: mx-fade 0.4s var(--at, 0.3s) both;
+}
+
+/* A track's words fill their box; `--fit` shrinks them when they would not. `--len` steps a heading down by its length. */
+.mx-scene {
+  --fit: 1;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: clamp(8px, 2.6cqh, 24px);
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  text-align: left;
+}
+.mx-head {
+  --len: 1;
+  max-width: 100%;
+  font-size: calc(clamp(30px, min(11cqw, 21cqh), 190px) * var(--fit, 1) * var(--len));
+  text-wrap: balance;
+}
+.film.mx .fit-1 { --len: 0.74; }
+.film.mx .fit-2 { --len: 0.56; }
+.film.mx .fit-3 { --len: 0.43; }
+.film.mx .fit-4 { --len: 0.34; }
+.mx-body {
+  max-width: 36em;
+  font-size: calc(clamp(12px, min(1.7cqw, 3.1cqh), 18px) * var(--fit, 1));
+  color: var(--f-soft);
+  text-wrap: pretty;
+}
+
+/* A reel: its teeth are the dashes of its rim, turning. */
+.mx-reel {
+  flex: none;
+  width: clamp(22px, min(4.6cqw, 8.4cqh), 56px);
+  aspect-ratio: 1;
+  box-sizing: border-box;
+  border: clamp(4px, min(0.9cqw, 1.6cqh), 10px) dashed currentColor;
+  border-radius: 50%;
+  animation: mx-spin 2.6s linear infinite;
+}
+.mx-band {
+  flex: 1;
+  height: clamp(2px, 0.5cqh, 4px);
+  background: currentColor;
+  opacity: 0.45;
+}
+
+/* ---------- Track one: their name ---------- */
+
+.mx-name {
+  color: var(--mx-pop);
+  line-height: 0.82;
+  white-space: nowrap;
+}
+.mx-sub {
+  font-size: calc(clamp(20px, min(4.8cqw, 9cqh), 68px) * var(--fit, 1));
+  color: var(--mx-hot);
+  text-wrap: balance;
+}
+.mx-deck {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 1.4cqw, 16px);
+  width: min(100%, 64cqw);
+}
+
+/* ---------- Between tracks ---------- */
+
+.mx-trackno {
+  font-size: clamp(13px, min(2cqw, 3.6cqh), 22px);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--mx-hot);
+}
+.mx-card .mx-head {
+  color: var(--mx-pop);
+}
+.mx-meter {
+  display: flex;
+  align-items: flex-end;
+  gap: clamp(3px, 0.6cqw, 7px);
+  height: clamp(22px, 9cqh, 70px);
+}
+.mx-meter i {
+  width: clamp(5px, 1.1cqw, 13px);
+  height: 26%;
+  background: var(--mx-hot);
+  animation: mx-level 0.46s calc(var(--i) * -0.17s) ease-in-out infinite alternate;
+}
+.mx-meter i:nth-child(3n) { animation-duration: 0.62s; }
+.mx-meter i:nth-child(4n + 1) { animation-duration: 0.38s; }
+.mx-meter i:nth-child(5n + 2) { animation-duration: 0.74s; }
+@keyframes mx-level {
+  to { height: 100%; }
+}
+
+/* ---------- A photo as cover art ---------- */
+
+.mx-photo {
+  display: grid;
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(16px, 5cqw, 72px);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.mx-photo.layout-right {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.82fr);
+}
+.mx-photo.layout-right .mx-cover {
+  order: 2;
+}
+.mx-cover {
+  justify-self: center;
+  width: min(100%, 62cqh);
+  margin: 0;
+  padding: clamp(5px, 1cqw, 13px);
+  background: var(--mx-paper);
+  color: var(--mx-paper-ink);
+  box-shadow: clamp(5px, 1.1cqw, 15px) clamp(5px, 1.1cqw, 15px) 0 var(--mx-hot);
+  transform: rotate(var(--r, -2deg));
+  animation: mx-cover 0.5s 0.12s cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+}
+.mx-cover img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+}
+.mx-cover figcaption {
+  padding: 0.55em 0.15em 0.2em;
+  text-align: left;
+}
+@keyframes mx-cover {
+  from { opacity: 0; transform: translateX(-10%) rotate(calc(var(--r, -2deg) - 6deg)); }
+}
+.mx-photo .mx-head {
+  font-size: calc(clamp(26px, min(6.4cqw, 12cqh), 104px) * var(--fit, 1) * var(--len));
+}
+.mx-prose {
+  margin: 0;
+  max-width: 30em;
+  font: 500 calc(clamp(14px, min(1.9cqw, 3.5cqh), 22px) * var(--fit, 1)) / 1.45 var(--sans);
+  text-wrap: pretty;
+}
+.mx-words.is-long .mx-prose {
+  font-size: calc(clamp(12.5px, min(1.55cqw, 2.9cqh), 18px) * var(--fit, 1));
+}
+.mx-words.is-epic .mx-prose {
+  font-size: calc(clamp(11.5px, min(1.3cqw, 2.4cqh), 15.5px) * var(--fit, 1));
+  line-height: 1.38;
+}
+.mx-caption {
+  color: var(--f-soft);
+}
+
+/* The poster: the photo runs off the edge of the frame, and the words have the rest. */
+.mx-photo.is-poster {
+  grid-template-columns: 46% minmax(0, 1fr);
+}
+.mx-photo.is-poster.layout-right {
+  grid-template-columns: minmax(0, 1fr) 46%;
+}
+.mx-photo.is-poster .mx-cover {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 46%;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  transform: none;
+  animation: mx-wipe 0.5s 0.05s cubic-bezier(0.7, 0, 0.2, 1) both;
+}
+.mx-photo.is-poster.layout-right .mx-cover {
+  inset: 0 0 0 auto;
+}
+.mx-photo.is-poster .mx-cover img {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+}
+.mx-photo.is-poster .mx-cover::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: clamp(8px, 2.2cqh, 18px);
+  background: var(--mx-pop);
+}
+.mx-photo.is-poster .mx-words {
+  grid-column: 2;
+}
+.mx-photo.is-poster.layout-right .mx-words {
+  grid-column: 1;
+}
+
+/* ---------- Red flags at full volume ---------- */
+
+.mx-shout {
+  color: var(--tone-ink);
+}
+.mx-shout::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--tone-bg);
+  animation: mx-wipe 0.26s cubic-bezier(0.7, 0, 0.2, 1) both;
+}
+.mx-shout[data-tone='0'] { --tone-bg: var(--mx-hot); --tone-ink: var(--mx-on-hot); }
+.mx-shout[data-tone='1'] { --tone-bg: var(--mx-pop); --tone-ink: var(--mx-on-pop); }
+.mx-shout[data-tone='2'] { --tone-bg: var(--mx-paper); --tone-ink: var(--mx-paper-ink); }
+.mx-shout[data-tone='3'] { --tone-bg: var(--mx-bg-2); --tone-ink: #fdf6e3; }
+.mx-shout .mx-tag {
+  color: inherit;
+}
+
+/* ---------- A list as a track listing ---------- */
+
+/* It grows downwards from where it starts, so adding a line never moves the ones above it. */
+.mx-list {
+  --len: 1;
+  align-content: start;
+  padding-top: clamp(4px, 5cqh, 44px);
+}
+.mx-tracks {
+  list-style: none;
+  display: grid;
+  gap: calc(clamp(4px, 1.5cqh, 14px) * var(--fit, 1));
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+.mx-tracks li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: clamp(10px, 2cqw, 28px);
+  padding-bottom: calc(clamp(4px, 1.5cqh, 14px) * var(--fit, 1));
+  border-bottom: 1px solid var(--mx-line);
+  font: 800 calc(clamp(17px, min(4.6cqw, 8.4cqh), 68px) * var(--fit, 1) * var(--len)) / 1.02 var(--caps);
+  font-stretch: 75%;
+  text-transform: uppercase;
+  color: var(--f-soft);
+}
+.mx-tracks li:last-child {
+  color: var(--f-ink);
+}
+.mx-tracks li.is-new {
+  color: var(--mx-pop);
+  animation: mx-row 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+}
+.mx-tracks b {
+  font-size: clamp(11px, 0.42em, 18px);
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  color: var(--mx-hot);
+}
+@keyframes mx-row {
+  from { opacity: 0; transform: translateX(-3%); }
+}
+.mx-stamp {
+  justify-self: end;
+  padding: 0.22em 0.5em 0.14em;
+  border: 0.12em solid var(--mx-hot);
+  font-size: clamp(16px, min(3.4cqw, 6cqh), 44px);
+  color: var(--mx-hot);
+  transform: rotate(-4deg);
+  animation: mx-w 0.3s 0.5s both;
+}
+
+/* ---------- A reason, playing ---------- */
+
+.mx-ghost {
+  position: absolute;
+  right: clamp(8px, 4cqw, 60px);
+  bottom: 0;
+  z-index: -1;
+  font-size: min(46cqw, 80cqh);
+  line-height: 0.78;
+  color: var(--mx-hot);
+  opacity: 0.2;
+}
+.mx-reason {
+  --len: 1;
+  margin: 0;
+  max-width: 15em;
+  font: 800 calc(clamp(24px, min(6.4cqw, 12cqh), 104px) * var(--fit, 1) * var(--len)) / 0.98 var(--caps);
+  font-stretch: 78%;
+  text-wrap: balance;
+}
+.mx-progress {
+  width: min(100%, 70cqw);
+  height: clamp(4px, 1cqh, 8px);
+  background: var(--mx-line);
+}
+.mx-progress i {
+  display: block;
+  height: 100%;
+  background: var(--mx-pop);
+  transform-origin: 0 50%;
+  animation: mx-run var(--dur, 6s) linear both;
+}
+
+/* ---------- The camera roll: a rack of covers ---------- */
+
+.mx-montage {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: clamp(8px, 3cqh, 26px);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.mx-montage-head {
+  display: grid;
+  justify-items: start;
+  gap: 0.3em;
+}
+.mx-montage .mx-head {
+  font-size: calc(clamp(22px, min(5cqw, 9cqh), 76px) * var(--len));
+}
+.mx-covers {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--rows), minmax(0, 1fr));
+  gap: clamp(10px, 2.2cqw, 28px);
+  min-height: 0;
+  margin: 0;
+  padding: 0 clamp(4px, 1cqw, 14px) clamp(4px, 1cqw, 14px) 0;
+}
+.mx-covers li {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: 0;
+  padding: clamp(4px, 0.7cqw, 9px);
+  background: var(--mx-paper);
+  color: var(--mx-paper-ink);
+  box-shadow: clamp(3px, 0.6cqw, 8px) clamp(3px, 0.6cqw, 8px) 0 var(--mx-hot);
+  transform: rotate(var(--r, 0deg));
+  animation: mx-deal 0.4s calc(0.35s + var(--i) * 0.22s) cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+}
+.mx-covers img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: cover;
+}
+.mx-covers span {
+  display: -webkit-box;
+  overflow: hidden;
+  padding: 0.4em 0.1em 0.05em;
+  font-size: clamp(10px, min(1.25cqw, 2.3cqh), 14px);
+  line-height: 1.25;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+@keyframes mx-deal {
+  from { opacity: 0; transform: translateY(14%) rotate(calc(var(--r, 0deg) + 8deg)) scale(1.1); }
+}
+
+/* ---------- The letter: the inlay card, unfolded ---------- */
+
+.film.mx .sheet {
+  border-radius: 0;
+  background: var(--mx-paper);
+  color: var(--mx-paper-ink);
+  box-shadow: clamp(6px, 1.2cqw, 16px) clamp(6px, 1.2cqw, 16px) 0 var(--mx-hot);
+}
+.film.mx .sheet .greeting {
+  font: 700 clamp(32px, min(5.2cqw, 9.4cqh), 64px) / 1 var(--hand);
+  color: var(--mx-paper-ink);
+}
+.film.mx .sheet .para {
+  font: 400 clamp(14px, min(1.75cqw, 3.3cqh), 19px) / 1.6 var(--mono);
+}
+.film.mx .sheet .signoff {
+  font: 700 clamp(26px, min(3.8cqw, 7cqh), 46px) / 1.1 var(--hand);
+  color: var(--mx-paper-ink);
+}
+
+/* ---------- The hidden track, the last line, the credits ---------- */
+
+.mx-wish .mx-tag {
+  justify-content: center;
+}
+.mx-wish .mx-head {
+  font-size: clamp(28px, min(7cqw, 12cqh), 100px);
+}
+.film.mx .blow,
+.film.mx .again {
+  border-radius: 6px;
+  font: 800 17px / 1 var(--caps);
+  font-stretch: 78%;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--mx-bg);
+}
+.film.mx.is-light .blow,
+.film.mx.is-light .again {
+  color: #fff;
+}
+.film.mx .again.is-quiet,
+.film.mx.is-light .again.is-quiet {
+  color: var(--f-ink);
+}
+.film.mx .reveal {
+  max-width: 100%;
+  font-family: var(--caps);
+  font-style: normal;
+  font-weight: 800;
+  font-size: calc(clamp(30px, min(11cqw, 21cqh), 190px) * var(--fit, 1) * var(--len));
+  line-height: 0.9;
+  letter-spacing: 0.002em;
+  color: var(--mx-pop);
+  text-shadow: none;
+}
+.mx-underline {
+  display: block;
+  width: min(40cqw, 60%);
+  height: clamp(6px, 1.6cqh, 14px);
+  background: var(--mx-hot);
+  transform-origin: 0 50%;
+  animation: mx-run 0.5s var(--at, 1s) cubic-bezier(0.7, 0, 0.2, 1) both;
+}
+.mx-credits {
+  justify-items: start;
+  width: 100%;
+  text-align: left;
+}
+.film.mx .roll div {
+  grid-template-columns: minmax(7.5em, auto) minmax(0, 1fr);
+}
+.film.mx .roll dt {
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-align: left;
+  text-transform: uppercase;
+}
+.film.mx .roll dd {
+  font: 800 clamp(20px, min(3.6cqw, 6.6cqh), 48px) / 1 var(--caps);
+  font-stretch: 75%;
+  text-transform: uppercase;
+}
+.film.mx .credits-last {
+  font: 800 clamp(26px, min(6cqw, 11cqh), 90px) / 0.92 var(--caps);
+  font-stretch: 75%;
+  color: var(--mx-pop);
+}
+.film.mx .credits-note {
+  margin-left: 0;
+  text-align: left;
+}
+.film.mx .credits-next {
+  justify-content: flex-start;
+}
+
+/* ---------- The opening: the tape, before it is played ---------- */
+
+.mx-tape-float {
+  display: grid;
+  justify-items: center;
+  gap: clamp(14px, 4cqh, 30px);
+  color: var(--f-ink);
+  animation: bob 5.5s ease-in-out infinite alternate;
+}
+.mx-tape {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: clamp(6px, 2cqh, 16px);
+  width: min(560px, 80cqw, 118cqh);
+  aspect-ratio: 1.58;
+  box-sizing: border-box;
+  padding: clamp(10px, 2.6cqw, 22px) clamp(12px, 3cqw, 26px) 0;
+  border-radius: clamp(8px, 2cqw, 18px);
+  background: var(--mx-hot);
+  color: var(--mx-paper);
+  transform: rotate(-2deg);
+  filter: drop-shadow(0 30px 40px rgba(0, 0, 0, 0.42));
+  animation: ticket-in 1.1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.mx-tape-label {
+  display: grid;
+  gap: 0.1em;
+  padding: clamp(6px, 1.6cqw, 14px) clamp(10px, 2.4cqw, 22px) clamp(5px, 1.2cqw, 10px);
+  border-bottom: clamp(5px, 1.5cqh, 11px) solid var(--mx-pop);
+  border-radius: 5px;
+  background: var(--mx-paper);
+  color: var(--mx-paper-ink);
+  text-align: left;
+}
+.mx-tape-label .mx-mono {
+  font-size: clamp(10px, min(1.6cqw, 2.8cqh), 14px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.mx-tape-name {
+  font: 700 clamp(34px, min(11cqw, 17cqh), 92px) / 0.92 var(--hand);
+  white-space: nowrap;
+}
+.mx-tape-name.is-long {
+  font-size: clamp(24px, min(7cqw, 12cqh), 58px);
+}
+.mx-tape-window {
+  justify-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8%;
+  width: 62%;
+  min-height: 0;
+  padding: 0 7%;
+  border-radius: 999px;
+  background: var(--mx-bg-2);
+  color: #fdf6e3;
+}
+.mx-tape-window .mx-reel {
+  width: 24%;
+  animation-duration: 5s;
+}
+.mx-tape-foot {
+  justify-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  width: 58%;
+  height: clamp(10px, 3.4cqh, 24px);
+  background: rgba(0, 0, 0, 0.2);
+  clip-path: polygon(6% 0, 94% 0, 100% 100%, 0 100%);
+}
+.mx-tape-foot i {
+  width: clamp(4px, 1cqw, 8px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.4);
+}
+.mx-play {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+  padding: 0.5em 1em 0.42em;
+  border: 2px solid currentColor;
+  border-radius: 6px;
+  font-size: clamp(15px, min(2.4cqw, 4.4cqh), 22px);
+  letter-spacing: 0.12em;
+  transition: background 0.2s, color 0.2s;
+}
+.mx-play i {
+  width: 0;
+  height: 0;
+  border-left: 0.7em solid currentColor;
+  border-top: 0.42em solid transparent;
+  border-bottom: 0.42em solid transparent;
+}
+.mx-opening .opening-hint {
+  font-family: var(--mono);
+}
+.opening:not(.is-torn) .ticket-hit:hover + .mx-tape-float .mx-play,
+.opening:not(.is-torn) .ticket-hit:focus-visible + .mx-tape-float .mx-play {
+  background: var(--f-ink);
+  color: var(--mx-bg);
+}
+.opening:not(.is-torn) .ticket-hit:focus-visible + .mx-tape-float .mx-tape {
+  outline: 3px solid var(--f-accent);
+  outline-offset: 8px;
+}
+/* Pressed: the tape drops into the deck and the reels take up the slack. */
+.mx-opening.is-torn .mx-tape-float {
+  animation: mx-load 1.6s cubic-bezier(0.6, 0, 0.3, 1) forwards;
+}
+.mx-opening.is-torn .mx-reel {
+  animation-duration: 0.45s;
+}
+.mx-opening.is-torn .mx-play,
+.mx-opening.is-torn .opening-hint {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+@keyframes mx-load {
+  25% { transform: translateY(-3%) scale(1.03); opacity: 1; }
+  100% { transform: translateY(64%) scale(0.82); opacity: 0; }
+}
+.film.still.mx .mx-tape-float,
+.film.still.mx .mx-tape {
+  animation: none;
+}
+
+/* ---------- A tall frame (a phone held upright) ---------- */
+
+@container film (max-aspect-ratio: 1 / 1) {
+  .mx-photo,
+  .mx-photo.layout-right {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 0.92fr) minmax(0, 1fr);
+    gap: clamp(10px, 3cqh, 24px);
+  }
+  .mx-photo.layout-right .mx-cover {
+    order: 0;
+  }
+  .mx-cover {
+    align-self: end;
+    width: min(76%, 38cqh);
+  }
+  .mx-photo.is-poster,
+  .mx-photo.is-poster.layout-right {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 42% minmax(0, 1fr);
+  }
+  .mx-photo.is-poster .mx-cover,
+  .mx-photo.is-poster.layout-right .mx-cover {
+    inset: 0 0 auto;
+    width: 100%;
+    height: 42%;
+  }
+  .mx-photo.is-poster .mx-words,
+  .mx-photo.is-poster.layout-right .mx-words {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .mx-covers {
+    grid-template-columns: repeat(var(--cols-tall), minmax(0, 1fr));
+    grid-template-rows: repeat(var(--rows-tall), minmax(0, 1fr));
+  }
+  .mx-ghost {
+    font-size: min(60cqw, 40cqh);
+  }
+  /* Held upright there is height to spare, so the type is set by the width and runs to more lines. */
+  .mx-head,
+  .film.mx .reveal {
+    font-size: calc(clamp(30px, 17.5cqw, 130px) * var(--fit, 1) * var(--len));
+  }
+  .mx-photo .mx-head {
+    font-size: calc(clamp(26px, 12cqw, 90px) * var(--fit, 1) * var(--len));
+  }
+  .mx-montage .mx-head {
+    font-size: calc(clamp(22px, 9cqw, 64px) * var(--len));
+  }
+  .mx-sub {
+    font-size: calc(clamp(20px, 8.4cqw, 60px) * var(--fit, 1));
+  }
+  .mx-reason {
+    font-size: calc(clamp(24px, 10cqw, 76px) * var(--fit, 1) * var(--len));
+  }
+  .mx-tracks li {
+    font-size: calc(clamp(17px, 7.4cqw, 52px) * var(--fit, 1) * var(--len));
+  }
+  .mx-mono {
+    font-size: clamp(11.5px, 3.2cqw, 16px);
+  }
+  .mx-body {
+    font-size: calc(clamp(13px, 3.8cqw, 18px) * var(--fit, 1));
+  }
+  .mx-prose {
+    font-size: calc(clamp(14px, 4.5cqw, 22px) * var(--fit, 1));
+  }
+  .mx-words.is-long .mx-prose {
+    font-size: calc(clamp(13px, 3.9cqw, 19px) * var(--fit, 1));
+  }
+  .mx-words.is-epic .mx-prose {
+    font-size: calc(clamp(12px, 3.4cqw, 17px) * var(--fit, 1));
+  }
+  .mx-trackno {
+    font-size: clamp(13px, 3.8cqw, 22px);
+  }
+  .mx-stamp {
+    font-size: clamp(16px, 6cqw, 40px);
+  }
+  .mx-wish .mx-head {
+    font-size: clamp(28px, 13cqw, 90px);
+  }
+  .film.mx .roll dd {
+    font-size: clamp(20px, 8cqw, 44px);
+  }
+  .film.mx .credits-last {
+    font-size: clamp(26px, 11cqw, 80px);
+  }
+  .film.mx .roll div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mx-reel,
+  .mx-meter i {
+    animation: none;
+  }
+}
