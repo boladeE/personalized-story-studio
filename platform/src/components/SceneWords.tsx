@@ -131,21 +131,29 @@ export function chapterAsk(layout: SceneLayout, intake: Intake): string {
   const them = intake.recipient.trim() || 'them'
   switch (layout) {
     case 'line':
-      return 'One line, on a screen of its own.'
+      return 'What this scene says. A blank line starts a new page.'
     case 'list':
       return 'Each line gets its turn on screen. Two or more.'
     case 'moment':
-      return 'Something told, the way you’d tell a friend. A blank line starts a new page.'
+      return 'What this scene says. A blank line starts a new page.'
     case 'photos':
       return `The photos of ${them} that no other scene shows.`
   }
 }
 
-const SHAPES: Array<{ id: Exclude<SceneLayout, 'photos'>; name: string }> = [
-  { id: 'line', name: 'One line' },
+/**
+ * How a scene of words is shown, as the sender sees it: words (one page or several), or a list.
+ * Whether words are a single line or a told scene of pages follows from how much is written.
+ */
+const SHAPES: Array<{ id: 'words' | 'list'; name: string }> = [
+  { id: 'words', name: 'Words' },
   { id: 'list', name: 'A list' },
-  { id: 'moment', name: 'A moment' },
 ]
+/** One short page is a line; anything more is told over pages. */
+const wordsLayout = (pages: string[]): 'line' | 'moment' => {
+  const said = pages.map((p) => p.trim()).filter(Boolean)
+  return said.length <= 1 && (said[0]?.length ?? 0) <= OUTLINE_LIMITS.line ? 'line' : 'moment'
+}
 
 /**
  * The opening of a film with its own scenes: the two names and the occasion, which the ticket, the
@@ -246,21 +254,20 @@ export function ChapterWords({
           <div className="scene-shape-row">
             {SHAPES.map((shape) => (
               <label key={shape.id} className="scene-shape-option">
-                <input type="radio" name={`shape-${chapter.id}`} checked={chapter.layout === shape.id} onChange={() => change({ layout: shape.id })} />
+                <input
+                  type="radio"
+                  name={`shape-${chapter.id}`}
+                  checked={shape.id === 'list' ? chapter.layout === 'list' : chapter.layout !== 'list'}
+                  onChange={() => change({ layout: shape.id === 'list' ? 'list' : wordsLayout(chapter.lines) })}
+                />
                 {shape.name}
               </label>
             ))}
           </div>
         </fieldset>
       )}
-      {chapter.layout === 'line' && (
-        <Field label="The line">
-          {(id) => <textarea id={id} rows={2} maxLength={OUTLINE_LIMITS.line} value={lines[0]} onChange={(e) => change({ lines: [oneLine(e.target.value), ...lines.slice(1)] })} />}
-        </Field>
-      )}
-      {chapter.layout === 'line' && photoPick}
       {chapter.layout === 'list' && <ListEditor label="Line" values={lines} max={OUTLINE_LIMITS.lines} onChange={(v) => change({ lines: v })} onActive={onWriting} />}
-      {chapter.layout === 'moment' && (
+      {(chapter.layout === 'moment' || chapter.layout === 'line') && (
         <>
           <Field label="What it says">
             {(id) => (
@@ -272,7 +279,8 @@ export function ChapterWords({
                 onSelect={(e) => onWriting(pageAt(e.currentTarget))}
                 onChange={(e) => {
                   onWriting(pageAt(e.currentTarget))
-                  change({ lines: e.target.value.split('\n\n') })
+                  const pages = e.target.value.split('\n\n')
+                  change({ lines: pages, layout: wordsLayout(pages) })
                 }}
               />
             )}

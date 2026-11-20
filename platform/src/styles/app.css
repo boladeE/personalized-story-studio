@@ -1729,3 +1729,15 @@ select:focus-visible {
   display: block;
   object-fit: cover;
 }
+
+/* Adding a scene is an action, so its tile doesn't look like a scene waiting to be filled. */
+.scene-tile.is-add .scene-thumb {
+  background: none;
+  box-shadow: none;
+  border: 2px dashed var(--hibiscus);
+  color: var(--hibiscus-deep);
+}
+.scene-tile.is-add .scene-tile-name {
+  color: var(--hibiscus-deep);
+  font-weight: 700;
+}

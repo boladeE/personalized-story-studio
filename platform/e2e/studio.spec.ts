@@ -528,7 +528,9 @@ test('the short flow writes the film’s own scenes from the sender’s words, p
   await page.getByRole('button', { name: 'Make the film' }).click()
   const sent = (await sortRequest).postDataJSON() as Record<string, unknown>
   expect(sent).toMatchObject({ text: NOTE, sender: 'Tobi', recipient: 'Zara', occasion: 'anniversary', relationship: 'girlfriend', letter: false })
-  expect(Object.keys(sent).sort()).toEqual(['answers', 'letter', 'occasion', 'photos', 'recipient', 'relationship', 'sender', 'text'])
+  expect(Object.keys(sent).sort()).toEqual(['answers', 'letter', 'occasion', 'peeks', 'photos', 'recipient', 'relationship', 'sender', 'text'])
+  // No copy of a photo goes with it unless this browser has been switched to let the director see them.
+  expect(sent.peeks).toEqual([])
   expect(sent.answers).toEqual([{ quote: 'You always steal the duvet, then ask why I am cold.', question: 'What does Zara say when you bring it up?', answer: '“You run hot anyway.” Every time.' }])
   expect(typeof sent.photos).toBe('number')
   await expect(page).toHaveURL(/\/preview$/)
@@ -580,7 +582,7 @@ test('the short flow writes the film’s own scenes from the sender’s words, p
   // Its name and words are open right there, beside the still of it: nothing to find first. The film is still while they are written.
   await expect(page.locator('.scene-panel').getByRole('heading', { level: 1 })).toHaveText('Moving day')
   await expect(page).toHaveURL(/\/preview\?edit=1$/)
-  await expect(page.getByRole('radio', { name: 'A moment' })).toBeChecked()
+  await expect(page.getByRole('radio', { name: 'Words' })).toBeChecked()
   await page.getByLabel('Scene name').click()
   const film = page.locator('.preview-body > .film')
   await expect(film).toHaveAttribute('data-phase', 'ticket')
@@ -614,7 +616,7 @@ test('the short flow writes the film’s own scenes from the sender’s words, p
   await page.getByLabel('Scene name').fill('Her tea')
   // Where the still will be says what the scene still needs.
   await expect(page.locator('.stage-still-empty')).toContainText('Add its words.')
-  await page.getByLabel('The line').fill('Two sips, then it goes cold.')
+  await page.getByLabel('What it says').fill('Two sips, then it goes cold.')
   await expect(still).toHaveAttribute('data-text', 'Her tea. Two sips, then it goes cold.')
   await expect(sceneTile(page, 'Her tea')).toHaveClass(/is-in/)
   await page.getByRole('radio', { name: 'A list' }).check()

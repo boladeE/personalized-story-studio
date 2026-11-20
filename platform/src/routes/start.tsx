@@ -15,7 +15,7 @@ import { OCCASIONS, occasionFor, occasionOf } from '../story/occasions'
 import { RELATIONSHIPS } from '../story/relationships'
 import { newSeed } from '../story/rng'
 import { isOccasion } from '../story/types'
-import type { Chapter, Occasion } from '../story/types'
+import type { Chapter, Occasion, Photo } from '../story/types'
 import { LIMITS } from '../story/validate'
 import { vibeById, VIBES, VOICES } from '../story/vibes'
 
@@ -29,6 +29,36 @@ import { vibeById, VIBES, VOICES } from '../story/vibes'
 type StepId = 'who' | 'names' | 'occasion' | 'photos' | 'about' | 'more' | 'song'
 const ALL: StepId[] = ['who', 'names', 'occasion', 'photos', 'about', 'more', 'song']
 const ENOUGH = 30
+
+/**
+ * Small copies of the photos for the director to place scenes by. They are made, and sent, only in a
+ * browser where this has been switched on (`lt-director-sees`), and used only by a studio set to allow
+ * it. Everywhere else the photos stay on the device until the film is sent, as the photos step says.
+ */
+async function photoPeeks(photos: Photo[]): Promise<Array<{ id: string; jpeg: string }>> {
+  try {
+    if (window.localStorage.getItem('lt-director-sees') !== '1') return []
+  } catch {
+    return []
+  }
+  const peeks: Array<{ id: string; jpeg: string }> = []
+  for (const photo of photos) {
+    try {
+      const bitmap = await createImageBitmap(await (await fetch(photo.src)).blob())
+      const scale = Math.min(1, 512 / Math.max(bitmap.width, bitmap.height))
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale))
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale))
+      canvas.getContext('2d')?.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+      bitmap.close()
+      const jpeg = canvas.toDataURL('image/jpeg', 0.7).split(',')[1] ?? ''
+      if (jpeg) peeks.push({ id: photo.id, jpeg })
+    } catch {
+      // A photo that can't be read here is simply placed blind.
+    }
+  }
+  return peeks
+}
 
 export const Route = createFileRoute('/start')({
   // `occasion` arrives from the home page's tickets; it is written into the draft and then dropped from the address.
@@ -139,7 +169,7 @@ function Start() {
       let directed: DirectionPlan | null = null
       const facts = { occasion: intake.occasion, occasionName: intake.occasionName?.trim() || undefined, relationship: intake.relationship, photos: intake.photos.length, letter: intake.letter.trim().length >= 40 }
       try {
-        const response = await fetch('/api/sort', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text, sender: me, recipient: them, ...facts, answers }) })
+        const response = await fetch('/api/sort', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text, sender: me, recipient: them, ...facts, answers, peeks: await photoPeeks(intake.photos) }) })
         const body = (await response.json()) as { outline?: unknown; wish?: unknown; direction?: unknown }
         if (!response.ok) throw new Error('outline failed')
         // Checked again here: the studio may tidy the sender's words, but every line must stay close to what they wrote.

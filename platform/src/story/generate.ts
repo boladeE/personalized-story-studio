@@ -173,15 +173,17 @@ export function generateStory(intake: Intake, seed: number): Story {
     const last = new Map<SceneLayout, string>()
     const drawn = new Map<string, string>()
     for (const chapter of outline) {
-      const options = designsFor(world, chapter.layout)
+      // A single line may be said beside a photo, so it draws from the told scenes' designs.
+      const kind = chapter.layout === 'line' ? 'moment' : chapter.layout
+      const options = designsFor(world, kind)
       const roll = direct.next()
       if (!options.length) continue
       const suited = chapter.layout === 'list' ? options.filter((d) => Boolean(d.loud) === (chapter.mood === 'playful')) : options
       const at = Math.floor(roll * suited.length)
-      const pick = suited[at].id === last.get(chapter.layout) ? suited[(at + 1) % suited.length] : suited[at]
+      const pick = suited[at].id === last.get(kind) ? suited[(at + 1) % suited.length] : suited[at]
       const own = options.find((d) => d.id === intake.cut?.designs?.[chapter.id])
       drawn.set(chapter.id, (own ?? pick).id)
-      last.set(chapter.layout, (own ?? pick).id)
+      last.set(kind, (own ?? pick).id)
     }
     fixed('ticket')
     fixed('hello')

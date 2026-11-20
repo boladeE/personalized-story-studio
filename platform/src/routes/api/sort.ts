@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { outlineByRule, outlineFilm } from '../../server/outline'
+import { directorSeesPhotos, outlineByRule, outlineFilm } from '../../server/outline'
 import { allowSort } from '../../server/sort'
 import { json } from '../../server/store'
 import { cleanAnswers } from '../../story/followups'
@@ -27,14 +27,22 @@ export const Route = createFileRoute('/api/sort')({
         let letter = false
         let answers: Answered[] = []
         let occasionName = ''
+        let peeks: Array<{ id: string; jpeg: string }> = []
         try {
-          const body = (await request.json()) as { text?: unknown; sender?: unknown; recipient?: unknown; occasion?: unknown; occasionName?: unknown; relationship?: unknown; photos?: unknown; letter?: unknown; answers?: unknown }
+          const body = (await request.json()) as { text?: unknown; sender?: unknown; recipient?: unknown; occasion?: unknown; occasionName?: unknown; peeks?: unknown; relationship?: unknown; photos?: unknown; letter?: unknown; answers?: unknown }
           answers = cleanAnswers(body.answers)
           if (isOccasion(body.occasion)) occasion = body.occasion
           occasionName = typeof body.occasionName === 'string' ? body.occasionName.trim().slice(0, LIMITS.occasionName) : ''
           if (isRelationship(body.relationship)) relationship = body.relationship
           photos = typeof body.photos === 'number' && body.photos > 0 ? Math.min(Math.floor(body.photos), LIMITS.photos) : 0
           letter = body.letter === true
+          // Small copies of the photos, used only when the studio lets its director see them.
+          if (directorSeesPhotos() && Array.isArray(body.peeks)) {
+            peeks = body.peeks
+              .slice(0, LIMITS.photos)
+              .map((p) => (p && typeof p === 'object' ? (p as Record<string, unknown>) : {}))
+              .filter((p): p is { id: string; jpeg: string } => typeof p.id === 'string' && /^[a-z0-9-]{1,64}$/i.test(p.id) && typeof p.jpeg === 'string' && p.jpeg.length < 220_000 && /^[A-Za-z0-9+/=]+$/.test(p.jpeg))
+          }
           text = typeof body.text === 'string' ? body.text.trim() : ''
           sender = typeof body.sender === 'string' ? body.sender.trim().slice(0, LIMITS.name) : ''
           recipient = typeof body.recipient === 'string' ? body.recipient.trim().slice(0, LIMITS.name) : ''
@@ -44,7 +52,7 @@ export const Route = createFileRoute('/api/sort')({
         if (!text) return json({ error: 'Write a little about them first.' }, { status: 400 })
         if (text.length > NOTES_LIMIT) return json({ error: `That’s more than fits (up to ${NOTES_LIMIT} characters).` }, { status: 400 })
         const client = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local'
-        const brief = { text, sender, recipient, answered: answers, occasion, ...(occasionName ? { occasionName } : {}), relationship, photos, letter }
+        const brief = { text, sender, recipient, answered: answers, occasion, ...(occasionName ? { occasionName } : {}), relationship, photos, letter, ...(peeks.length ? { peeks } : {}) }
         // Past the hourly cap the film is still outlined, by rule on this server.
         return json(allowSort(client) ? await outlineFilm(brief) : outlineByRule(brief))
       },

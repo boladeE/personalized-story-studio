@@ -68,8 +68,8 @@ type Draft = DistOmit<Shot, 'id' | 'index' | 'start' | 'duration' | 'scene' | 's
 
 const ORDINALS = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
 const words = (...parts: Array<string | undefined>) => parts.join(' ').split(/\s+/).filter(Boolean).length
-/** Seconds a line needs on screen: time to arrive, then roughly three words a second. */
-const read = (count: number, floor = 2.8) => Math.max(floor, 1.5 + count * 0.36)
+/** Seconds a line needs on screen: time to arrive, then a little over three words a second, so nothing sits read and waiting. */
+const read = (count: number, floor = 2.8) => Math.max(floor, 1.5 + count * 0.3)
 
 export const DEFAULT_BPM = 88
 
@@ -155,7 +155,7 @@ export function buildFilm(story: Story): Film {
             title: frame.title,
             body: frame.body,
             layout: frame.layout,
-            seconds: read(words(frame.title, frame.body, frame.photo.caption)) + 2.4,
+            seconds: read(words(frame.title, frame.body, frame.photo.caption)) + 2,
             enter: 'type',
             exit: 'fade',
             text: [frame.kicker, frame.title, frame.body, frame.photo.caption].filter(Boolean).join('. '),

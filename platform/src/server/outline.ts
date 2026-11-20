@@ -36,7 +36,16 @@ export interface OutlineBrief {
   relationship?: Relationship
   photos: number
   letter: boolean
+  /**
+   * The sender's photos, small, in order, with their ids: given only when the studio is set to let the
+   * director see them (`DIRECTOR_SEES_PHOTOS=1`) and the browser sent them. With them the director puts
+   * each scene beside the photo that shows it; without them photos are dealt out blind.
+   */
+  peeks?: Array<{ id: string; jpeg: string }>
 }
+
+/** Whether the director may be shown the sender's photos. Off unless the studio's owner turns it on. */
+export const directorSeesPhotos = () => process.env.DIRECTOR_SEES_PHOTOS === '1'
 
 export interface Outlined {
   outline: Chapter[]
@@ -57,6 +66,7 @@ const SCHEMA = {
           layout: { type: 'string', enum: ['line', 'list', 'moment', 'photos'] },
           mood: { type: 'string', enum: ['playful', 'tender', 'warm'] },
           lines: { type: 'array', items: { type: 'string' } },
+          photo: { type: 'integer' },
         },
         required: ['name', 'layout', 'mood', 'lines'],
       },
@@ -80,7 +90,7 @@ export function outlineBrief(brief: OutlineBrief) {
     [
       'The scenes:',
       '- A scene is one thing: one moment that happened, one habit or saying that deserves a screen to itself, or a run of things that are alike. Group what belongs together and keep apart what does not.',
-      `- name: what this scene is called, in one to four words. Take it from the scene's own words, or say plainly what they are about ("The coffee queue", "Voice notes", "Sunday calls"). It is a title, never a sentence, and never says what the scene will say. Never use a stock label such as "Memories", "Memory lane", "Reasons", "Reasons I love you", "Red flags", "Habits", "Quirks", "Little things" or "Highlights" unless the note itself uses those words. Never put a name, a place or a fact in a title that is not in the note. No two scenes share a name.`,
+      `- name: what this scene is called, in one to four words. Take it from the scene's own words, or say plainly what they are about ("The coffee queue", "Voice notes", "Sunday calls"). It is a title, never a sentence, and never says what the scene will say. Never use a stock label such as "Memories", "Memory lane", "Reasons", "Reasons I love you", "Red flags", "Habits", "Quirks", "Little things" or "Highlights" unless the note itself uses those words. Never put a name, a place or a fact in a title that is not in the note. No two scenes share a name. A name never just repeats its scene's own sentence: for a scene of one short sentence, name its subject in two or three words.`,
       '- layout: `line` is a single sentence on a screen of its own (`lines` has exactly one item, at most 140 characters). `list` is two to seven short lines that are alike, shown one after another (one per item). `moment` is something told: a thing that happened, or a longer thought about who they are. \`lines\` holds its pages, one to five, each one or two whole sentences (about 130 characters at most) that read well alone. A page is never a piece of a sentence: do not cut one sentence across two pages, and if the telling is a single sentence it is a single page; the first is shown beside a photo when there is one, and each page after it has a screen to itself. Several paragraphs about one thing are one scene of several pages, not several scenes and not one crowded page.' +
         (brief.photos ? ` \`photos\` is a scene of ${from}'s photos, at most one, with a name and no lines; include it when there are more photos than moments.` : ' Do not use `photos`: there are none.'),
       `- mood: playful when the scene teases ${who} or is funny, tender when it is sincere or loving, warm otherwise.`,
@@ -95,6 +105,16 @@ export function outlineBrief(brief: OutlineBrief) {
       `- Keep one way of speaking through the whole film. If the note wanders between talking to ${who} ("you") and about ${who} ("he", "she"), settle on the one the note uses most.`,
       '- Never add a fact, a name, a place, a feeling, a joke or a compliment that is not in the note. Never make it more romantic, more formal or more poetic than they wrote it. Every line must be something they said, said more cleanly; never something new.',
     ].join('\n'),
+    ...(brief.peeks?.length
+      ? [
+          [
+            `The photos: you are shown ${from}'s ${brief.peeks.length} photos, numbered in order. For each scene, \`photo\` is the number of the photo that belongs beside it, or 0 for none.`,
+            '- Match a scene to the photo that shows what it says: the same place, the same moment, the same thing happening. A scene about a feeling can take a photo where they simply look like themselves.',
+            '- Use a photo for one scene only. If nothing fits a scene, give it 0; a wrong photo is worse than none. A `list` and the `photos` scene take 0.',
+            `- The photos only decide placement. Never describe a photo, and never put anything you see in one into the words: the words come only from ${from}'s note.`,
+          ].join('\n'),
+        ]
+      : []),
     `wish: a closing line, hope or promise for ${who}, if the note has one, in ${from}'s words. It is not part of any scene. Otherwise empty.`,
     [
       'Then choose how the film is made:',
@@ -131,7 +151,12 @@ async function askModel(brief: OutlineBrief): Promise<unknown> {
       signal: controller.signal,
       headers: { 'x-goog-api-key': process.env.GEMINI_API_KEY ?? '', 'content-type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: outlineBrief(brief) }] }],
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: outlineBrief(brief) }, ...(brief.peeks ?? []).flatMap((peek, i) => [{ text: `Photo ${i + 1}:` }, { inlineData: { mimeType: 'image/jpeg', data: peek.jpeg } }])],
+          },
+        ],
         generationConfig: { responseMimeType: 'application/json', responseSchema: SCHEMA, thinkingConfig: { thinkingLevel: process.env.GEMINI_OUTLINE_THINKING ?? 'low' } },
       }),
     })
@@ -151,7 +176,13 @@ async function askModel(brief: OutlineBrief): Promise<unknown> {
 export function checkOutline(raw: unknown, brief: OutlineBrief): Omit<Outlined, 'by'> | null {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
   const written = withAnswers(brief.text, brief.answered)
-  const outline = cleanOutline(r.scenes, { source: written, photos: brief.photos })
+  // The director names a photo by its number; the film knows it by its id.
+  const scenes = (Array.isArray(r.scenes) ? r.scenes : []).map((scene) => {
+    const at = scene && typeof scene === 'object' ? Number((scene as { photo?: unknown }).photo) : 0
+    const peek = Number.isInteger(at) && at > 0 ? brief.peeks?.[at - 1] : undefined
+    return peek && (scene as { layout?: unknown }).layout !== 'list' && (scene as { layout?: unknown }).layout !== 'photos' ? { ...(scene as object), photoId: peek.id } : scene
+  })
+  const outline = cleanOutline(scenes, { source: written, photos: brief.photos })
   if (!outline.some((c) => c.layout !== 'photos')) return null
   const said = typeof r.wish === 'string' ? r.wish.replace(/\s+/g, ' ').trim().slice(0, LIMITS.wish) : ''
   const wish = said && closeToTheirWords(said, written) ? said : ''

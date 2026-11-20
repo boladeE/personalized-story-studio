@@ -29,7 +29,9 @@ export function followupBrief(text: string, sender: string, recipient: string) {
       `- \`question\` speaks to ${from} directly, in plain everyday words, in under 14 words. Use ${who}'s name or the pronoun the note uses.`,
       '- Ask for something specific and easy to answer in a line: the exact words someone said, the next thing that happened, one example. Never a yes-or-no question. Never "how did that make you feel".',
       '- Ask only about what is in the note. Do not suggest answers, add facts or guess at anything. Nothing intimate, medical or painful.',
-      '- Pick the parts where one more detail would make the film funnier or more touching. Fewer good questions beat three weak ones; an empty list is fine for a note that needs nothing.',
+      '- Pick the parts where one more detail would make the film funnier or more touching. Ask for something that could fill a screen of its own: a moment, what was said, what it looked like. Never a small fact that changes nothing, such as what someone ordered or wore.',
+      `- A short note (under about 80 words) always gets two or three questions: that is where one more detail matters most. Only a long, detailed note may get fewer, or none.`,
+      `- Call ${who} by name. Use "he" or "she" only if the note itself does.`,
     ].join('\n'),
     `The note:\n${text}`,
   ].join('\n\n')
@@ -37,7 +39,7 @@ export function followupBrief(text: string, sender: string, recipient: string) {
 
 async function askModel(text: string, sender: string, recipient: string): Promise<unknown> {
   const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), Number(process.env.FOLLOWUP_TIMEOUT_MS ?? 12_000))
+  const timer = setTimeout(() => controller.abort(), Number(process.env.FOLLOWUP_TIMEOUT_MS ?? 20_000))
   try {
     // The sender is waiting on this step, so the fast model stays: about 3.5 seconds, and its questions were as good as
     // Hydrogen's (7 to 9 seconds) when both were tried on 2026-11-20. Flash-Lite was quicker still but asked less well.

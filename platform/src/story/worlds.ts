@@ -125,7 +125,9 @@ export const worldOf = (id: WorldId | undefined): WorldDef => WORLDS.find((w) =>
 export const designsFor = (world: WorldId | undefined, sceneType: string): DesignDef[] => worldOf(world).designs[sceneType] ?? []
 
 /** What a scene's designs are listed under: its layout when it came from an outline, otherwise its type. */
-export const designKey = (scene: { type: string; layout?: string }) => scene.layout ?? scene.type
+export const designKey = (scene: { type: string; layout?: string; frames?: Array<{ kind: string }> }) =>
+  // A single line said beside a photo is drawn the way a told scene is.
+  scene.layout === 'line' ? (scene.frames?.some((f) => f.kind === 'photo') ? 'moment' : 'line') : (scene.layout ?? scene.type)
 
 export const designName = (world: WorldId | undefined, sceneType: string, design: string | undefined) =>
   designsFor(world, sceneType).find((d) => d.id === design)?.name

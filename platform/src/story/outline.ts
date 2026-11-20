@@ -86,6 +86,8 @@ export function cleanOutline(raw: unknown, { source, photos = 0 }: { source?: st
   const seen = new Set<string>()
   const ids = new Set<string>()
   const names = new Set<string>()
+  // A photo sits beside one scene.
+  const photoIds = new Set<string>()
   const out: Chapter[] = []
   for (const item of Array.isArray(raw) ? raw : []) {
     if (out.length === OUTLINE_LIMITS.scenes) break
@@ -107,7 +109,7 @@ export function cleanOutline(raw: unknown, { source, photos = 0 }: { source?: st
     for (let n = out.length + 1; !id; n++) if (!ids.has(`s${n}`)) id = `s${n}`
     ids.add(id)
     const mood = MOODS.find((m) => m === r.mood) ?? 'warm'
-    out.push({ id, name, layout, mood, lines, ...(typeof r.photoId === 'string' && ID_RE.test(r.photoId) ? { photoId: r.photoId } : {}) })
+    out.push({ id, name, layout, mood, lines, ...(typeof r.photoId === 'string' && /^[a-z0-9-]{1,64}$/i.test(r.photoId) && !photoIds.has(r.photoId) && (photoIds.add(r.photoId), true) ? { photoId: r.photoId } : {}) })
   }
   return out
 }
