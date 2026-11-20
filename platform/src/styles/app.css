@@ -1894,3 +1894,14 @@ select:focus-visible {
   padding: 7px 0;
   border-bottom: 1px solid var(--line);
 }
+
+.voice-field {
+  grid-template-columns: repeat(2, auto) 1fr;
+  align-items: center;
+}
+.voice-field > b,
+.voice-field > audio,
+.voice-field > small,
+.voice-field > .text-button {
+  grid-column: 1 / -1;
+}

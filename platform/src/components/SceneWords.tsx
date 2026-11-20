@@ -128,14 +128,73 @@ export function SceneWords({
 type Setter = <K extends keyof Intake>(key: K, value: Intake[K]) => void
 
 const VOICE_SECONDS = 45
+/** A recording brought from elsewhere (a voice note from a chat, say) may run a little longer. */
+const UPLOAD_SECONDS = 60
+const UPLOAD_BYTES = 4 * 1024 * 1024
+
+/** How long a recording runs, or null when this browser can't play it. */
+function lengthOf(src: string): Promise<number | null> {
+  return new Promise((resolve) => {
+    const el = new Audio()
+    const done = (value: number | null) => {
+      clearTimeout(timer)
+      el.removeAttribute('src')
+      resolve(value)
+    }
+    const timer = setTimeout(() => done(null), 8000)
+    el.preload = 'metadata'
+    el.onerror = () => done(null)
+    el.onloadedmetadata = () => {
+      if (Number.isFinite(el.duration)) return done(el.duration)
+      // Some recordings only say how long they are once played to the end.
+      el.ondurationchange = () => Number.isFinite(el.duration) && done(el.duration)
+      el.currentTime = 1e7
+    }
+    el.src = src
+  })
+}
 
 /** The sender's own voice for a scene: recorded here, heard in the film over that scene with the song turned down. */
 function VoiceField({ voice, onChange }: { voice?: VoiceNote; onChange: (voice: VoiceNote | undefined) => void }) {
   const recorder = useRecorder(VOICE_SECONDS)
+  const [problem, setProblem] = useState('')
+  const picker = useRef<HTMLInputElement>(null)
   const record = async () => {
+    setProblem('')
     const made = await recorder.start()
     if (made) onChange({ src: URL.createObjectURL(made.blob), seconds: made.seconds })
   }
+  /** A voice note the sender already has, brought in as it is. */
+  const upload = async (file: File | undefined) => {
+    if (!file) return
+    setProblem('')
+    if (file.size > UPLOAD_BYTES) return setProblem('That recording is over 4 MB. A voice note of up to a minute fits.')
+    const src = URL.createObjectURL(file)
+    const seconds = await lengthOf(src)
+    if (seconds === null || seconds > UPLOAD_SECONDS + 0.5) {
+      URL.revokeObjectURL(src)
+      return setProblem(seconds === null ? 'This browser can’t play that recording. Try an MP3 or M4A, or record it here.' : 'That recording is longer than a minute. Trim it, or record a shorter one here.')
+    }
+    onChange({ src, seconds })
+  }
+  const uploader = (
+    <>
+      <input
+        ref={picker}
+        type="file"
+        accept="audio/*,.m4a,.mp3,.ogg,.opus,.wav,.aac"
+        hidden
+        aria-label="Upload a voice note"
+        onChange={(e) => {
+          void upload(e.target.files?.[0])
+          e.target.value = ''
+        }}
+      />
+      <button type="button" className="chip-button" onClick={() => picker.current?.click()}>
+        {voice?.src ? 'Upload a different one' : 'Upload one you have'}
+      </button>
+    </>
+  )
   return (
     <div className="voice-field">
       <b>Your voice</b>
@@ -149,16 +208,22 @@ function VoiceField({ voice, onChange }: { voice?: VoiceNote; onChange: (voice: 
           <button type="button" className="chip-button" onClick={() => void record()}>
             Record it again
           </button>
+          {uploader}
           <button type="button" className="text-button" onClick={() => onChange(undefined)}>
             Remove the voice note
           </button>
         </>
       ) : (
-        <button type="button" className="chip-button" onClick={() => void record()}>
-          Record a voice note
-        </button>
+        <>
+          <button type="button" className="chip-button" onClick={() => void record()}>
+            Record a voice note
+          </button>
+          {uploader}
+        </>
       )}
-      <small>{recorder.state === 'denied' ? 'The microphone is blocked for this site. Allow it in the browser, then try again.' : `Up to ${VOICE_SECONDS} seconds. It plays over this scene, with the song turned down under it.`}</small>
+      <small role="status">
+        {problem || (recorder.state === 'denied' ? 'The microphone is blocked for this site. Allow it in the browser, then try again.' : 'Record up to 45 seconds, or upload a voice note of up to a minute. It plays over this scene, with the song turned down under it.')}
+      </small>
     </div>
   )
 }
