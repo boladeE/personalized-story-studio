@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CreateRouteImport } from './routes/create'
+import { Route as LabRouteImport } from './routes/lab'
 import { Route as OwnerRouteImport } from './routes/owner'
 import { Route as PreviewRouteImport } from './routes/preview'
 import { Route as SendRouteImport } from './routes/send'
@@ -39,6 +40,11 @@ const IndexRoute = IndexRouteImport.update({
 const CreateRoute = CreateRouteImport.update({
   id: '/create',
   path: '/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabRoute = LabRouteImport.update({
+  id: '/lab',
+  path: '/lab',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OwnerRoute = OwnerRouteImport.update({
@@ -140,6 +146,7 @@ const ApiMediaSlugFileRoute = ApiMediaSlugFileRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
+  '/lab': typeof LabRoute
   '/owner': typeof OwnerRoute
   '/preview': typeof PreviewRoute
   '/send': typeof SendRoute
@@ -163,6 +170,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
+  '/lab': typeof LabRoute
   '/owner': typeof OwnerRoute
   '/preview': typeof PreviewRoute
   '/send': typeof SendRoute
@@ -187,6 +195,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
+  '/lab': typeof LabRoute
   '/owner': typeof OwnerRoute
   '/preview': typeof PreviewRoute
   '/send': typeof SendRoute
@@ -212,6 +221,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/create'
+    | '/lab'
     | '/owner'
     | '/preview'
     | '/send'
@@ -235,6 +245,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/create'
+    | '/lab'
     | '/owner'
     | '/preview'
     | '/send'
@@ -258,6 +269,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/create'
+    | '/lab'
     | '/owner'
     | '/preview'
     | '/send'
@@ -282,6 +294,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CreateRoute: typeof CreateRoute
+  LabRoute: typeof LabRoute
   OwnerRoute: typeof OwnerRoute
   PreviewRoute: typeof PreviewRoute
   SendRoute: typeof SendRoute
@@ -317,6 +330,13 @@ declare module '@tanstack/react-router' {
       path: '/create'
       fullPath: '/create'
       preLoaderRoute: typeof CreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lab': {
+      id: '/lab'
+      path: '/lab'
+      fullPath: '/lab'
+      preLoaderRoute: typeof LabRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/owner': {
@@ -458,6 +478,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CreateRoute: CreateRoute,
+  LabRoute: LabRoute,
   OwnerRoute: OwnerRoute,
   PreviewRoute: PreviewRoute,
   SendRoute: SendRoute,
