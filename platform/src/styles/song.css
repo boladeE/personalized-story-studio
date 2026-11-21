@@ -958,3 +958,60 @@
     justify-content: center;
   }
 }
+
+/* While new words are being written the paper shows it: a light passes down the lines and the button's arrow turns. */
+.song-paper {
+  position: relative;
+}
+.song-paper[aria-busy='true']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent 0, color-mix(in srgb, var(--card) 85%, transparent) 45%, color-mix(in srgb, var(--hibiscus) 14%, var(--card)) 50%, color-mix(in srgb, var(--card) 85%, transparent) 55%, transparent 100%);
+  background-size: 100% 60%;
+  background-repeat: no-repeat;
+  animation: song-sweep 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+.song-paper[aria-busy='true']::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 3;
+  height: 3px;
+  background: linear-gradient(to right, transparent, var(--hibiscus), transparent);
+  background-size: 40% 100%;
+  background-repeat: no-repeat;
+  animation: song-run 1.1s linear infinite;
+}
+.song-rewrite.is-busy svg {
+  animation: song-spin 0.9s linear infinite;
+}
+.song-rewrite.is-busy:disabled {
+  opacity: 0.85;
+}
+@keyframes song-sweep {
+  from { background-position: 0 -80%; }
+  to { background-position: 0 240%; }
+}
+@keyframes song-run {
+  from { background-position: -70% 0; }
+  to { background-position: 170% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .song-paper[aria-busy='true']::after,
+  .song-paper[aria-busy='true']::before,
+  .song-rewrite.is-busy svg {
+    animation: none;
+  }
+}
+
+/* The song's name is one line of large type in a field: tall enough that it has nothing to scroll. */
+.song-paper-head .sheet-title {
+  box-sizing: content-box;
+  height: 1.3em;
+  padding: 0 0 4px;
+  line-height: 1.3;
+  overflow: clip;
+}
