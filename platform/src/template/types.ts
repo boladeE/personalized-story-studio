@@ -111,7 +111,7 @@ export type Area = [number, number, number, number]
 interface Placed {
   /** Its place on a wide screen and on a phone held upright. Items may overlap; later ones are drawn on top. */
   at: { wide: Area; tall: Area }
-  /** Degrees, -8 to 8. */
+  /** Degrees, -8 to 8 (a shape may be turned any amount, -180 to 180). */
   rotate?: number
   enter?: Enter
   /** Left out when the page has nothing for it (no photo, no second line). Items that need a slot are left out anyway. */
@@ -123,15 +123,18 @@ export interface TextItem extends Placed {
   is: 'text'
   slot: string
   voice: VoiceId
-  /** Size in units (a unit is about 1% of a wide frame's width, about 1.9% of a phone's). 1.1 to 22. */
+  /** Size in units (a unit is about 1% of a wide frame's width, about 2.1% of a phone's). 1.1 to 22. */
   size: number
+  /** A different size on a phone held upright, when the one size does not serve both. */
+  sizeTall?: number
   /** The smallest it may be shrunk to when the words are long, as a share of `size`. 0.4 to 1. */
   min?: number
   color: Token
   align?: 'start' | 'center' | 'end'
   valign?: 'start' | 'center' | 'end'
   box?: Box
-  mark?: 'none' | 'underline' | 'highlight' | 'rule-above' | 'rule-below' | 'quotes'
+  /** `glow` lights the words in their own colour, like a sign. */
+  mark?: 'none' | 'underline' | 'highlight' | 'rule-above' | 'rule-below' | 'quotes' | 'glow'
   markColor?: Token
 }
 
@@ -171,7 +174,8 @@ export interface PhotosItem extends Placed {
   tone?: PhotoItem['tone']
 }
 
-export const SHAPES = ['rect', 'circle', 'ring', 'rule', 'arch', 'blob', 'stripes', 'dots', 'corner', 'star', 'sun', 'wave', 'cross', 'tape', 'burst'] as const
+/** `rule` is a horizontal line and `vrule` a vertical one. */
+export const SHAPES = ['rect', 'circle', 'ring', 'rule', 'vrule', 'arch', 'blob', 'stripes', 'dots', 'corner', 'star', 'sun', 'wave', 'cross', 'tape', 'burst'] as const
 export type ShapeKind = (typeof SHAPES)[number]
 
 /** Something drawn, under the words: a block of colour, a line, a mark. */
@@ -181,8 +185,10 @@ export interface ShapeItem extends Placed {
   color: Token
   /** 0.05 to 1. */
   opacity?: number
-  /** Its size as a share of its area, 0.1 to 1.6 (above 1 it runs past its area). */
+  /** Its size as a share of its area, 0.02 to 2.5 (above 1 it runs past its area). */
   scale?: number
+  /** Where in its area it sits, when not the middle: `top-left`, `bottom`, `right` and so on. */
+  anchor?: 'center' | 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
   /** For a rule or a ring: its thickness in units. */
   weight?: number
 }
@@ -215,6 +221,9 @@ export interface ListItem extends Placed {
   marker: 'number' | 'dot' | 'check' | 'dash' | 'none' | 'box'
   gap?: number
   align?: 'start' | 'center'
+  /** Where the list sits in its area: from the top (so it grows downward as lines arrive), the middle, or the bottom. */
+  valign?: 'start' | 'center' | 'end'
+  sizeTall?: number
   box?: Box
 }
 

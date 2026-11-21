@@ -1,0 +1,216 @@
+{
+  "id": "blueprint",
+  "name": "Blueprint",
+  "idea": "A technical drawing of one person: a fine grid inside a hairline border, callout balloons and dimension lines, and a ruled title block in the corner of every sheet.",
+  "tags": ["modern", "playful", "words", "bold"],
+  "palettes": [
+    { "bg": "#123b6e", "surface": "#e8f0fa", "ink": "#f2f6fc", "soft": "#b9cce6", "accent": "#ffd05c", "accent2": "#6b98d4", "onSurface": "#123b6e", "onAccent": "#123b6e" },
+    { "bg": "#f1eee4", "surface": "#1e3a5f", "ink": "#1e3a5f", "soft": "#4b5e79", "accent": "#c0392b", "accent2": "#9fb4cf", "onSurface": "#f1eee4", "onAccent": "#ffffff" },
+    { "bg": "#191c20", "surface": "#e9e5da", "ink": "#ece8dd", "soft": "#a9afb7", "accent": "#5cd3e8", "accent2": "#45515f", "onSurface": "#191c20", "onAccent": "#0e1b20" }
+  ],
+  "tint": true,
+  "voices": {
+    "display": { "font": "spacegrotesk", "face": "700", "upper": true, "track": 0.01, "lead": 0.95 },
+    "body": { "font": "plexmono", "face": "400", "lead": 1.5 },
+    "label": { "font": "spacemono", "face": "400", "upper": true, "track": 0.14, "lead": 1.3 }
+  },
+  "ground": { "fill": "bg" },
+  "sheet": { "inset": [2.2, 2.2], "box": { "fill": "bg", "border": { "color": "ink", "width": 0.12 } }, "ground": { "fill": "bg", "texture": "grid", "ink": "accent2", "strength": 0.32 } },
+  "motion": { "cut": "cut", "pace": "even" },
+  "pages": {
+    "cover": {
+      "grid": { "wide": { "cols": [0.5, 5, 5, 6, 0.5], "rows": [0.5, 3.25, 0.5, 3.25, 2.5, 0.5], "gap": 0, "pad": [1.2, 1.2] }, "tall": { "cols": [0.5, 7.5, 0.5], "rows": [0.5, 3.5, 0.5, 3.5, 1.2, 4.6, 3.5, 0.5], "gap": 0, "pad": [1.2, 1.2] } },
+      "items": [
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [1, 1, 1, 1], "tall": [1, 1, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [5, 1, 1, 1], "tall": [3, 1, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [1, 6, 1, 1], "tall": [1, 8, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [5, 6, 1, 1], "tall": [3, 8, 1, 1] } },
+        { "is": "shape", "shape": "ring", "color": "accent2", "scale": 0.92, "weight": 0.12, "at": { "wide": [4, 2, 1, 3], "tall": [2, 2, 1, 3] } },
+        { "is": "shape", "shape": "ring", "color": "accent2", "scale": 0.42, "weight": 0.12, "at": { "wide": [4, 2, 1, 3], "tall": [2, 2, 1, 3] } },
+        { "is": "shape", "shape": "rule", "color": "accent2", "scale": 1.1, "weight": 0.12, "at": { "wide": [4, 3, 1, 1], "tall": [2, 3, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent", "scale": 0.8, "at": { "wide": [4, 3, 1, 1], "tall": [2, 3, 1, 1] } },
+        { "is": "text", "slot": "occasion", "voice": "label", "size": 1.6, "color": "soft", "valign": "end", "at": { "wide": [2, 2, 2, 1], "tall": [2, 5, 1, 1] } },
+        { "is": "text", "slot": "recipient", "voice": "display", "size": 12, "min": 0.4, "color": "ink", "enter": "wipe", "at": { "wide": [2, 3, 2, 2], "tall": [2, 6, 1, 1] } },
+        { "is": "group", "gap": 1.2, "valign": "center", "enter": "fade", "box": { "fill": "bg", "pad": 1.6, "border": { "color": "ink", "width": 0.12 }, "stretch": true }, "at": { "wide": [4, 5, 1, 1], "tall": [2, 7, 1, 1] }, "lines": [
+          { "slot": "sender", "voice": "body", "size": 1.9, "color": "ink" },
+          { "slot": "hint", "voice": "label", "size": 1.5, "color": "onAccent", "box": { "fill": "accent", "pad": 0.8 } }
+        ] }
+      ]
+    },
+    "name": {
+      "grid": { "wide": { "cols": [0.5, 10, 6, 0.5], "rows": [0.5, 1.4, 4.6, 3.5, 0.5], "gap": 0, "pad": [1.2, 1.2] }, "tall": { "cols": [0.5, 7.5, 0.5], "rows": [0.5, 1.6, 10.2, 4.6, 0.5], "gap": 0, "pad": [1.2, 1.2] } },
+      "items": [
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [1, 1, 1, 1], "tall": [1, 1, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [4, 1, 1, 1], "tall": [3, 1, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [1, 5, 1, 1], "tall": [1, 5, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [4, 5, 1, 1], "tall": [3, 5, 1, 1] } },
+        { "is": "shape", "shape": "stripes", "color": "accent2", "opacity": 0.45, "at": { "wide": [3, 2, 1, 2], "tall": [2, 2, 1, 1] } },
+        { "is": "shape", "shape": "rule", "color": "accent", "weight": 0.14, "at": { "wide": [2, 2, 1, 1], "tall": [2, 2, 1, 1] } },
+        { "is": "text", "slot": "kicker", "voice": "label", "size": 1.5, "color": "ink", "align": "center", "box": { "fill": "bg", "pad": 0.7 }, "at": { "wide": [2, 2, 1, 1], "tall": [2, 2, 1, 1] } },
+        { "is": "text", "slot": "name", "voice": "display", "size": 12, "min": 0.4, "color": "ink", "enter": "wipe", "at": { "wide": [2, 3, 1, 2], "tall": [2, 3, 1, 1] } },
+        { "is": "group", "gap": 1.3, "valign": "start", "enter": "fade", "box": { "fill": "bg", "pad": 1.8, "border": { "color": "ink", "width": 0.12 }, "stretch": true }, "at": { "wide": [3, 4, 1, 1], "tall": [2, 4, 1, 1] }, "lines": [
+          { "slot": "sub", "voice": "display", "size": 3.2, "min": 0.5, "color": "accent" },
+          { "slot": "body", "voice": "body", "size": 1.8, "color": "soft" }
+        ] }
+      ]
+    },
+    "card": {
+      "grid": { "wide": { "cols": [0.5, 1.5, 3, 1.5, 0.6, 4.4, 5, 0.5], "rows": [0.5, 3, 3.5, 3, 0.5], "gap": 0, "pad": [1.2, 1.2] }, "tall": { "cols": [0.5, 2, 3.5, 2, 0.5], "rows": [0.5, 7, 6, 4.3, 0.5], "gap": 0, "pad": [1.2, 1.2] } },
+      "items": [
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [1, 1, 1, 1], "tall": [1, 1, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [8, 1, 1, 1], "tall": [5, 1, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [1, 5, 1, 1], "tall": [1, 5, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [8, 5, 1, 1], "tall": [5, 5, 1, 1] } },
+        { "is": "shape", "shape": "ring", "color": "accent", "scale": 0.65, "weight": 0.18, "enter": "pop", "at": { "wide": [2, 2, 3, 3], "tall": [2, 2, 3, 1] } },
+        { "is": "shape", "shape": "rule", "color": "accent", "weight": 0.14, "at": { "wide": [5, 3, 1, 1], "tall": [2, 4, 3, 1] } },
+        { "is": "text", "slot": "number", "voice": "display", "size": 5, "min": 0.5, "color": "accent", "align": "center", "at": { "wide": [3, 3, 1, 1], "tall": [3, 2, 1, 1] } },
+        { "is": "text", "slot": "title", "voice": "display", "size": 11, "min": 0.4, "color": "ink", "valign": "end", "enter": "wipe", "at": { "wide": [6, 2, 2, 2], "tall": [2, 3, 3, 1] } },
+        { "is": "shape", "shape": "stripes", "color": "accent2", "opacity": 0.45, "at": { "wide": [6, 4, 1, 1], "tall": [2, 4, 3, 1] } },
+        { "is": "group", "gap": 1, "valign": "center", "enter": "fade", "box": { "fill": "bg", "pad": 1.8, "border": { "color": "ink", "width": 0.12 }, "stretch": true }, "at": { "wide": [7, 4, 1, 1], "tall": [2, 4, 3, 1] }, "lines": [
+          { "slot": "sub", "voice": "body", "size": 1.9, "color": "ink" }
+        ] }
+      ]
+    },
+    "line": {
+      "grid": { "wide": { "cols": [0.5, 10.5, 0.6, 4.9, 0.5], "rows": [0.5, 7, 2.5, 0.5], "gap": 0, "pad": [1.2, 1.2] }, "tall": { "cols": [0.5, 7.5, 0.5], "rows": [0.5, 10, 6.3, 0.5], "gap": 0, "pad": [1.2, 1.2] } },
+      "items": [
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [1, 1, 1, 1], "tall": [1, 1, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [5, 1, 1, 1], "tall": [3, 1, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [1, 4, 1, 1], "tall": [1, 4, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [5, 4, 1, 1], "tall": [3, 4, 1, 1] } },
+        { "is": "shape", "shape": "stripes", "color": "accent2", "opacity": 0.45, "at": { "wide": [4, 2, 1, 2], "tall": [2, 3, 1, 1] } },
+        { "is": "text", "slot": "title", "voice": "display", "size": 8.5, "min": 0.4, "color": "ink", "enter": "wipe", "at": { "wide": [2, 2, 1, 2], "tall": [2, 2, 1, 1] } },
+        { "is": "group", "gap": 1.4, "valign": "end", "enter": "fade", "box": { "fill": "bg", "pad": 1.8, "border": { "color": "ink", "width": 0.12 }, "stretch": true }, "at": { "wide": [4, 2, 1, 2], "tall": [2, 3, 1, 1] }, "lines": [
+          { "slot": "kicker", "voice": "label", "size": 1.5, "color": "accent" },
+          { "slot": "body", "voice": "body", "size": 1.8, "color": "ink" }
+        ] }
+      ]
+    },
+    "photo": {
+      "grid": { "wide": { "cols": [0.5, 10, 0.7, 5.8, 0.5], "rows": [0.5, 1.2, 8.3, 0.5], "gap": 0, "pad": [1.2, 1.2] }, "tall": { "cols": [0.5, 7.5, 0.5], "rows": [0.5, 1.4, 9.6, 0.5, 6.3, 0.5], "gap": 0, "pad": [1.2, 1.2] } },
+      "items": [
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [1, 1, 1, 1], "tall": [1, 1, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [5, 1, 1, 1], "tall": [3, 1, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [1, 4, 1, 1], "tall": [1, 6, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [5, 4, 1, 1], "tall": [3, 6, 1, 1] } },
+        { "is": "shape", "shape": "rule", "color": "accent", "weight": 0.14, "at": { "wide": [2, 2, 1, 1], "tall": [2, 2, 1, 1] } },
+        { "is": "text", "slot": "kicker", "voice": "label", "size": 1.5, "color": "ink", "align": "center", "box": { "fill": "bg", "pad": 0.7 }, "at": { "wide": [2, 2, 1, 1], "tall": [2, 2, 1, 1] } },
+        { "is": "photo", "frame": "outline", "fit": "cover", "color": "ink", "tone": "cool", "enter": "develop", "at": { "wide": [2, 3, 1, 1], "tall": [2, 3, 1, 1] } },
+        { "is": "group", "gap": 1.4, "valign": "end", "enter": "fade", "box": { "fill": "bg", "pad": 1.8, "border": { "color": "ink", "width": 0.12 }, "stretch": true }, "at": { "wide": [4, 2, 1, 2], "tall": [2, 5, 1, 1] }, "lines": [
+          { "slot": "title", "voice": "display", "size": 4.2, "min": 0.45, "color": "ink" },
+          { "slot": "body", "voice": "body", "size": 1.8, "color": "soft" }
+        ] }
+      ]
+    },
+    "item": {
+      "grid": { "wide": { "cols": [0.5, 4.6, 0.8, 7, 3.6, 0.5], "rows": [0.5, 1.5, 5.5, 2.5, 0.5], "gap": 0, "pad": [1.2, 1.2] }, "tall": { "cols": [0.5, 7.5, 0.5], "rows": [0.5, 1.4, 6, 7.4, 1.3, 2.6, 0.5], "gap": 0, "pad": [1.2, 1.2] } },
+      "items": [
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [1, 1, 1, 1], "tall": [1, 1, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [6, 1, 1, 1], "tall": [3, 1, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [1, 5, 1, 1], "tall": [1, 7, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [6, 5, 1, 1], "tall": [3, 7, 1, 1] } },
+        { "is": "shape", "shape": "ring", "color": "accent", "scale": 0.85, "weight": 0.18, "enter": "pop", "at": { "wide": [2, 3, 1, 1], "tall": [2, 3, 1, 1] } },
+        { "is": "shape", "shape": "rule", "color": "accent", "weight": 0.14, "at": { "wide": [3, 3, 1, 1], "tall": [2, 5, 1, 1] } },
+        { "is": "text", "slot": "n", "voice": "display", "size": 9, "min": 0.5, "color": "accent", "align": "center", "at": { "wide": [2, 3, 1, 1], "tall": [2, 3, 1, 1] } },
+        { "is": "text", "slot": "label", "voice": "label", "size": 1.5, "color": "soft", "valign": "end", "at": { "wide": [4, 2, 2, 1], "tall": [2, 2, 1, 1] } },
+        { "is": "text", "slot": "text", "voice": "display", "size": 7, "min": 0.4, "color": "ink", "enter": "wipe", "at": { "wide": [4, 3, 2, 1], "tall": [2, 4, 1, 1] } },
+        { "is": "pips", "look": "ticks", "color": "soft", "lit": "accent", "align": "start", "at": { "wide": [4, 4, 1, 1], "tall": [2, 5, 1, 1] } },
+        { "is": "group", "gap": 0.6, "valign": "center", "box": { "fill": "bg", "pad": 1.4, "border": { "color": "ink", "width": 0.12 }, "stretch": true }, "at": { "wide": [5, 4, 1, 1], "tall": [2, 6, 1, 1] }, "lines": [
+          { "slot": "count", "voice": "display", "size": 2.6, "color": "ink" }
+        ] }
+      ]
+    },
+    "montage": {
+      "grid": { "wide": { "cols": [0.5, 11, 5, 0.5], "rows": [0.5, 7.4, 2.1, 0.5], "gap": 0, "pad": [1.2, 1.2] }, "tall": { "cols": [0.5, 7.5, 0.5], "rows": [0.5, 12.6, 1.2, 3.6, 0.5], "gap": 0, "pad": [1.2, 1.2] } },
+      "items": [
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [1, 1, 1, 1], "tall": [1, 1, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [4, 1, 1, 1], "tall": [3, 1, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [1, 4, 1, 1], "tall": [1, 5, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [4, 4, 1, 1], "tall": [3, 5, 1, 1] } },
+        { "is": "photos", "arrange": "mosaic", "frame": "outline", "color": "ink", "tone": "cool", "enter": "develop", "at": { "wide": [2, 2, 2, 1], "tall": [2, 2, 1, 1] } },
+        { "is": "text", "slot": "kicker", "voice": "label", "size": 1.5, "color": "soft", "at": { "wide": [2, 3, 1, 1], "tall": [2, 3, 1, 1] } },
+        { "is": "group", "gap": 1, "valign": "center", "box": { "fill": "bg", "pad": 1.6, "border": { "color": "ink", "width": 0.12 }, "stretch": true }, "at": { "wide": [3, 3, 1, 1], "tall": [2, 4, 1, 1] }, "lines": [
+          { "slot": "title", "voice": "display", "size": 3.4, "min": 0.45, "color": "ink" }
+        ] }
+      ]
+    },
+    "voice": {
+      "grid": { "wide": { "cols": [0.5, 6, 0.8, 9.2, 0.5], "rows": [0.5, 6, 0.8, 2.7, 0.5], "gap": 0, "pad": [1.2, 1.2] }, "tall": { "cols": [0.5, 7.5, 0.5], "rows": [0.5, 8, 4.4, 0.9, 3.5, 0.5], "gap": 0, "pad": [1.2, 1.2] } },
+      "items": [
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [1, 1, 1, 1], "tall": [1, 1, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [5, 1, 1, 1], "tall": [3, 1, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [1, 5, 1, 1], "tall": [1, 6, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [5, 5, 1, 1], "tall": [3, 6, 1, 1] } },
+        { "is": "photo", "frame": "corners", "fit": "cover", "color": "accent", "tone": "cool", "enter": "develop", "at": { "wide": [2, 2, 1, 3], "tall": [2, 2, 1, 1] } },
+        { "is": "shape", "shape": "stripes", "only": "noPhoto", "color": "accent2", "opacity": 0.45, "at": { "wide": [2, 4, 1, 1], "tall": [2, 4, 1, 1] } },
+        { "is": "group", "only": "photo", "gap": 0.8, "valign": "center", "enter": "fade", "box": { "fill": "bg", "pad": 1.8, "border": { "color": "ink", "width": 0.12 }, "stretch": true }, "at": { "wide": [4, 4, 1, 1], "tall": [2, 5, 1, 1] }, "lines": [
+          { "slot": "who", "voice": "display", "size": 4.5, "min": 0.45, "color": "ink" },
+          { "slot": "count", "voice": "label", "size": 1.5, "color": "soft" }
+        ] },
+        { "is": "group", "only": "noPhoto", "gap": 0.8, "valign": "end", "enter": "fade", "box": { "fill": "bg", "pad": 1.8, "border": { "color": "ink", "width": 0.12 }, "stretch": true }, "at": { "wide": [4, 4, 1, 1], "tall": [2, 2, 1, 4] }, "lines": [
+          { "slot": "who", "voice": "display", "size": 6, "min": 0.4, "color": "ink" },
+          { "slot": "count", "voice": "label", "size": 1.5, "color": "soft" }
+        ] },
+        { "is": "shape", "shape": "rule", "only": "photo", "color": "accent2", "weight": 0.12, "at": { "wide": [4, 2, 1, 1], "tall": [2, 3, 1, 1] } },
+        { "is": "wave", "only": "photo", "look": "line", "color": "accent2", "lit": "accent", "at": { "wide": [4, 2, 1, 1], "tall": [2, 3, 1, 1] } },
+        { "is": "shape", "shape": "rule", "only": "noPhoto", "color": "accent2", "weight": 0.12, "at": { "wide": [2, 2, 3, 1], "tall": [2, 2, 1, 2] } },
+        { "is": "wave", "only": "noPhoto", "look": "line", "color": "accent2", "lit": "accent", "at": { "wide": [2, 2, 3, 1], "tall": [2, 2, 1, 2] } },
+        { "is": "pips", "look": "squares", "color": "soft", "lit": "accent", "align": "start", "at": { "wide": [4, 3, 1, 1], "tall": [2, 4, 1, 1] } }
+      ]
+    },
+    "letter": {
+      "grid": { "wide": { "cols": [0.5, 12, 4, 0.5], "rows": [0.5, 9.5, 0.5], "gap": 0, "pad": [1.2, 1.2] }, "tall": { "cols": [0.5, 7.5, 0.5], "rows": [0.5, 15.8, 1.5, 0.5], "gap": 0, "pad": [1.2, 1.2] } },
+      "items": [
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [1, 1, 1, 1], "tall": [1, 1, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [4, 1, 1, 1], "tall": [3, 1, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [1, 3, 1, 1], "tall": [1, 4, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [4, 3, 1, 1], "tall": [3, 4, 1, 1] } },
+        { "is": "shape", "shape": "stripes", "color": "accent2", "opacity": 0.45, "at": { "wide": [3, 2, 1, 1], "tall": [2, 3, 1, 1] } },
+        { "is": "letter", "voice": "body", "size": 1.9, "color": "ink", "enter": "fade", "sheet": { "fill": "bg", "pad": 3, "border": { "color": "ink", "width": 0.12 } }, "at": { "wide": [2, 2, 1, 1], "tall": [2, 2, 1, 1] } }
+      ]
+    },
+    "wish": {
+      "grid": { "wide": { "cols": [0.5, 9, 0.6, 6.4, 0.5], "rows": [0.5, 6, 3.5, 0.5], "gap": 0, "pad": [1.2, 1.2] }, "tall": { "cols": [0.5, 7.5, 0.5], "rows": [0.5, 4.5, 9.5, 3, 0.5], "gap": 0, "pad": [1.2, 1.2] } },
+      "items": [
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [1, 1, 1, 1], "tall": [1, 1, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [5, 1, 1, 1], "tall": [3, 1, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [1, 4, 1, 1], "tall": [1, 5, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [5, 4, 1, 1], "tall": [3, 5, 1, 1] } },
+        { "is": "shape", "shape": "ring", "color": "accent2", "scale": 0.8, "weight": 0.12, "at": { "wide": [4, 2, 1, 2], "tall": [2, 3, 1, 1] } },
+        { "is": "text", "slot": "title", "voice": "display", "size": 7, "min": 0.4, "color": "ink", "valign": "end", "enter": "wipe", "at": { "wide": [2, 2, 1, 1], "tall": [2, 2, 1, 1] } },
+        { "is": "group", "gap": 1, "valign": "start", "box": { "fill": "bg", "pad": 1.8, "border": { "color": "ink", "width": 0.12 }, "stretch": true }, "at": { "wide": [2, 3, 1, 1], "tall": [2, 4, 1, 1] }, "lines": [
+          { "slot": "body", "voice": "body", "size": 1.9, "color": "ink" }
+        ] },
+        { "is": "ending", "button": { "voice": "label", "color": "onAccent", "box": { "fill": "accent", "pad": 1.3, "radius": 0 } }, "at": { "wide": [4, 2, 1, 2], "tall": [2, 3, 1, 1] } }
+      ]
+    },
+    "reveal": {
+      "grid": { "wide": { "cols": [0.5, 11, 5, 0.5], "rows": [0.5, 1, 6, 2.5, 0.5], "gap": 0, "pad": [1.2, 1.2] }, "tall": { "cols": [0.5, 7.5, 0.5], "rows": [0.5, 1.2, 11.2, 3.6, 0.5], "gap": 0, "pad": [1.2, 1.2] } },
+      "items": [
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [1, 1, 1, 1], "tall": [1, 1, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [4, 1, 1, 1], "tall": [3, 1, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [1, 5, 1, 1], "tall": [1, 5, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [4, 5, 1, 1], "tall": [3, 5, 1, 1] } },
+        { "is": "shape", "shape": "rule", "color": "accent", "weight": 0.14, "at": { "wide": [2, 2, 2, 1], "tall": [2, 2, 1, 1] } },
+        { "is": "text", "slot": "words", "voice": "display", "size": 10, "min": 0.4, "color": "ink", "align": "center", "enter": "words", "at": { "wide": [2, 3, 2, 1], "tall": [2, 3, 1, 1] } },
+        { "is": "group", "gap": 1, "valign": "center", "box": { "fill": "bg", "pad": 1.6, "border": { "color": "ink", "width": 0.12 }, "stretch": true }, "at": { "wide": [3, 4, 1, 1], "tall": [2, 4, 1, 1] }, "lines": [
+          { "slot": "pick", "voice": "label", "size": 1.6, "color": "accent" }
+        ] }
+      ]
+    },
+    "credits": {
+      "grid": { "wide": { "cols": [0.5, 7, 0.8, 8.2, 0.5], "rows": [0.5, 9.5, 0.5], "gap": 0, "pad": [1.2, 1.2] }, "tall": { "cols": [0.5, 7.5, 0.5], "rows": [0.5, 5, 12, 0.5], "gap": 0, "pad": [1.2, 1.2] } },
+      "items": [
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [1, 1, 1, 1], "tall": [1, 1, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [5, 1, 1, 1], "tall": [3, 1, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [1, 3, 1, 1], "tall": [1, 4, 1, 1] } },
+        { "is": "shape", "shape": "cross", "color": "accent2", "scale": 0.55, "at": { "wide": [5, 3, 1, 1], "tall": [3, 4, 1, 1] } },
+        { "is": "group", "gap": 1.4, "valign": "end", "at": { "wide": [2, 2, 1, 1], "tall": [2, 2, 1, 1] }, "lines": [
+          { "slot": "last", "voice": "display", "size": 6, "min": 0.45, "color": "ink" },
+          { "slot": "note", "voice": "label", "size": 1.4, "color": "soft" }
+        ] },
+        { "is": "credits", "look": "table", "voice": "body", "size": 2.2, "color": "ink", "roleColor": "soft", "at": { "wide": [4, 2, 1, 1], "tall": [2, 3, 1, 1] } }
+      ]
+    }
+  }
+}

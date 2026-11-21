@@ -1,0 +1,147 @@
+{
+  "id": "camcorder-tape",
+  "name": "Camcorder tape",
+  "idea": "A home video of one person played back on an old screen: scanlines, a red recording dot and mono readouts in the corners, each photo as the picture and the words in a lower-third panel.",
+  "tags": ["retro", "warm", "playful", "photos", "modern"],
+  "palettes": [
+    {"bg": "#0e0f12", "surface": "#f1ede2", "ink": "#f1ede2", "soft": "#a9adb3", "accent": "#ff4b3e", "accent2": "#2c313a", "onSurface": "#101114", "onAccent": "#101114"},
+    {"bg": "#1736b8", "surface": "#0a0f2e", "ink": "#ffffff", "soft": "#c8d2ff", "accent": "#ffe04a", "accent2": "#3556d6", "onSurface": "#ffffff", "onAccent": "#0a0f2e"},
+    {"bg": "#17110c", "surface": "#ffa53a", "ink": "#f7e7c6", "soft": "#c9ae86", "accent": "#f4572f", "accent2": "#3a2a1c", "onSurface": "#17110c", "onAccent": "#17110c"}
+  ],
+  "tint": true,
+  "voices": {
+    "display": {"font": "spacemono", "face": "700", "upper": true, "lead": 1.02, "track": -0.02},
+    "body": {"font": "plexmono", "face": "400", "lead": 1.5},
+    "label": {"font": "plexmono", "face": "500", "upper": true, "track": 0.14, "lead": 1.2}
+  },
+  "ground": {"fill": "bg", "texture": "lines", "ink": "accent2", "strength": 0.5},
+  "motion": {"cut": "cut", "pace": "even"},
+  "pages": {
+    "cover": {
+      "grid": {"wide": {"cols": [0.4, 3, 3, 3], "rows": [0.6, 1, 2.6, 1, 0.6], "gap": 1, "pad": [3, 3.5]}, "tall": {"cols": [0.5, 3, 3], "rows": [0.4, 1, 2.6, 1, 0.4], "gap": 1, "pad": [3, 2.5]}},
+      "items": [
+        {"is": "shape", "shape": "circle", "color": "accent", "scale": 0.5, "at": {"wide": [1, 1, 1, 1], "tall": [1, 1, 1, 1]}},
+        {"is": "text", "slot": "occasion", "voice": "label", "size": 1.8, "min": 0.8, "color": "ink", "at": {"wide": [2, 1, 2, 1], "tall": [2, 1, 1, 1]}},
+        {"is": "text", "slot": "hint", "voice": "label", "size": 1.8, "color": "onAccent", "align": "end", "enter": "fade", "box": {"fill": "accent", "pad": 0.8}, "at": {"wide": [4, 1, 1, 1], "tall": [3, 1, 1, 1]}},
+        {"is": "text", "slot": "recipient", "voice": "display", "size": 16, "sizeTall": 14, "min": 0.4, "color": "ink", "align": "center", "enter": "fade", "at": {"wide": [2, 2, 3, 3], "tall": [1, 2, 3, 3]}},
+        {"is": "text", "slot": "sender", "voice": "label", "size": 1.8, "min": 0.8, "color": "soft", "align": "end", "at": {"wide": [3, 5, 2, 1], "tall": [1, 5, 3, 1]}}
+      ]
+    },
+    "name": {
+      "grid": {"wide": {"cols": [0.4, 3, 3, 3], "rows": [0.6, 2.4, 1.9, 0.6], "gap": 1, "pad": [3, 3.5]}, "tall": {"cols": [0.5, 3, 3], "rows": [0.4, 2.2, 2, 0.4], "gap": 1, "pad": [3, 2.5]}},
+      "items": [
+        {"is": "shape", "shape": "circle", "color": "accent", "scale": 0.5, "at": {"wide": [1, 1, 1, 1], "tall": [1, 1, 1, 1]}},
+        {"is": "shape", "shape": "rect", "color": "accent", "at": {"wide": [1, 3, 1, 1], "tall": [1, 3, 1, 1]}},
+        {"is": "text", "slot": "kicker", "voice": "label", "size": 1.8, "min": 0.8, "color": "ink", "at": {"wide": [2, 1, 3, 1], "tall": [2, 1, 2, 1]}},
+        {"is": "text", "slot": "name", "voice": "display", "size": 15, "sizeTall": 14, "min": 0.4, "color": "ink", "valign": "end", "enter": "fade", "at": {"wide": [2, 2, 3, 1], "tall": [1, 2, 3, 1]}},
+        {"is": "group", "gap": 1, "align": "start", "valign": "center", "enter": "left", "box": {"fill": "surface", "pad": 1.6, "stretch": true}, "at": {"wide": [2, 3, 2, 1], "tall": [2, 3, 2, 1]}, "lines": [
+          {"slot": "sub", "voice": "display", "size": 3.6, "min": 0.45, "color": "onSurface"},
+          {"slot": "body", "voice": "body", "size": 2, "color": "onSurface"}
+        ] }
+      ]
+    },
+    "card": {
+      "grid": {"wide": {"cols": [0.4, 3, 3, 3], "rows": [0.6, 2.8, 1.1, 0.6], "gap": 1, "pad": [3, 3.5]}, "tall": {"cols": [0.5, 3, 3], "rows": [0.4, 2.6, 1.2, 0.4], "gap": 1, "pad": [3, 2.5]}},
+      "items": [
+        {"is": "shape", "shape": "circle", "color": "accent", "scale": 0.5, "at": {"wide": [1, 1, 1, 1], "tall": [1, 1, 1, 1]}},
+        {"is": "shape", "shape": "rule", "color": "soft", "weight": 0.3, "at": {"wide": [2, 4, 3, 1], "tall": [1, 4, 3, 1]}},
+        {"is": "text", "slot": "number", "voice": "label", "size": 2.2, "min": 0.8, "color": "accent", "at": {"wide": [2, 1, 3, 1], "tall": [2, 1, 2, 1]}},
+        {"is": "text", "slot": "title", "voice": "display", "size": 13, "sizeTall": 11, "min": 0.4, "color": "ink", "valign": "end", "enter": "letters", "at": {"wide": [2, 2, 3, 1], "tall": [1, 2, 3, 1]}},
+        {"is": "text", "slot": "sub", "voice": "body", "size": 2.2, "color": "soft", "valign": "start", "at": {"wide": [2, 3, 2, 1], "tall": [1, 3, 3, 1]}}
+      ]
+    },
+    "line": {
+      "grid": {"wide": {"cols": [0.4, 3, 3, 3], "rows": [0.6, 3.2, 1, 0.6], "gap": 1, "pad": [3, 3.5]}, "tall": {"cols": [0.5, 3, 3], "rows": [0.4, 3, 1.3, 0.4], "gap": 1, "pad": [3, 2.5]}},
+      "items": [
+        {"is": "shape", "shape": "circle", "color": "accent", "scale": 0.5, "at": {"wide": [1, 1, 1, 1], "tall": [1, 1, 1, 1]}},
+        {"is": "text", "slot": "kicker", "voice": "label", "size": 1.8, "min": 0.8, "color": "ink", "at": {"wide": [2, 1, 3, 1], "tall": [2, 1, 2, 1]}},
+        {"is": "text", "slot": "title", "voice": "display", "size": 9, "sizeTall": 8, "min": 0.4, "color": "ink", "align": "center", "enter": "letters", "at": {"wide": [2, 2, 3, 1], "tall": [1, 2, 3, 1]}},
+        {"is": "text", "slot": "body", "voice": "body", "size": 2.2, "color": "onSurface", "align": "center", "valign": "start", "enter": "fade", "box": {"fill": "surface", "pad": 0.9}, "at": {"wide": [2, 3, 3, 1], "tall": [1, 3, 3, 1]}}
+      ]
+    },
+    "photo": {
+      "grid": {"wide": {"cols": [0.4, 3, 3, 3], "rows": [0.6, 2.2, 0.9, 1.3, 0.6], "gap": 0, "pad": [2.5, 3]}, "tall": {"cols": [0.5, 3, 3], "rows": [0.4, 2.3, 0.9, 1, 0.4], "gap": 0, "pad": [2.5, 2.5]}},
+      "items": [
+        {"is": "photo", "frame": "corners", "fit": "cover", "color": "ink", "tone": "warm", "enter": "fade", "at": {"wide": [1, 1, 4, 5], "tall": [1, 1, 3, 5]}},
+        {"is": "shape", "shape": "circle", "color": "accent", "scale": 0.5, "at": {"wide": [1, 1, 1, 1], "tall": [1, 1, 1, 1]}},
+        {"is": "shape", "shape": "rect", "color": "accent", "at": {"wide": [1, 3, 1, 2], "tall": [1, 3, 1, 2]}},
+        {"is": "text", "slot": "kicker", "voice": "label", "size": 1.8, "min": 0.8, "color": "ink", "box": {"fill": "bg", "pad": 0.6}, "at": {"wide": [2, 1, 2, 1], "tall": [2, 1, 2, 1]}},
+        {"is": "text", "slot": "title", "voice": "display", "size": 4.6, "min": 0.5, "color": "onSurface", "enter": "left", "box": {"fill": "surface", "pad": 1.8, "stretch": true}, "at": {"wide": [2, 3, 2, 1], "tall": [2, 3, 2, 1]}},
+        {"is": "text", "slot": "body", "voice": "body", "size": 2, "color": "onSurface", "enter": "left", "box": {"fill": "surface", "pad": 1.4, "stretch": true}, "at": {"wide": [2, 4, 2, 1], "tall": [2, 4, 2, 1]}}
+      ]
+    },
+    "item": {
+      "grid": {"wide": {"cols": [0.4, 3, 3, 3], "rows": [0.6, 3, 1.3, 0.5], "gap": 1, "pad": [3, 3.5]}, "tall": {"cols": [0.5, 3, 3], "rows": [0.4, 3, 1.2, 0.3], "gap": 1, "pad": [3, 2.5]}},
+      "items": [
+        {"is": "shape", "shape": "circle", "color": "accent", "scale": 0.5, "at": {"wide": [1, 1, 1, 1], "tall": [1, 1, 1, 1]}},
+        {"is": "text", "slot": "label", "voice": "label", "size": 1.8, "min": 0.8, "color": "ink", "at": {"wide": [2, 1, 2, 1], "tall": [2, 1, 1, 1]}},
+        {"is": "text", "slot": "count", "voice": "label", "size": 1.8, "color": "soft", "align": "end", "at": {"wide": [4, 1, 1, 1], "tall": [3, 1, 1, 1]}},
+        {"is": "text", "slot": "text", "voice": "display", "size": 8, "sizeTall": 8, "min": 0.42, "color": "ink", "valign": "center", "enter": "letters", "at": {"wide": [2, 2, 3, 1], "tall": [1, 2, 3, 1]}},
+        {"is": "text", "slot": "n", "voice": "display", "size": 14, "color": "accent", "valign": "end", "at": {"wide": [2, 3, 1, 1], "tall": [1, 3, 2, 1]}},
+        {"is": "pips", "look": "bars", "color": "soft", "lit": "accent", "align": "start", "at": {"wide": [2, 4, 3, 1], "tall": [1, 4, 3, 1]}}
+      ]
+    },
+    "montage": {
+      "grid": {"wide": {"cols": [0.4, 3, 3, 3], "rows": [0.6, 3.2, 1, 0.6], "gap": 1, "pad": [3, 3.5]}, "tall": {"cols": [0.5, 3, 3], "rows": [0.4, 3.4, 1, 0.4], "gap": 1, "pad": [3, 2.5]}},
+      "items": [
+        {"is": "shape", "shape": "circle", "color": "accent", "scale": 0.5, "at": {"wide": [1, 1, 1, 1], "tall": [1, 1, 1, 1]}},
+        {"is": "shape", "shape": "rect", "color": "accent", "at": {"wide": [1, 3, 1, 1], "tall": [1, 3, 1, 1]}},
+        {"is": "text", "slot": "kicker", "voice": "label", "size": 1.8, "min": 0.8, "color": "ink", "at": {"wide": [2, 1, 3, 1], "tall": [2, 1, 2, 1]}},
+        {"is": "photos", "arrange": "grid", "frame": "corners", "color": "soft", "tone": "warm", "enter": "fade", "at": {"wide": [2, 2, 3, 1], "tall": [1, 2, 3, 1]}},
+        {"is": "text", "slot": "title", "voice": "display", "size": 4.4, "min": 0.45, "color": "onSurface", "enter": "left", "box": {"fill": "surface", "pad": 1.8, "stretch": true}, "at": {"wide": [2, 3, 2, 1], "tall": [2, 3, 2, 1]}}
+      ]
+    },
+    "voice": {
+      "grid": {"wide": {"cols": [0.4, 3, 3, 3], "rows": [0.6, 2.4, 0.9, 0.8, 0.5], "gap": 1, "pad": [2.5, 3]}, "tall": {"cols": [0.5, 3, 3], "rows": [0.4, 2.6, 0.8, 0.7, 0.3], "gap": 1, "pad": [2.5, 2.5]}},
+      "items": [
+        {"is": "photo", "frame": "corners", "fit": "cover", "color": "ink", "tone": "warm", "enter": "fade", "at": {"wide": [1, 1, 4, 5], "tall": [1, 1, 3, 5]}},
+        {"is": "shape", "shape": "circle", "color": "accent", "scale": 0.5, "at": {"wide": [1, 1, 1, 1], "tall": [1, 1, 1, 1]}},
+        {"is": "shape", "only": "photo", "shape": "rect", "color": "surface", "at": {"wide": [2, 3, 2, 2], "tall": [2, 3, 2, 2]}},
+        {"is": "shape", "only": "photo", "shape": "rect", "color": "accent", "at": {"wide": [1, 3, 1, 2], "tall": [1, 3, 1, 2]}},
+        {"is": "text", "slot": "count", "voice": "label", "size": 1.8, "color": "ink", "align": "end", "box": {"fill": "bg", "pad": 0.6}, "at": {"wide": [4, 1, 1, 1], "tall": [3, 1, 1, 1]}},
+        {"is": "text", "only": "photo", "slot": "who", "voice": "display", "size": 5, "min": 0.5, "color": "onSurface", "valign": "end", "at": {"wide": [2, 3, 2, 1], "tall": [2, 3, 2, 1]}, "box": {"fill": "surface", "pad": 0.4}},
+        {"is": "wave", "only": "photo", "look": "bars", "color": "accent2", "lit": "accent", "at": {"wide": [2, 4, 2, 1], "tall": [2, 4, 2, 1]}},
+        {"is": "text", "only": "noPhoto", "slot": "who", "voice": "display", "size": 12, "sizeTall": 7, "min": 0.4, "color": "ink", "align": "center", "enter": "letters", "at": {"wide": [2, 2, 3, 1], "tall": [1, 2, 3, 1]}},
+        {"is": "wave", "only": "noPhoto", "look": "bars", "color": "soft", "lit": "accent", "at": {"wide": [2, 3, 3, 2], "tall": [1, 3, 3, 2]}},
+        {"is": "pips", "look": "bars", "color": "soft", "lit": "accent", "align": "start", "at": {"wide": [4, 5, 1, 1], "tall": [3, 5, 1, 1]}}
+      ]
+    },
+    "letter": {
+      "grid": {"wide": {"cols": [0.4, 1.4, 6, 1.6], "rows": [0.6, 5], "gap": 1, "pad": [3, 3.5]}, "tall": {"cols": [0.5, 6], "rows": [0.4, 6], "gap": 1, "pad": [3, 2.5]}},
+      "items": [
+        {"is": "shape", "shape": "circle", "color": "accent", "scale": 0.5, "at": {"wide": [1, 1, 1, 1], "tall": [1, 1, 1, 1]}},
+        {"is": "letter", "voice": "body", "size": 2.1, "color": "ink", "enter": "fade", "sheet": {"fill": "bg", "pad": 3, "border": {"color": "soft", "width": 0.12}}, "at": {"wide": [3, 2, 1, 1], "tall": [1, 2, 2, 1]}}
+      ]
+    },
+    "wish": {
+      "grid": {"wide": {"cols": [0.4, 3, 3, 3], "rows": [0.6, 2.2, 1.6, 0.6], "gap": 1, "pad": [3, 3.5]}, "tall": {"cols": [0.5, 3, 3], "rows": [0.4, 1.6, 0.5, 3, 0.4], "gap": 1, "pad": [3, 2.5]}},
+      "items": [
+        {"is": "shape", "shape": "circle", "color": "accent", "scale": 0.5, "at": {"wide": [1, 1, 1, 1], "tall": [1, 1, 1, 1]}},
+        {"is": "text", "slot": "title", "voice": "display", "size": 7, "sizeTall": 5.5, "min": 0.4, "color": "ink", "align": "start", "valign": "end", "enter": "letters", "at": {"wide": [2, 2, 2, 1], "tall": [1, 2, 3, 1]}},
+        {"is": "text", "slot": "body", "voice": "body", "size": 2.2, "color": "onSurface", "align": "start", "valign": "start", "box": {"fill": "surface", "pad": 0.9}, "at": {"wide": [2, 3, 2, 1], "tall": [1, 3, 3, 1]}},
+        {"is": "ending", "button": {"voice": "label", "color": "onAccent", "box": {"fill": "accent", "pad": 1.3, "radius": 0}}, "at": {"wide": [4, 2, 1, 2], "tall": [1, 4, 3, 1]}}
+      ]
+    },
+    "reveal": {
+      "grid": {"wide": {"cols": [0.4, 3, 3, 3], "rows": [0.6, 3.8, 0.6], "gap": 1, "pad": [3, 3.5]}, "tall": {"cols": [0.5, 3, 3], "rows": [0.4, 4, 0.4], "gap": 1, "pad": [3, 2.5]}},
+      "items": [
+        {"is": "shape", "shape": "circle", "color": "accent", "scale": 0.5, "at": {"wide": [1, 1, 1, 1], "tall": [1, 1, 1, 1]}},
+        {"is": "shape", "shape": "rule", "color": "soft", "weight": 0.3, "at": {"wide": [2, 3, 3, 1], "tall": [1, 3, 3, 1]}},
+        {"is": "text", "slot": "pick", "voice": "label", "size": 1.8, "color": "onAccent", "box": {"fill": "accent", "pad": 0.7}, "at": {"wide": [2, 1, 3, 1], "tall": [2, 1, 2, 1]}},
+        {"is": "text", "slot": "words", "voice": "display", "size": 9, "sizeTall": 6, "min": 0.4, "color": "ink", "align": "center", "enter": "letters", "at": {"wide": [2, 2, 3, 1], "tall": [1, 2, 3, 1]}}
+      ]
+    },
+    "credits": {
+      "grid": {"wide": {"cols": [0.4, 3, 3, 3], "rows": [0.6, 3.2, 1.1, 0.6], "gap": 1, "pad": [3, 3.5]}, "tall": {"cols": [0.5, 3, 3], "rows": [0.4, 3, 1.3, 0.4], "gap": 1, "pad": [3, 2.5]}},
+      "items": [
+        {"is": "shape", "shape": "circle", "color": "accent", "scale": 0.5, "at": {"wide": [1, 1, 1, 1], "tall": [1, 1, 1, 1]}},
+        {"is": "shape", "shape": "rect", "color": "accent", "at": {"wide": [1, 3, 1, 1], "tall": [1, 3, 1, 1]}},
+        {"is": "credits", "look": "roll", "voice": "body", "size": 2.2, "color": "ink", "roleColor": "soft", "at": {"wide": [2, 2, 3, 1], "tall": [1, 2, 3, 1]}},
+        {"is": "group", "gap": 0.8, "align": "start", "valign": "center", "box": {"fill": "surface", "pad": 1.8, "stretch": true}, "at": {"wide": [2, 3, 2, 1], "tall": [2, 3, 2, 1]}, "lines": [
+          {"slot": "last", "voice": "display", "size": 3.6, "min": 0.5, "color": "onSurface"},
+          {"slot": "note", "voice": "label", "size": 1.5, "color": "onSurface"}
+        ] }
+      ]
+    }
+  }
+}

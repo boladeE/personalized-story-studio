@@ -46,6 +46,7 @@ node scripts/distinct.mjs public/templates/<id>.json            # its layout is 
 The gate draws every page on a film with very little to say and one with a great deal (a 17-letter name, a seven-line list, long sentences), and fails a template when:
 
 - words do not fit their area even at their smallest, or run off the page;
+- a word had to be broken in two to fit (a long name cut mid-word);
 - words from different items lie over each other;
 - words lie on a photo with nothing behind them (give them a `box`);
 - words have less than 4.5:1 contrast with what is behind them (3:1 for large type), in **any** palette, including after the palette is turned toward a film's own colours;
@@ -77,6 +78,15 @@ Vary these, in roughly this order of how much they change what a viewer sees:
 5. **Motion**: how pages cut and how things arrive.
 
 A template has one idea. Do not mix every frame and every shape into one design.
+
+## Things that help
+
+- `sizeTall` on words and lists gives a different size on a phone, for when one `size` cannot serve both shapes.
+- A list has `valign`: `start` makes it grow downward from the top of its area as lines arrive.
+- `mark: "glow"` lights words in their own colour (a sign on a dark ground).
+- A shape has `anchor` (`top-left`, `bottom`, `right`…) to sit in a corner or along an edge of its area, `scale` from 0.02 to 2.5, and there is a `vrule` (vertical line) beside `rule`.
+- A shape may be turned any amount (`rotate` from -180 to 180); everything else from -8 to 8.
+- Words on a shape are measured against the shape. They do not need a `box` of their own, but they do need contrast with the shape's colour in every palette.
 
 ## The file
 

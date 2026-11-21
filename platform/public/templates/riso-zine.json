@@ -1,0 +1,1809 @@
+{
+  "id": "riso-zine",
+  "name": "Riso zine",
+  "idea": "A home-printed two-ink zine about one person: halftone paper, chunky rounded letters set askew, and a second ink that never quite lines up with the first.",
+  "tags": [
+    "playful",
+    "handmade",
+    "retro",
+    "bold"
+  ],
+  "palettes": [
+    {
+      "bg": "#f3eee3",
+      "surface": "#2537a8",
+      "ink": "#2537a8",
+      "soft": "#48508a",
+      "accent": "#e8368a",
+      "accent2": "#f6a9cb",
+      "onSurface": "#f3eee3",
+      "onAccent": "#140d30"
+    },
+    {
+      "bg": "#f2efe6",
+      "surface": "#0f6e6a",
+      "ink": "#0f6e6a",
+      "soft": "#355a57",
+      "accent": "#e8521f",
+      "accent2": "#f8bb9c",
+      "onSurface": "#f2efe6",
+      "onAccent": "#1a0f08"
+    },
+    {
+      "bg": "#22214c",
+      "surface": "#ffd84d",
+      "ink": "#ffd84d",
+      "soft": "#d8d2f0",
+      "accent": "#ff6fb5",
+      "accent2": "#5b3d8f",
+      "onSurface": "#22214c",
+      "onAccent": "#22214c"
+    }
+  ],
+  "tint": true,
+  "voices": {
+    "display": {
+      "font": "fredoka",
+      "face": "600",
+      "lead": 0.98,
+      "track": -0.01
+    },
+    "body": {
+      "font": "rubik",
+      "face": "500",
+      "lead": 1.38
+    },
+    "label": {
+      "font": "rubik",
+      "face": "800",
+      "upper": true,
+      "track": 0.1
+    }
+  },
+  "ground": {
+    "fill": "bg",
+    "texture": "halftone",
+    "ink": "accent2",
+    "strength": 0.4
+  },
+  "motion": {
+    "cut": "cut",
+    "pace": "quick"
+  },
+  "pages": {
+    "cover": {
+      "grid": {
+        "wide": {
+          "cols": [
+            2,
+            0.4,
+            5,
+            0.4,
+            2
+          ],
+          "rows": [
+            0.8,
+            0.4,
+            4.4,
+            0.4,
+            0.8
+          ],
+          "gap": 1.2,
+          "pad": [
+            5,
+            6
+          ]
+        },
+        "tall": {
+          "cols": [
+            0.3,
+            4,
+            0.3
+          ],
+          "rows": [
+            1,
+            0.3,
+            2.6,
+            0.3,
+            1.2,
+            0.8
+          ],
+          "gap": 1,
+          "pad": [
+            6,
+            5
+          ]
+        }
+      },
+      "items": [
+        {
+          "is": "shape",
+          "shape": "circle",
+          "color": "accent2",
+          "at": {
+            "wide": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "tall": [
+              1,
+              2,
+              2,
+              2
+            ]
+          },
+          "scale": 1.12
+        },
+        {
+          "is": "shape",
+          "shape": "ring",
+          "color": "accent",
+          "weight": 0.5,
+          "at": {
+            "wide": [
+              3,
+              3,
+              2,
+              2
+            ],
+            "tall": [
+              2,
+              3,
+              2,
+              2
+            ]
+          },
+          "scale": 1.12
+        },
+        {
+          "is": "text",
+          "slot": "occasion",
+          "voice": "label",
+          "size": 1.7,
+          "color": "onSurface",
+          "align": "center",
+          "valign": "end",
+          "rotate": -3,
+          "enter": "pop",
+          "box": {
+            "fill": "surface",
+            "pad": 1.2,
+            "radius": 1,
+            "shadow": "hard",
+            "shadowColor": "accent"
+          },
+          "at": {
+            "wide": [
+              1,
+              1,
+              5,
+              1
+            ],
+            "tall": [
+              1,
+              1,
+              3,
+              1
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "recipient",
+          "voice": "display",
+          "size": 16,
+          "min": 0.4,
+          "color": "ink",
+          "align": "center",
+          "rotate": -2,
+          "enter": "pop",
+          "at": {
+            "wide": [
+              1,
+              2,
+              5,
+              3
+            ],
+            "tall": [
+              1,
+              2,
+              3,
+              3
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "sender",
+          "voice": "body",
+          "size": 2.4,
+          "color": "soft",
+          "align": "start",
+          "valign": "center",
+          "rotate": 2,
+          "at": {
+            "wide": [
+              1,
+              5,
+              2,
+              1
+            ],
+            "tall": [
+              1,
+              5,
+              3,
+              1
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "hint",
+          "voice": "label",
+          "size": 1.7,
+          "color": "onSurface",
+          "align": "end",
+          "rotate": 3,
+          "enter": "pop",
+          "box": {
+            "fill": "surface",
+            "pad": 1.4,
+            "radius": 99,
+            "shadow": "hard",
+            "shadowColor": "accent"
+          },
+          "at": {
+            "wide": [
+              4,
+              5,
+              2,
+              1
+            ],
+            "tall": [
+              1,
+              6,
+              3,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    "name": {
+      "grid": {
+        "wide": {
+          "cols": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "rows": [
+            1,
+            2.2,
+            1.6
+          ],
+          "gap": 1.2,
+          "pad": [
+            5,
+            6
+          ]
+        },
+        "tall": {
+          "cols": [
+            1
+          ],
+          "rows": [
+            0.8,
+            2.6,
+            2.2
+          ],
+          "gap": 1.5,
+          "pad": [
+            6,
+            5
+          ]
+        }
+      },
+      "items": [
+        {
+          "is": "shape",
+          "shape": "dots",
+          "color": "accent",
+          "scale": 1,
+          "at": {
+            "wide": [
+              4,
+              1,
+              3,
+              3
+            ],
+            "tall": [
+              1,
+              2,
+              1,
+              2
+            ]
+          },
+          "opacity": 0.7
+        },
+        {
+          "is": "text",
+          "slot": "kicker",
+          "voice": "label",
+          "size": 1.6,
+          "color": "onAccent",
+          "valign": "end",
+          "rotate": -3,
+          "enter": "pop",
+          "box": {
+            "fill": "accent",
+            "pad": 1.1,
+            "radius": 1,
+            "shadow": "hard",
+            "shadowColor": "surface"
+          },
+          "at": {
+            "wide": [
+              1,
+              1,
+              4,
+              1
+            ],
+            "tall": [
+              1,
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "name",
+          "voice": "display",
+          "size": 16,
+          "min": 0.4,
+          "color": "ink",
+          "rotate": -2,
+          "enter": "left",
+          "at": {
+            "wide": [
+              1,
+              2,
+              6,
+              1
+            ],
+            "tall": [
+              1,
+              2,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "is": "group",
+          "gap": 1,
+          "valign": "start",
+          "rotate": 1.5,
+          "enter": "pop",
+          "box": {
+            "fill": "bg",
+            "pad": 2,
+            "radius": 2,
+            "border": {
+              "color": "ink",
+              "width": 0.25
+            },
+            "shadow": "hard",
+            "shadowColor": "accent"
+          },
+          "at": {
+            "wide": [
+              3,
+              3,
+              4,
+              1
+            ],
+            "tall": [
+              1,
+              3,
+              1,
+              1
+            ]
+          },
+          "lines": [
+            {
+              "slot": "sub",
+              "voice": "display",
+              "size": 4.6,
+              "min": 0.5,
+              "color": "ink"
+            },
+            {
+              "slot": "body",
+              "voice": "body",
+              "size": 2.1,
+              "color": "soft"
+            }
+          ]
+        }
+      ]
+    },
+    "card": {
+      "grid": {
+        "wide": {
+          "cols": [
+            0.5,
+            4,
+            0.5,
+            1.6,
+            8
+          ],
+          "rows": [
+            0.5,
+            4.5,
+            0.5
+          ],
+          "gap": 0,
+          "pad": [
+            5,
+            6
+          ]
+        },
+        "tall": {
+          "cols": [
+            0.5,
+            4,
+            0.5
+          ],
+          "rows": [
+            0.4,
+            3.2,
+            0.4,
+            0.5,
+            3.6
+          ],
+          "gap": 0,
+          "pad": [
+            6,
+            5
+          ]
+        }
+      },
+      "items": [
+        {
+          "is": "shape",
+          "shape": "circle",
+          "color": "accent",
+          "at": {
+            "wide": [
+              1,
+              1,
+              2,
+              2
+            ],
+            "tall": [
+              1,
+              1,
+              2,
+              2
+            ]
+          }
+        },
+        {
+          "is": "shape",
+          "shape": "ring",
+          "color": "ink",
+          "weight": 0.5,
+          "at": {
+            "wide": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "tall": [
+              2,
+              2,
+              2,
+              2
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "number",
+          "voice": "label",
+          "size": 2.6,
+          "color": "onSurface",
+          "align": "center",
+          "rotate": -5,
+          "enter": "pop",
+          "box": {
+            "fill": "surface",
+            "pad": 1.3,
+            "radius": 1,
+            "shadow": "hard",
+            "shadowColor": "accent2"
+          },
+          "at": {
+            "wide": [
+              2,
+              2,
+              1,
+              1
+            ],
+            "tall": [
+              2,
+              2,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "is": "group",
+          "gap": 1.8,
+          "valign": "center",
+          "rotate": -2,
+          "enter": "left",
+          "at": {
+            "wide": [
+              5,
+              1,
+              1,
+              3
+            ],
+            "tall": [
+              1,
+              5,
+              3,
+              1
+            ]
+          },
+          "lines": [
+            {
+              "slot": "title",
+              "voice": "display",
+              "size": 10,
+              "min": 0.4,
+              "color": "ink"
+            },
+            {
+              "slot": "sub",
+              "voice": "body",
+              "size": 2.3,
+              "color": "soft"
+            }
+          ]
+        }
+      ]
+    },
+    "line": {
+      "grid": {
+        "wide": {
+          "cols": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "rows": [
+            1,
+            3,
+            1.2
+          ],
+          "gap": 1.2,
+          "pad": [
+            5,
+            6
+          ]
+        },
+        "tall": {
+          "cols": [
+            1,
+            1
+          ],
+          "rows": [
+            1,
+            4,
+            1.6
+          ],
+          "gap": 1.5,
+          "pad": [
+            6,
+            5
+          ]
+        }
+      },
+      "items": [
+        {
+          "is": "shape",
+          "shape": "ring",
+          "color": "accent",
+          "weight": 0.6,
+          "scale": 0.9,
+          "at": {
+            "wide": [
+              6,
+              1,
+              1,
+              2
+            ],
+            "tall": [
+              2,
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "kicker",
+          "voice": "label",
+          "size": 1.6,
+          "color": "onAccent",
+          "valign": "end",
+          "rotate": -3,
+          "enter": "pop",
+          "box": {
+            "fill": "accent",
+            "pad": 1.1,
+            "radius": 1,
+            "shadow": "hard",
+            "shadowColor": "surface"
+          },
+          "at": {
+            "wide": [
+              1,
+              1,
+              3,
+              1
+            ],
+            "tall": [
+              1,
+              1,
+              2,
+              1
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "title",
+          "voice": "display",
+          "size": 10,
+          "min": 0.4,
+          "color": "ink",
+          "rotate": -2,
+          "enter": "left",
+          "at": {
+            "wide": [
+              1,
+              2,
+              5,
+              1
+            ],
+            "tall": [
+              1,
+              2,
+              2,
+              1
+            ]
+          },
+          "mark": "highlight",
+          "markColor": "accent2"
+        },
+        {
+          "is": "text",
+          "slot": "body",
+          "voice": "body",
+          "size": 2.3,
+          "color": "soft",
+          "valign": "start",
+          "rotate": 1.5,
+          "at": {
+            "wide": [
+              3,
+              3,
+              4,
+              1
+            ],
+            "tall": [
+              1,
+              3,
+              2,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    "photo": {
+      "grid": {
+        "wide": {
+          "cols": [
+            0.6,
+            7,
+            0.6,
+            1,
+            7
+          ],
+          "rows": [
+            0.6,
+            6,
+            0.6
+          ],
+          "gap": 0,
+          "pad": [
+            5,
+            5
+          ]
+        },
+        "tall": {
+          "cols": [
+            0.5,
+            6,
+            0.5
+          ],
+          "rows": [
+            0.4,
+            4.4,
+            0.4,
+            0.5,
+            4
+          ],
+          "gap": 0,
+          "pad": [
+            6,
+            5
+          ]
+        }
+      },
+      "items": [
+        {
+          "is": "shape",
+          "shape": "rect",
+          "color": "accent",
+          "at": {
+            "wide": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "tall": [
+              2,
+              2,
+              2,
+              2
+            ]
+          }
+        },
+        {
+          "is": "photo",
+          "frame": "round",
+          "fit": "cover",
+          "tone": "mono",
+          "enter": "drop",
+          "at": {
+            "wide": [
+              1,
+              1,
+              2,
+              2
+            ],
+            "tall": [
+              1,
+              1,
+              2,
+              2
+            ]
+          }
+        },
+        {
+          "is": "group",
+          "gap": 1.5,
+          "valign": "center",
+          "rotate": -2,
+          "enter": "right",
+          "at": {
+            "wide": [
+              5,
+              1,
+              1,
+              3
+            ],
+            "tall": [
+              1,
+              5,
+              3,
+              1
+            ]
+          },
+          "lines": [
+            {
+              "slot": "kicker",
+              "voice": "label",
+              "size": 1.5,
+              "color": "onAccent",
+              "box": {
+                "fill": "accent",
+                "pad": 1
+              }
+            },
+            {
+              "slot": "title",
+              "voice": "display",
+              "size": 7,
+              "min": 0.45,
+              "color": "ink"
+            },
+            {
+              "slot": "body",
+              "voice": "body",
+              "size": 2.1,
+              "color": "soft"
+            }
+          ]
+        }
+      ]
+    },
+    "item": {
+      "grid": {
+        "wide": {
+          "cols": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "rows": [
+            0.8,
+            3,
+            0.7
+          ],
+          "gap": 1.5,
+          "pad": [
+            5,
+            6
+          ]
+        },
+        "tall": {
+          "cols": [
+            1
+          ],
+          "rows": [
+            1.6,
+            0.5,
+            3.2,
+            0.4
+          ],
+          "gap": 1.5,
+          "pad": [
+            6,
+            5
+          ]
+        }
+      },
+      "items": [
+        {
+          "is": "shape",
+          "shape": "circle",
+          "color": "accent2",
+          "scale": 0.95,
+          "at": {
+            "wide": [
+              1,
+              1,
+              2,
+              3
+            ],
+            "tall": [
+              1,
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "n",
+          "voice": "display",
+          "size": 20,
+          "min": 0.6,
+          "color": "ink",
+          "align": "center",
+          "rotate": -4,
+          "enter": "pop",
+          "at": {
+            "wide": [
+              1,
+              1,
+              2,
+              3
+            ],
+            "tall": [
+              1,
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "label",
+          "voice": "label",
+          "size": 1.6,
+          "color": "soft",
+          "valign": "end",
+          "at": {
+            "wide": [
+              4,
+              1,
+              3,
+              1
+            ],
+            "tall": [
+              1,
+              2,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "text",
+          "voice": "display",
+          "size": 6.4,
+          "min": 0.4,
+          "color": "onSurface",
+          "rotate": -2,
+          "enter": "pop",
+          "box": {
+            "fill": "surface",
+            "pad": 3,
+            "radius": 2.4,
+            "shadow": "hard",
+            "shadowColor": "accent"
+          },
+          "at": {
+            "wide": [
+              3,
+              2,
+              4,
+              1
+            ],
+            "tall": [
+              1,
+              3,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "is": "pips",
+          "look": "diamonds",
+          "color": "soft",
+          "lit": "accent",
+          "align": "start",
+          "at": {
+            "wide": [
+              3,
+              3,
+              4,
+              1
+            ],
+            "tall": [
+              1,
+              4,
+              1,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    "montage": {
+      "grid": {
+        "wide": {
+          "cols": [
+            1,
+            1,
+            1
+          ],
+          "rows": [
+            3,
+            1
+          ],
+          "gap": 1,
+          "pad": [
+            4,
+            6
+          ]
+        },
+        "tall": {
+          "cols": [
+            1
+          ],
+          "rows": [
+            3.6,
+            1
+          ],
+          "gap": 1,
+          "pad": [
+            6,
+            4
+          ]
+        }
+      },
+      "items": [
+        {
+          "is": "photos",
+          "arrange": "fan",
+          "frame": "round",
+          "tone": "mono",
+          "enter": "drop",
+          "at": {
+            "wide": [
+              1,
+              1,
+              3,
+              2
+            ],
+            "tall": [
+              1,
+              1,
+              1,
+              2
+            ]
+          }
+        },
+        {
+          "is": "group",
+          "gap": 1,
+          "valign": "center",
+          "rotate": -4,
+          "enter": "pop",
+          "box": {
+            "fill": "accent",
+            "pad": 2,
+            "radius": 2,
+            "shadow": "hard",
+            "shadowColor": "surface"
+          },
+          "at": {
+            "wide": [
+              1,
+              2,
+              2,
+              1
+            ],
+            "tall": [
+              1,
+              2,
+              1,
+              1
+            ]
+          },
+          "lines": [
+            {
+              "slot": "kicker",
+              "voice": "label",
+              "size": 1.5,
+              "color": "onAccent"
+            },
+            {
+              "slot": "title",
+              "voice": "display",
+              "size": 5,
+              "min": 0.45,
+              "color": "onAccent"
+            }
+          ]
+        }
+      ]
+    },
+    "voice": {
+      "grid": {
+        "wide": {
+          "cols": [
+            0.5,
+            5,
+            0.5,
+            1,
+            7
+          ],
+          "rows": [
+            0.5,
+            3.4,
+            0.5,
+            1.2,
+            0.6
+          ],
+          "gap": 0,
+          "pad": [
+            5,
+            6
+          ]
+        },
+        "tall": {
+          "cols": [
+            0.5,
+            5,
+            0.5
+          ],
+          "rows": [
+            0.4,
+            3.6,
+            0.4,
+            1.4,
+            1,
+            0.4
+          ],
+          "gap": 0,
+          "pad": [
+            6,
+            5
+          ]
+        }
+      },
+      "items": [
+        {
+          "is": "shape",
+          "only": "photo",
+          "shape": "rect",
+          "color": "accent",
+          "at": {
+            "wide": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "tall": [
+              2,
+              2,
+              2,
+              2
+            ]
+          }
+        },
+        {
+          "is": "photo",
+          "frame": "round",
+          "fit": "cover",
+          "tone": "mono",
+          "enter": "drop",
+          "at": {
+            "wide": [
+              1,
+              1,
+              2,
+              2
+            ],
+            "tall": [
+              1,
+              1,
+              2,
+              2
+            ]
+          }
+        },
+        {
+          "is": "shape",
+          "only": "noPhoto",
+          "shape": "circle",
+          "color": "accent2",
+          "scale": 0.9,
+          "at": {
+            "wide": [
+              4,
+              1,
+              2,
+              4
+            ],
+            "tall": [
+              1,
+              2,
+              3,
+              3
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "only": "photo",
+          "slot": "who",
+          "voice": "display",
+          "size": 9,
+          "min": 0.4,
+          "color": "ink",
+          "valign": "end",
+          "rotate": -2,
+          "enter": "right",
+          "at": {
+            "wide": [
+              5,
+              1,
+              1,
+              2
+            ],
+            "tall": [
+              1,
+              4,
+              3,
+              1
+            ]
+          }
+        },
+        {
+          "is": "wave",
+          "only": "photo",
+          "look": "mirror",
+          "color": "soft",
+          "lit": "accent",
+          "at": {
+            "wide": [
+              5,
+              3,
+              1,
+              2
+            ],
+            "tall": [
+              1,
+              5,
+              3,
+              1
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "only": "noPhoto",
+          "slot": "who",
+          "voice": "display",
+          "size": 14,
+          "min": 0.4,
+          "color": "ink",
+          "valign": "center",
+          "rotate": -3,
+          "enter": "pop",
+          "at": {
+            "wide": [
+              1,
+              1,
+              5,
+              2
+            ],
+            "tall": [
+              1,
+              2,
+              3,
+              3
+            ]
+          }
+        },
+        {
+          "is": "wave",
+          "only": "noPhoto",
+          "look": "mirror",
+          "color": "soft",
+          "lit": "accent",
+          "at": {
+            "wide": [
+              1,
+              3,
+              5,
+              2
+            ],
+            "tall": [
+              1,
+              5,
+              3,
+              1
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "count",
+          "voice": "label",
+          "size": 1.5,
+          "color": "onSurface",
+          "rotate": -4,
+          "box": {
+            "fill": "surface",
+            "pad": 1,
+            "radius": 1,
+            "shadow": "hard",
+            "shadowColor": "accent"
+          },
+          "at": {
+            "wide": [
+              1,
+              5,
+              5,
+              1
+            ],
+            "tall": [
+              1,
+              6,
+              3,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    "letter": {
+      "grid": {
+        "wide": {
+          "cols": [
+            1.4,
+            4,
+            1
+          ],
+          "rows": [
+            1
+          ],
+          "gap": 0,
+          "pad": [
+            5,
+            5
+          ]
+        },
+        "tall": {
+          "cols": [
+            1
+          ],
+          "rows": [
+            1
+          ],
+          "pad": [
+            6,
+            5
+          ]
+        }
+      },
+      "items": [
+        {
+          "is": "shape",
+          "shape": "dots",
+          "color": "accent",
+          "opacity": 0.7,
+          "at": {
+            "wide": [
+              1,
+              1,
+              2,
+              1
+            ],
+            "tall": [
+              1,
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "is": "letter",
+          "voice": "body",
+          "size": 2.1,
+          "color": "onSurface",
+          "rotate": 1,
+          "enter": "rise",
+          "sheet": {
+            "fill": "surface",
+            "pad": 3.8,
+            "radius": 2,
+            "shadow": "hard",
+            "shadowColor": "accent"
+          },
+          "at": {
+            "wide": [
+              2,
+              1,
+              1,
+              1
+            ],
+            "tall": [
+              1,
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    "wish": {
+      "grid": {
+        "wide": {
+          "cols": [
+            1.2,
+            1
+          ],
+          "rows": [
+            1
+          ],
+          "gap": 3,
+          "pad": [
+            6,
+            7
+          ]
+        },
+        "tall": {
+          "cols": [
+            1
+          ],
+          "rows": [
+            1,
+            1.3
+          ],
+          "gap": 2,
+          "pad": [
+            7,
+            5
+          ]
+        }
+      },
+      "items": [
+        {
+          "is": "shape",
+          "shape": "circle",
+          "color": "accent2",
+          "scale": 1.05,
+          "at": {
+            "wide": [
+              2,
+              1,
+              1,
+              1
+            ],
+            "tall": [
+              1,
+              2,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "is": "group",
+          "gap": 1.6,
+          "valign": "center",
+          "rotate": -2,
+          "enter": "left",
+          "at": {
+            "wide": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "tall": [
+              1,
+              1,
+              1,
+              1
+            ]
+          },
+          "lines": [
+            {
+              "slot": "title",
+              "voice": "display",
+              "size": 8,
+              "min": 0.4,
+              "color": "ink",
+              "mark": "highlight",
+              "markColor": "accent2"
+            },
+            {
+              "slot": "body",
+              "voice": "body",
+              "size": 2.3,
+              "color": "soft"
+            }
+          ]
+        },
+        {
+          "is": "ending",
+          "button": {
+            "voice": "label",
+            "color": "onSurface",
+            "box": {
+              "fill": "surface",
+              "pad": 1.5,
+              "radius": 99,
+              "shadow": "hard",
+              "shadowColor": "accent"
+            }
+          },
+          "at": {
+            "wide": [
+              2,
+              1,
+              1,
+              1
+            ],
+            "tall": [
+              1,
+              2,
+              1,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    "reveal": {
+      "grid": {
+        "wide": {
+          "cols": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "rows": [
+            1,
+            3,
+            0.6
+          ],
+          "gap": 1.2,
+          "pad": [
+            5,
+            6
+          ]
+        },
+        "tall": {
+          "cols": [
+            1,
+            1
+          ],
+          "rows": [
+            1,
+            4.5,
+            0.6
+          ],
+          "gap": 1.5,
+          "pad": [
+            6,
+            5
+          ]
+        }
+      },
+      "items": [
+        {
+          "is": "shape",
+          "shape": "circle",
+          "color": "accent2",
+          "scale": 1.0,
+          "at": {
+            "wide": [
+              5,
+              1,
+              2,
+              2
+            ],
+            "tall": [
+              2,
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "is": "shape",
+          "shape": "ring",
+          "color": "ink",
+          "scale": 1.25,
+          "weight": 0.4,
+          "at": {
+            "wide": [
+              6,
+              1,
+              1,
+              2
+            ],
+            "tall": [
+              2,
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "pick",
+          "voice": "label",
+          "size": 1.6,
+          "color": "onSurface",
+          "valign": "end",
+          "rotate": -3,
+          "enter": "pop",
+          "box": {
+            "fill": "surface",
+            "pad": 1.1,
+            "radius": 1,
+            "shadow": "hard",
+            "shadowColor": "accent"
+          },
+          "at": {
+            "wide": [
+              1,
+              1,
+              3,
+              1
+            ],
+            "tall": [
+              1,
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "words",
+          "voice": "display",
+          "size": 10,
+          "min": 0.4,
+          "color": "ink",
+          "rotate": -2,
+          "enter": "words",
+          "mark": "highlight",
+          "markColor": "accent2",
+          "at": {
+            "wide": [
+              1,
+              2,
+              6,
+              1
+            ],
+            "tall": [
+              1,
+              2,
+              2,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    "credits": {
+      "grid": {
+        "wide": {
+          "cols": [
+            1,
+            1.2
+          ],
+          "rows": [
+            1
+          ],
+          "gap": 5,
+          "pad": [
+            6,
+            7
+          ]
+        },
+        "tall": {
+          "cols": [
+            1
+          ],
+          "rows": [
+            1,
+            2
+          ],
+          "gap": 2,
+          "pad": [
+            7,
+            5
+          ]
+        }
+      },
+      "items": [
+        {
+          "is": "shape",
+          "shape": "blob",
+          "color": "accent2",
+          "scale": 1.2,
+          "at": {
+            "wide": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "tall": [
+              1,
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "is": "group",
+          "gap": 1.4,
+          "valign": "center",
+          "rotate": -3,
+          "enter": "pop",
+          "at": {
+            "wide": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "tall": [
+              1,
+              1,
+              1,
+              1
+            ]
+          },
+          "lines": [
+            {
+              "slot": "last",
+              "voice": "display",
+              "size": 6.5,
+              "min": 0.45,
+              "color": "ink"
+            },
+            {
+              "slot": "note",
+              "voice": "label",
+              "size": 1.4,
+              "color": "soft"
+            }
+          ]
+        },
+        {
+          "is": "credits",
+          "look": "stack",
+          "voice": "body",
+          "size": 2.4,
+          "color": "ink",
+          "roleColor": "soft",
+          "at": {
+            "wide": [
+              2,
+              1,
+              1,
+              1
+            ],
+            "tall": [
+              1,
+              2,
+              1,
+              1
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

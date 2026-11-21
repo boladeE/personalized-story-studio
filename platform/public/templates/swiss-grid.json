@@ -1,0 +1,1754 @@
+{
+  "id": "swiss-grid",
+  "name": "Swiss grid",
+  "idea": "An international-style poster: one plain grotesque hung from the left on a strict column grid, one block of strong colour, giant numerals and a great deal of empty space.",
+  "tags": [
+    "modern",
+    "bold",
+    "words",
+    "quiet"
+  ],
+  "palettes": [
+    {
+      "bg": "#f1efe9",
+      "surface": "#141414",
+      "ink": "#121212",
+      "soft": "#4a4842",
+      "accent": "#c3241a",
+      "accent2": "#c9c4b8",
+      "onSurface": "#f1efe9",
+      "onAccent": "#ffffff"
+    },
+    {
+      "bg": "#121315",
+      "surface": "#f1efe9",
+      "ink": "#f3f1ec",
+      "soft": "#a9a59d",
+      "accent": "#ffcc00",
+      "accent2": "#2b2c30",
+      "onSurface": "#121315",
+      "onAccent": "#121315"
+    },
+    {
+      "bg": "#f4f4f1",
+      "surface": "#101010",
+      "ink": "#0f0f10",
+      "soft": "#4c4c4a",
+      "accent": "#1d3fd0",
+      "accent2": "#cfd3dc",
+      "onSurface": "#f4f4f1",
+      "onAccent": "#ffffff"
+    }
+  ],
+  "tint": true,
+  "voices": {
+    "display": {
+      "font": "archivo",
+      "face": "800",
+      "lead": 0.9,
+      "track": -0.035
+    },
+    "body": {
+      "font": "archivo",
+      "face": "400",
+      "lead": 1.38
+    },
+    "label": {
+      "font": "archivo",
+      "face": "800",
+      "upper": true,
+      "track": 0.06
+    }
+  },
+  "ground": {
+    "fill": "bg",
+    "texture": "none"
+  },
+  "motion": {
+    "cut": "cut",
+    "pace": "even"
+  },
+  "pages": {
+    "cover": {
+      "grid": {
+        "wide": {
+          "cols": [
+            0.7,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0.7
+          ],
+          "rows": [
+            0.6,
+            1,
+            1,
+            1,
+            1,
+            0.6
+          ],
+          "gap": 1.2,
+          "pad": [
+            0,
+            0
+          ]
+        },
+        "tall": {
+          "cols": [
+            0.5,
+            1,
+            1,
+            1,
+            1,
+            0.5
+          ],
+          "rows": [
+            0.6,
+            0.5,
+            2.4,
+            0.7,
+            1.7,
+            0.6
+          ],
+          "gap": 1.2,
+          "pad": [
+            0,
+            0
+          ]
+        }
+      },
+      "items": [
+        {
+          "is": "shape",
+          "shape": "rect",
+          "color": "accent",
+          "at": {
+            "wide": [
+              1,
+              1,
+              4,
+              6
+            ],
+            "tall": [
+              1,
+              5,
+              4,
+              2
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "occasion",
+          "voice": "label",
+          "size": 1.7,
+          "color": "onAccent",
+          "valign": "start",
+          "box": {
+            "fill": "accent",
+            "pad": 0.5
+          },
+          "at": {
+            "wide": [
+              2,
+              2,
+              3,
+              1
+            ],
+            "tall": [
+              2,
+              2,
+              4,
+              1
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "recipient",
+          "voice": "display",
+          "size": 15,
+          "min": 0.4,
+          "color": "ink",
+          "valign": "end",
+          "enter": "left",
+          "at": {
+            "wide": [
+              6,
+              2,
+              6,
+              3
+            ],
+            "tall": [
+              2,
+              3,
+              4,
+              1
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "sender",
+          "voice": "body",
+          "size": 2.3,
+          "color": "soft",
+          "valign": "start",
+          "at": {
+            "wide": [
+              6,
+              5,
+              6,
+              1
+            ],
+            "tall": [
+              2,
+              4,
+              4,
+              1
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "hint",
+          "voice": "label",
+          "size": 1.7,
+          "color": "onAccent",
+          "valign": "end",
+          "box": {
+            "fill": "accent",
+            "pad": 0
+          },
+          "at": {
+            "wide": [
+              2,
+              5,
+              3,
+              1
+            ],
+            "tall": [
+              2,
+              5,
+              3,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    "name": {
+      "grid": {
+        "wide": {
+          "cols": [
+            0.7,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0.7
+          ],
+          "rows": [
+            0.6,
+            1,
+            1,
+            1.6,
+            0.6
+          ],
+          "gap": 1.2,
+          "pad": [
+            0,
+            0
+          ]
+        },
+        "tall": {
+          "cols": [
+            0.5,
+            1,
+            1,
+            1,
+            1,
+            0.5
+          ],
+          "rows": [
+            0.6,
+            1.1,
+            2,
+            1.9,
+            0.6
+          ],
+          "gap": 1.2,
+          "pad": [
+            0,
+            0
+          ]
+        }
+      },
+      "items": [
+        {
+          "is": "shape",
+          "shape": "rect",
+          "color": "accent",
+          "at": {
+            "wide": [
+              1,
+              1,
+              4,
+              3
+            ],
+            "tall": [
+              1,
+              1,
+              4,
+              2
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "kicker",
+          "voice": "label",
+          "size": 1.7,
+          "color": "onAccent",
+          "valign": "end",
+          "box": {
+            "fill": "accent",
+            "pad": 0
+          },
+          "at": {
+            "wide": [
+              2,
+              3,
+              3,
+              1
+            ],
+            "tall": [
+              2,
+              2,
+              3,
+              1
+            ]
+          }
+        },
+        {
+          "is": "group",
+          "gap": 1.6,
+          "valign": "start",
+          "enter": "rise",
+          "at": {
+            "wide": [
+              6,
+              2,
+              6,
+              2
+            ],
+            "tall": [
+              2,
+              4,
+              4,
+              1
+            ]
+          },
+          "lines": [
+            {
+              "slot": "sub",
+              "voice": "display",
+              "size": 4.6,
+              "min": 0.5,
+              "color": "ink"
+            },
+            {
+              "slot": "body",
+              "voice": "body",
+              "size": 2.1,
+              "color": "soft"
+            }
+          ]
+        },
+        {
+          "is": "text",
+          "slot": "name",
+          "voice": "display",
+          "size": 15,
+          "min": 0.4,
+          "color": "ink",
+          "valign": "end",
+          "enter": "left",
+          "at": {
+            "wide": [
+              2,
+              4,
+              10,
+              1
+            ],
+            "tall": [
+              2,
+              3,
+              4,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    "card": {
+      "grid": {
+        "wide": {
+          "cols": [
+            0.7,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0.7
+          ],
+          "rows": [
+            0.6,
+            0.9,
+            0.3,
+            1.9,
+            0.8,
+            0.6
+          ],
+          "gap": 1.2,
+          "pad": [
+            0,
+            0
+          ]
+        },
+        "tall": {
+          "cols": [
+            0.5,
+            1,
+            1,
+            1,
+            1,
+            0.5
+          ],
+          "rows": [
+            0.6,
+            0.8,
+            0.3,
+            2.4,
+            1.1,
+            0.6
+          ],
+          "gap": 1.2,
+          "pad": [
+            0,
+            0
+          ]
+        }
+      },
+      "items": [
+        {
+          "is": "shape",
+          "shape": "rect",
+          "color": "accent",
+          "at": {
+            "wide": [
+              1,
+              1,
+              12,
+              2
+            ],
+            "tall": [
+              1,
+              1,
+              6,
+              2
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "number",
+          "voice": "display",
+          "size": 5.5,
+          "min": 0.6,
+          "color": "onAccent",
+          "valign": "end",
+          "enter": "wipe",
+          "box": {
+            "fill": "accent",
+            "pad": 0
+          },
+          "at": {
+            "wide": [
+              2,
+              2,
+              10,
+              1
+            ],
+            "tall": [
+              2,
+              2,
+              4,
+              1
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "title",
+          "voice": "display",
+          "size": 15,
+          "min": 0.4,
+          "color": "ink",
+          "valign": "start",
+          "enter": "left",
+          "at": {
+            "wide": [
+              2,
+              4,
+              10,
+              1
+            ],
+            "tall": [
+              2,
+              4,
+              4,
+              1
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "sub",
+          "voice": "body",
+          "size": 2.3,
+          "color": "soft",
+          "valign": "start",
+          "at": {
+            "wide": [
+              2,
+              5,
+              6,
+              1
+            ],
+            "tall": [
+              2,
+              5,
+              4,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    "line": {
+      "grid": {
+        "wide": {
+          "cols": [
+            0.7,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0.7
+          ],
+          "rows": [
+            0.6,
+            1,
+            1,
+            1,
+            0.6
+          ],
+          "gap": 1.2,
+          "pad": [
+            0,
+            0
+          ]
+        },
+        "tall": {
+          "cols": [
+            0.5,
+            1,
+            1,
+            1,
+            1,
+            0.5
+          ],
+          "rows": [
+            0.6,
+            0.4,
+            2.6,
+            1.2,
+            0.6
+          ],
+          "gap": 1.2,
+          "pad": [
+            0,
+            0
+          ]
+        }
+      },
+      "items": [
+        {
+          "is": "shape",
+          "shape": "rect",
+          "color": "accent",
+          "at": {
+            "wide": [
+              1,
+              1,
+              1,
+              5
+            ],
+            "tall": [
+              1,
+              1,
+              1,
+              5
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "kicker",
+          "voice": "label",
+          "size": 1.6,
+          "color": "ink",
+          "valign": "start",
+          "mark": "rule-above",
+          "markColor": "ink",
+          "at": {
+            "wide": [
+              2,
+              2,
+              2,
+              1
+            ],
+            "tall": [
+              2,
+              2,
+              4,
+              1
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "title",
+          "voice": "display",
+          "size": 8,
+          "min": 0.4,
+          "color": "ink",
+          "valign": "start",
+          "enter": "left",
+          "at": {
+            "wide": [
+              4,
+              2,
+              8,
+              2
+            ],
+            "tall": [
+              2,
+              3,
+              4,
+              1
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "body",
+          "voice": "body",
+          "size": 2.2,
+          "color": "soft",
+          "valign": "start",
+          "at": {
+            "wide": [
+              4,
+              4,
+              6,
+              1
+            ],
+            "tall": [
+              2,
+              4,
+              4,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    "photo": {
+      "grid": {
+        "wide": {
+          "cols": [
+            0.7,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0.7
+          ],
+          "rows": [
+            0.6,
+            1,
+            1,
+            1,
+            0.6
+          ],
+          "gap": 1.2,
+          "pad": [
+            0,
+            0
+          ]
+        },
+        "tall": {
+          "cols": [
+            0.5,
+            1,
+            1,
+            1,
+            1,
+            0.5
+          ],
+          "rows": [
+            2.5,
+            0.2,
+            1.9,
+            0.6
+          ],
+          "gap": 1.2,
+          "pad": [
+            0,
+            0
+          ]
+        }
+      },
+      "items": [
+        {
+          "is": "photo",
+          "frame": "none",
+          "fit": "cover",
+          "enter": "wipe",
+          "at": {
+            "wide": [
+              7,
+              1,
+              6,
+              5
+            ],
+            "tall": [
+              1,
+              1,
+              6,
+              1
+            ]
+          }
+        },
+        {
+          "is": "group",
+          "gap": 1.5,
+          "valign": "start",
+          "enter": "rise",
+          "at": {
+            "wide": [
+              2,
+              2,
+              4,
+              3
+            ],
+            "tall": [
+              2,
+              3,
+              4,
+              1
+            ]
+          },
+          "lines": [
+            {
+              "slot": "kicker",
+              "voice": "label",
+              "size": 1.6,
+              "color": "ink",
+              "mark": "rule-above",
+              "markColor": "accent"
+            },
+            {
+              "slot": "title",
+              "voice": "display",
+              "size": 5.4,
+              "min": 0.45,
+              "color": "ink"
+            },
+            {
+              "slot": "body",
+              "voice": "body",
+              "size": 2,
+              "color": "soft"
+            }
+          ]
+        }
+      ]
+    },
+    "item": {
+      "grid": {
+        "wide": {
+          "cols": [
+            0.7,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0.7
+          ],
+          "rows": [
+            0.6,
+            0.5,
+            2.1,
+            0.5,
+            0.6
+          ],
+          "gap": 1.2,
+          "pad": [
+            0,
+            0
+          ]
+        },
+        "tall": {
+          "cols": [
+            0.5,
+            1,
+            1,
+            1,
+            1,
+            0.5
+          ],
+          "rows": [
+            0.6,
+            0.4,
+            1.3,
+            2.1,
+            0.3,
+            0.6
+          ],
+          "gap": 1.2,
+          "pad": [
+            0,
+            0
+          ]
+        }
+      },
+      "items": [
+        {
+          "is": "text",
+          "slot": "label",
+          "voice": "label",
+          "size": 1.6,
+          "color": "ink",
+          "valign": "start",
+          "mark": "rule-below",
+          "markColor": "ink",
+          "at": {
+            "wide": [
+              2,
+              2,
+              10,
+              1
+            ],
+            "tall": [
+              2,
+              2,
+              4,
+              1
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "n",
+          "voice": "display",
+          "size": 22,
+          "color": "accent",
+          "valign": "end",
+          "enter": "fall",
+          "at": {
+            "wide": [
+              2,
+              3,
+              4,
+              2
+            ],
+            "tall": [
+              2,
+              3,
+              4,
+              1
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "text",
+          "voice": "display",
+          "size": 4.6,
+          "min": 0.45,
+          "color": "ink",
+          "valign": "start",
+          "enter": "left",
+          "at": {
+            "wide": [
+              7,
+              3,
+              5,
+              1
+            ],
+            "tall": [
+              2,
+              4,
+              4,
+              1
+            ]
+          }
+        },
+        {
+          "is": "pips",
+          "look": "squares",
+          "color": "soft",
+          "lit": "accent",
+          "align": "start",
+          "at": {
+            "wide": [
+              7,
+              4,
+              5,
+              1
+            ],
+            "tall": [
+              2,
+              5,
+              4,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    "montage": {
+      "grid": {
+        "wide": {
+          "cols": [
+            0.7,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0.7
+          ],
+          "rows": [
+            0.6,
+            0.9,
+            2.6
+          ],
+          "gap": 1.2,
+          "pad": [
+            0,
+            0
+          ]
+        },
+        "tall": {
+          "cols": [
+            0.5,
+            1,
+            1,
+            1,
+            1,
+            0.5
+          ],
+          "rows": [
+            0.6,
+            1,
+            3.4
+          ],
+          "gap": 1.2,
+          "pad": [
+            0,
+            0
+          ]
+        }
+      },
+      "items": [
+        {
+          "is": "group",
+          "gap": 1.5,
+          "valign": "end",
+          "enter": "rise",
+          "at": {
+            "wide": [
+              2,
+              2,
+              8,
+              1
+            ],
+            "tall": [
+              2,
+              2,
+              4,
+              1
+            ]
+          },
+          "lines": [
+            {
+              "slot": "kicker",
+              "voice": "label",
+              "size": 1.6,
+              "color": "ink",
+              "mark": "rule-above",
+              "markColor": "accent"
+            },
+            {
+              "slot": "title",
+              "voice": "display",
+              "size": 5,
+              "min": 0.45,
+              "color": "ink"
+            }
+          ]
+        },
+        {
+          "is": "photos",
+          "arrange": "mosaic",
+          "frame": "none",
+          "enter": "wipe",
+          "at": {
+            "wide": [
+              1,
+              3,
+              12,
+              1
+            ],
+            "tall": [
+              1,
+              3,
+              6,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    "voice": {
+      "grid": {
+        "wide": {
+          "cols": [
+            0.7,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0.7
+          ],
+          "rows": [
+            0.6,
+            0.3,
+            1.3,
+            0.8,
+            0.3,
+            0.6
+          ],
+          "gap": 1.2,
+          "pad": [
+            0,
+            0
+          ]
+        },
+        "tall": {
+          "cols": [
+            0.5,
+            1,
+            1,
+            1,
+            1,
+            0.5
+          ],
+          "rows": [
+            2,
+            0.25,
+            1,
+            0.55,
+            0.25,
+            0.5
+          ],
+          "gap": 1.2,
+          "pad": [
+            0,
+            0
+          ]
+        }
+      },
+      "items": [
+        {
+          "is": "photo",
+          "frame": "none",
+          "fit": "cover",
+          "enter": "wipe",
+          "at": {
+            "wide": [
+              1,
+              1,
+              5,
+              6
+            ],
+            "tall": [
+              1,
+              1,
+              6,
+              1
+            ]
+          }
+        },
+        {
+          "is": "shape",
+          "shape": "rect",
+          "color": "accent",
+          "only": "noPhoto",
+          "at": {
+            "wide": [
+              1,
+              1,
+              5,
+              6
+            ],
+            "tall": [
+              1,
+              1,
+              6,
+              1
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "count",
+          "voice": "label",
+          "size": 1.6,
+          "color": "ink",
+          "valign": "start",
+          "mark": "rule-above",
+          "markColor": "accent",
+          "at": {
+            "wide": [
+              7,
+              2,
+              5,
+              1
+            ],
+            "tall": [
+              2,
+              2,
+              4,
+              1
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "who",
+          "voice": "display",
+          "size": 8.5,
+          "min": 0.4,
+          "color": "ink",
+          "valign": "end",
+          "enter": "left",
+          "at": {
+            "wide": [
+              7,
+              3,
+              5,
+              1
+            ],
+            "tall": [
+              2,
+              3,
+              4,
+              1
+            ]
+          }
+        },
+        {
+          "is": "wave",
+          "look": "bars",
+          "color": "accent2",
+          "lit": "accent",
+          "at": {
+            "wide": [
+              7,
+              4,
+              5,
+              1
+            ],
+            "tall": [
+              2,
+              4,
+              4,
+              1
+            ]
+          }
+        },
+        {
+          "is": "pips",
+          "look": "squares",
+          "color": "soft",
+          "lit": "accent",
+          "align": "start",
+          "at": {
+            "wide": [
+              7,
+              5,
+              5,
+              1
+            ],
+            "tall": [
+              2,
+              5,
+              4,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    "letter": {
+      "grid": {
+        "wide": {
+          "cols": [
+            0.7,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0.7
+          ],
+          "rows": [
+            0.5,
+            4,
+            0.5
+          ],
+          "gap": 1.2,
+          "pad": [
+            0,
+            0
+          ]
+        },
+        "tall": {
+          "cols": [
+            0.5,
+            1,
+            1,
+            1,
+            1,
+            0.5
+          ],
+          "rows": [
+            0.5,
+            0.15,
+            4.4,
+            0.4
+          ],
+          "gap": 1.2,
+          "pad": [
+            0,
+            0
+          ]
+        }
+      },
+      "items": [
+        {
+          "is": "shape",
+          "shape": "rect",
+          "color": "accent",
+          "at": {
+            "wide": [
+              1,
+              1,
+              3,
+              3
+            ],
+            "tall": [
+              1,
+              1,
+              6,
+              1
+            ]
+          }
+        },
+        {
+          "is": "letter",
+          "voice": "body",
+          "size": 2.05,
+          "color": "ink",
+          "enter": "rise",
+          "at": {
+            "wide": [
+              5,
+              2,
+              6,
+              1
+            ],
+            "tall": [
+              2,
+              3,
+              4,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    "wish": {
+      "grid": {
+        "wide": {
+          "cols": [
+            0.7,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0.7
+          ],
+          "rows": [
+            0.6,
+            1.6,
+            1,
+            0.6
+          ],
+          "gap": 1.2,
+          "pad": [
+            0,
+            0
+          ]
+        },
+        "tall": {
+          "cols": [
+            0.5,
+            1,
+            1,
+            1,
+            1,
+            0.5
+          ],
+          "rows": [
+            0.6,
+            1.8,
+            0.6,
+            1.7,
+            0.6
+          ],
+          "gap": 1.2,
+          "pad": [
+            0,
+            0
+          ]
+        }
+      },
+      "items": [
+        {
+          "is": "shape",
+          "shape": "rect",
+          "color": "accent",
+          "at": {
+            "wide": [
+              1,
+              1,
+              1,
+              4
+            ],
+            "tall": [
+              1,
+              1,
+              1,
+              5
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "title",
+          "voice": "display",
+          "size": 8,
+          "min": 0.4,
+          "color": "ink",
+          "valign": "start",
+          "enter": "left",
+          "at": {
+            "wide": [
+              2,
+              2,
+              6,
+              1
+            ],
+            "tall": [
+              2,
+              2,
+              4,
+              1
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "body",
+          "voice": "body",
+          "size": 2.2,
+          "color": "soft",
+          "valign": "start",
+          "at": {
+            "wide": [
+              2,
+              3,
+              5,
+              1
+            ],
+            "tall": [
+              2,
+              3,
+              4,
+              1
+            ]
+          }
+        },
+        {
+          "is": "ending",
+          "button": {
+            "voice": "label",
+            "color": "onAccent",
+            "box": {
+              "fill": "accent",
+              "pad": 1.5,
+              "radius": 0
+            }
+          },
+          "at": {
+            "wide": [
+              8,
+              2,
+              4,
+              2
+            ],
+            "tall": [
+              2,
+              4,
+              4,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    "reveal": {
+      "ground": {
+        "fill": "accent",
+        "texture": "none"
+      },
+      "grid": {
+        "wide": {
+          "cols": [
+            0.7,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0.7
+          ],
+          "rows": [
+            0.6,
+            0.4,
+            2.4,
+            0.6
+          ],
+          "gap": 1.2,
+          "pad": [
+            0,
+            0
+          ]
+        },
+        "tall": {
+          "cols": [
+            0.5,
+            1,
+            1,
+            1,
+            1,
+            0.5
+          ],
+          "rows": [
+            0.6,
+            0.4,
+            3.4,
+            0.6
+          ],
+          "gap": 1.2,
+          "pad": [
+            0,
+            0
+          ]
+        }
+      },
+      "items": [
+        {
+          "is": "text",
+          "slot": "pick",
+          "voice": "label",
+          "size": 1.7,
+          "color": "onAccent",
+          "valign": "start",
+          "mark": "rule-above",
+          "markColor": "onAccent",
+          "at": {
+            "wide": [
+              2,
+              2,
+              10,
+              1
+            ],
+            "tall": [
+              2,
+              2,
+              4,
+              1
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "words",
+          "voice": "display",
+          "size": 10,
+          "min": 0.4,
+          "color": "onAccent",
+          "valign": "start",
+          "enter": "words",
+          "at": {
+            "wide": [
+              2,
+              3,
+              10,
+              1
+            ],
+            "tall": [
+              2,
+              3,
+              4,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    "credits": {
+      "grid": {
+        "wide": {
+          "cols": [
+            0.7,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0.7
+          ],
+          "rows": [
+            0.6,
+            1.4,
+            0.6,
+            0.6
+          ],
+          "gap": 1.2,
+          "pad": [
+            0,
+            0
+          ]
+        },
+        "tall": {
+          "cols": [
+            0.5,
+            1,
+            1,
+            1,
+            1,
+            0.5
+          ],
+          "rows": [
+            0.6,
+            1,
+            0.3,
+            2.3,
+            0.6
+          ],
+          "gap": 1.2,
+          "pad": [
+            0,
+            0
+          ]
+        }
+      },
+      "items": [
+        {
+          "is": "shape",
+          "shape": "rect",
+          "color": "accent",
+          "at": {
+            "wide": [
+              1,
+              1,
+              1,
+              4
+            ],
+            "tall": [
+              1,
+              1,
+              1,
+              5
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "last",
+          "voice": "display",
+          "size": 6,
+          "min": 0.45,
+          "color": "ink",
+          "valign": "start",
+          "enter": "left",
+          "at": {
+            "wide": [
+              2,
+              2,
+              4,
+              1
+            ],
+            "tall": [
+              2,
+              2,
+              4,
+              1
+            ]
+          }
+        },
+        {
+          "is": "text",
+          "slot": "note",
+          "voice": "label",
+          "size": 1.5,
+          "color": "soft",
+          "valign": "start",
+          "at": {
+            "wide": [
+              2,
+              3,
+              4,
+              1
+            ],
+            "tall": [
+              2,
+              3,
+              4,
+              1
+            ]
+          }
+        },
+        {
+          "is": "credits",
+          "look": "table",
+          "voice": "body",
+          "size": 2.3,
+          "color": "ink",
+          "roleColor": "soft",
+          "at": {
+            "wide": [
+              7,
+              2,
+              5,
+              2
+            ],
+            "tall": [
+              2,
+              4,
+              4,
+              1
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

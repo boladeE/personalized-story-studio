@@ -25,7 +25,14 @@ for (const file of files) {
     await page.addInitScript((t) => (window.__labTemplate = t), template)
     await page.goto(`${base}/lab?size=${size}`)
     await page.waitForFunction(() => window.__labReport?.ready, undefined, { timeout: 30000 })
-    await page.evaluate((z) => (document.querySelector('main').style.zoom = String(z)), zoom)
+    // Shrunk with a transform: `zoom` leaves a template's inner sheet undrawn.
+    await page.evaluate((z) => {
+      const main = document.querySelector('main')
+      main.style.width = `${1500 / z}px`
+      main.style.transformOrigin = '0 0'
+      main.style.transform = `scale(${z})`
+    }, zoom)
+    await page.waitForTimeout(300)
     for (const [i, key] of wanted.entries()) {
       const frame = page.locator(`[data-lab="${key}"]`)
       if (!(await frame.count())) continue

@@ -173,7 +173,8 @@
 /* Fitting shrinks big words more than small ones: nothing is taken below a size that can be read, unless it was set smaller. */
 .tp-words {
   margin: 0;
-  font-size: calc(var(--u) * max(var(--size) * var(--fit, 1), min(var(--size), 1.45)));
+  --sz: var(--size);
+  font-size: calc(var(--u) * max(var(--sz) * var(--fit, 1), min(var(--sz), 1.45)));
   overflow-wrap: break-word;
   text-wrap: balance;
   min-width: 0;
@@ -244,6 +245,10 @@ p.is-stretch {
 .tp-w {
   display: inline-block;
 }
+/* A word arriving a letter at a time is still one word: it does not break between its letters. */
+.tp-wd {
+  white-space: nowrap;
+}
 
 .tp-mark-underline .tp-ink {
   text-decoration: underline;
@@ -278,6 +283,9 @@ p.is-stretch {
 .tp-mark-rule-above[style*='right']::before,
 .tp-mark-rule-below[style*='right']::after {
   margin-left: auto;
+}
+.tp-mark-glow .tp-ink {
+  text-shadow: 0 0 0.18em currentColor, 0 0 0.55em color-mix(in srgb, currentColor 70%, transparent);
 }
 .tp-mark-quotes .tp-ink::before {
   content: '“';
@@ -425,12 +433,11 @@ p.is-stretch {
 .tp-frame-arch .tp-ph {
   border-radius: 999px 999px calc(var(--u) * 0.6) calc(var(--u) * 0.6);
 }
-.tp-frame-circle.is-cover,
-.tp-frame-circle.is-contain {
+.tp-photo.tp-frame-circle {
   width: auto;
   height: auto;
 }
-.tp-frame-circle .tp-ph {
+.tp-photo.tp-frame-circle .tp-ph {
   flex: none;
   width: min(100cqw, 100cqh);
   height: min(100cqw, 100cqh);
@@ -451,8 +458,13 @@ p.is-stretch {
   box-sizing: content-box;
   padding: calc(var(--u) * 1.2);
   background: var(--fr);
-  -webkit-mask: radial-gradient(circle at center, transparent calc(var(--u) * 0.42), #000 calc(var(--u) * 0.46)) calc(var(--u) * -0.75) calc(var(--u) * -0.75) / calc(var(--u) * 1.5) calc(var(--u) * 1.5);
-  mask: radial-gradient(circle at center, transparent calc(var(--u) * 0.42), #000 calc(var(--u) * 0.46)) calc(var(--u) * -0.75) calc(var(--u) * -0.75) / calc(var(--u) * 1.5) calc(var(--u) * 1.5);
+  /* Holes are punched along the edge only: the picture inside is left whole. */
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    radial-gradient(circle at center, transparent calc(var(--u) * 0.42), #000 calc(var(--u) * 0.46)) calc(var(--u) * -0.75) calc(var(--u) * -0.75) / calc(var(--u) * 1.5) calc(var(--u) * 1.5) border-box;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    radial-gradient(circle at center, transparent calc(var(--u) * 0.42), #000 calc(var(--u) * 0.46)) calc(var(--u) * -0.75) calc(var(--u) * -0.75) / calc(var(--u) * 1.5) calc(var(--u) * 1.5) border-box;
 }
 .tp-frame-stamp.is-cover .tp-ph {
   box-sizing: border-box;
@@ -634,6 +646,9 @@ p.is-stretch {
 .tp-shape-rule {
   height: max(1px, calc(var(--u) * var(--sw)));
 }
+.tp-shape-vrule {
+  width: max(1px, calc(var(--u) * var(--sw)));
+}
 .tp-shape-arch {
   border-radius: 999px 999px 0 0;
 }
@@ -719,8 +734,7 @@ p.is-stretch {
   gap: max(2px, calc(var(--u) * 0.7));
 }
 .tp-wave.is-line .tp-bars i {
-  flex: none;
-  width: max(1.5px, calc(var(--u) * 0.16));
+  flex: 0 1 max(1.5px, calc(var(--u) * 0.16));
   border-radius: 0;
 }
 .tp-wave.is-line .tp-bars {
@@ -809,7 +823,8 @@ p.is-stretch {
   margin: 0;
   padding: 0;
   list-style: none;
-  font-size: calc(var(--u) * max(var(--size) * var(--fit, 1), min(var(--size), 1.45)));
+  --sz: var(--size);
+  font-size: calc(var(--u) * max(var(--sz) * var(--fit, 1), min(var(--sz), 1.45)));
   min-width: 0;
 }
 .tp-list.is-stretch {
@@ -1217,6 +1232,16 @@ p.is-stretch {
   filter: saturate(0.7);
 }
 
+/* On the test page a page is measured and photographed at rest: it is not part-way through arriving. */
+.tp-lab .film .shot {
+  animation: none !important;
+  clip-path: none !important;
+}
+/* While a page is measured, its shapes can be found under a point like anything else painted there. */
+.tp-measuring .tp-is-shape {
+  pointer-events: auto;
+}
+
 /* A still shows a page as it rests: everything arrived. */
 .film.still .tp *,
 .tp-lab .tp * {
@@ -1241,5 +1266,9 @@ p.is-stretch {
   }
   .tp-cell {
     grid-area: var(--at);
+  }
+  .tp-words,
+  .tp-list {
+    --sz: var(--size-t, var(--size));
   }
 }

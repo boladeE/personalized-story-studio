@@ -1,0 +1,1666 @@
+{
+ "id": "recipe-cards",
+ "name": "Recipe cards",
+ "idea": "A box of index cards from the kitchen: ruled cards on a gingham table, a coloured tab and a red header line, words in ballpoint, photos taped on crooked, lists set down like ingredients.",
+ "tags": [
+  "handmade",
+  "warm",
+  "playful",
+  "tender"
+ ],
+ "palettes": [
+  {
+   "bg": "#f0cf72",
+   "surface": "#fdf9ef",
+   "ink": "#2b211b",
+   "soft": "#5e4c40",
+   "accent": "#b8351f",
+   "accent2": "#8fb3d1",
+   "onSurface": "#2b211b",
+   "onAccent": "#fff8ee"
+  },
+  {
+   "bg": "#b9cfae",
+   "surface": "#fffcf4",
+   "ink": "#24261f",
+   "soft": "#474c3f",
+   "accent": "#2c6a52",
+   "accent2": "#e6a39a",
+   "onSurface": "#24261f",
+   "onAccent": "#f8fff9"
+  },
+  {
+   "bg": "#a9c6e0",
+   "surface": "#fffdf7",
+   "ink": "#1f2430",
+   "soft": "#434a59",
+   "accent": "#b93b28",
+   "accent2": "#f0c66c",
+   "onSurface": "#1f2430",
+   "onAccent": "#fffaf2"
+  }
+ ],
+ "tint": true,
+ "voices": {
+  "display": {
+   "font": "kalam",
+   "face": "700",
+   "lead": 1.05
+  },
+  "body": {
+   "font": "specialelite",
+   "face": "400",
+   "lead": 1.5
+  },
+  "label": {
+   "font": "oswald",
+   "face": "500",
+   "upper": true,
+   "track": 0.12
+  }
+ },
+ "ground": {
+  "fill": "bg",
+  "texture": "weave",
+  "ink": "surface",
+  "strength": 0.32
+ },
+ "sheet": {
+  "inset": [
+   3.5,
+   3.5
+  ],
+  "box": {
+   "fill": "surface",
+   "radius": 0.8,
+   "shadow": "soft"
+  },
+  "ground": {
+   "fill": "surface",
+   "texture": "lines",
+   "ink": "accent2",
+   "strength": 0.5
+  }
+ },
+ "motion": {
+  "cut": "turn",
+  "pace": "even"
+ },
+ "pages": {
+  "cover": {
+   "grid": {
+    "wide": {
+     "cols": [
+      1.2,
+      2,
+      1.2
+     ],
+     "rows": [
+      0.7,
+      0.1,
+      2.6,
+      0.8,
+      0.9
+     ],
+     "gap": 1.2,
+     "pad": [
+      3,
+      5
+     ]
+    },
+    "tall": {
+     "cols": [
+      1,
+      1,
+      1
+     ],
+     "rows": [
+      0.7,
+      0.1,
+      3,
+      0.8,
+      1
+     ],
+     "gap": 1.2,
+     "pad": [
+      3,
+      3
+     ]
+    }
+   },
+   "items": [
+    {
+     "is": "shape",
+     "shape": "tape",
+     "color": "accent2",
+     "scale": 1.1,
+     "rotate": 6,
+     "at": {
+      "wide": [
+       3,
+       1,
+       1,
+       1
+      ],
+      "tall": [
+       3,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "is": "shape",
+     "shape": "rule",
+     "color": "accent",
+     "weight": 0.22,
+     "at": {
+      "wide": [
+       1,
+       2,
+       3,
+       1
+      ],
+      "tall": [
+       1,
+       2,
+       3,
+       1
+      ]
+     }
+    },
+    {
+     "is": "text",
+     "slot": "occasion",
+     "voice": "label",
+     "size": 1.7,
+     "color": "onAccent",
+     "valign": "end",
+     "box": {
+      "fill": "accent",
+      "pad": 1,
+      "radius": 0.5
+     },
+     "at": {
+      "wide": [
+       1,
+       1,
+       2,
+       1
+      ],
+      "tall": [
+       1,
+       1,
+       2,
+       1
+      ]
+     }
+    },
+    {
+     "is": "text",
+     "slot": "recipient",
+     "voice": "display",
+     "size": 14,
+     "min": 0.4,
+     "color": "ink",
+     "rotate": -2,
+     "enter": "fade",
+     "at": {
+      "wide": [
+       1,
+       3,
+       3,
+       1
+      ],
+      "tall": [
+       1,
+       3,
+       3,
+       1
+      ]
+     }
+    },
+    {
+     "is": "text",
+     "slot": "sender",
+     "voice": "body",
+     "size": 2.4,
+     "color": "soft",
+     "valign": "start",
+     "at": {
+      "wide": [
+       1,
+       4,
+       2,
+       1
+      ],
+      "tall": [
+       1,
+       4,
+       3,
+       1
+      ]
+     }
+    },
+    {
+     "is": "text",
+     "slot": "hint",
+     "voice": "label",
+     "size": 1.6,
+     "color": "onAccent",
+     "align": "end",
+     "valign": "end",
+     "box": {
+      "fill": "accent",
+      "pad": 1.2,
+      "radius": 99
+     },
+     "at": {
+      "wide": [
+       3,
+       5,
+       1,
+       1
+      ],
+      "tall": [
+       1,
+       5,
+       3,
+       1
+      ]
+     }
+    }
+   ]
+  },
+  "name": {
+   "grid": {
+    "wide": {
+     "cols": [
+      2,
+      1.1
+     ],
+     "rows": [
+      0.7,
+      0.1,
+      2.2,
+      1.4
+     ],
+     "gap": 1.4,
+     "pad": [
+      3,
+      5
+     ]
+    },
+    "tall": {
+     "cols": [
+      1
+     ],
+     "rows": [
+      0.7,
+      0.1,
+      2.4,
+      1.2,
+      1.4
+     ],
+     "gap": 1.4,
+     "pad": [
+      3,
+      3
+     ]
+    }
+   },
+   "items": [
+    {
+     "is": "shape",
+     "shape": "rule",
+     "color": "accent",
+     "weight": 0.22,
+     "at": {
+      "wide": [
+       1,
+       2,
+       2,
+       1
+      ],
+      "tall": [
+       1,
+       2,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "is": "text",
+     "slot": "kicker",
+     "voice": "label",
+     "size": 1.6,
+     "color": "onAccent",
+     "valign": "end",
+     "box": {
+      "fill": "accent",
+      "pad": 1,
+      "radius": 0.5
+     },
+     "at": {
+      "wide": [
+       1,
+       1,
+       2,
+       1
+      ],
+      "tall": [
+       1,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "is": "text",
+     "slot": "name",
+     "voice": "display",
+     "size": 15,
+     "min": 0.4,
+     "color": "ink",
+     "rotate": -1.5,
+     "enter": "fade",
+     "at": {
+      "wide": [
+       1,
+       3,
+       2,
+       1
+      ],
+      "tall": [
+       1,
+       3,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "is": "text",
+     "slot": "sub",
+     "voice": "display",
+     "size": 4.6,
+     "min": 0.5,
+     "color": "accent",
+     "valign": "start",
+     "at": {
+      "wide": [
+       1,
+       4,
+       1,
+       1
+      ],
+      "tall": [
+       1,
+       4,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "is": "text",
+     "slot": "body",
+     "voice": "body",
+     "size": 2.2,
+     "color": "soft",
+     "valign": "start",
+     "at": {
+      "wide": [
+       2,
+       4,
+       1,
+       1
+      ],
+      "tall": [
+       1,
+       5,
+       1,
+       1
+      ]
+     }
+    }
+   ]
+  },
+  "card": {
+   "grid": {
+    "wide": {
+     "cols": [
+      1,
+      3
+     ],
+     "rows": [
+      0.8,
+      0.1,
+      2.4,
+      0.9
+     ],
+     "gap": 1.4,
+     "pad": [
+      3,
+      5
+     ]
+    },
+    "tall": {
+     "cols": [
+      1
+     ],
+     "rows": [
+      0.8,
+      0.1,
+      3,
+      1.4
+     ],
+     "gap": 1.4,
+     "pad": [
+      3,
+      3
+     ]
+    }
+   },
+   "items": [
+    {
+     "is": "shape",
+     "shape": "tape",
+     "color": "accent2",
+     "scale": 1.1,
+     "rotate": 6,
+     "at": {
+      "wide": [
+       2,
+       1,
+       1,
+       1
+      ],
+      "tall": [
+       1,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "is": "shape",
+     "shape": "rule",
+     "color": "accent",
+     "weight": 0.22,
+     "at": {
+      "wide": [
+       1,
+       2,
+       2,
+       1
+      ],
+      "tall": [
+       1,
+       2,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "is": "text",
+     "slot": "number",
+     "voice": "label",
+     "size": 1.8,
+     "color": "onAccent",
+     "valign": "end",
+     "box": {
+      "fill": "accent",
+      "pad": 1.2,
+      "radius": 0.5
+     },
+     "at": {
+      "wide": [
+       1,
+       1,
+       1,
+       1
+      ],
+      "tall": [
+       1,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "is": "text",
+     "slot": "title",
+     "voice": "display",
+     "size": 10,
+     "min": 0.4,
+     "color": "ink",
+     "rotate": -1,
+     "enter": "fade",
+     "at": {
+      "wide": [
+       1,
+       3,
+       2,
+       1
+      ],
+      "tall": [
+       1,
+       3,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "is": "text",
+     "slot": "sub",
+     "voice": "body",
+     "size": 2.4,
+     "color": "soft",
+     "valign": "start",
+     "at": {
+      "wide": [
+       1,
+       4,
+       2,
+       1
+      ],
+      "tall": [
+       1,
+       4,
+       1,
+       1
+      ]
+     }
+    }
+   ]
+  },
+  "line": {
+   "grid": {
+    "wide": {
+     "cols": [
+      1,
+      5,
+      1
+     ],
+     "rows": [
+      0.5,
+      2.6,
+      1.1
+     ],
+     "gap": 1.4,
+     "pad": [
+      3,
+      4
+     ]
+    },
+    "tall": {
+     "cols": [
+      1,
+      3,
+      1
+     ],
+     "rows": [
+      0.6,
+      3,
+      1.4
+     ],
+     "gap": 1.4,
+     "pad": [
+      3,
+      3
+     ]
+    }
+   },
+   "items": [
+    {
+     "is": "shape",
+     "shape": "tape",
+     "color": "accent2",
+     "scale": 0.9,
+     "rotate": -8,
+     "at": {
+      "wide": [
+       1,
+       1,
+       1,
+       1
+      ],
+      "tall": [
+       1,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "is": "shape",
+     "shape": "tape",
+     "color": "accent2",
+     "scale": 0.9,
+     "rotate": 8,
+     "at": {
+      "wide": [
+       3,
+       1,
+       1,
+       1
+      ],
+      "tall": [
+       3,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "is": "text",
+     "slot": "kicker",
+     "voice": "label",
+     "size": 1.6,
+     "color": "accent",
+     "align": "center",
+     "valign": "end",
+     "at": {
+      "wide": [
+       2,
+       1,
+       1,
+       1
+      ],
+      "tall": [
+       2,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "is": "text",
+     "slot": "title",
+     "voice": "display",
+     "size": 8,
+     "min": 0.42,
+     "color": "ink",
+     "align": "center",
+     "rotate": -1,
+     "enter": "fade",
+     "at": {
+      "wide": [
+       2,
+       2,
+       1,
+       1
+      ],
+      "tall": [
+       1,
+       2,
+       3,
+       1
+      ]
+     }
+    },
+    {
+     "is": "text",
+     "slot": "body",
+     "voice": "body",
+     "size": 2.4,
+     "color": "soft",
+     "align": "center",
+     "valign": "start",
+     "at": {
+      "wide": [
+       2,
+       3,
+       1,
+       1
+      ],
+      "tall": [
+       1,
+       3,
+       3,
+       1
+      ]
+     }
+    }
+   ]
+  },
+  "photo": {
+   "grid": {
+    "wide": {
+     "cols": [
+      1,
+      1.15
+     ],
+     "rows": [
+      1
+     ],
+     "gap": 4,
+     "pad": [
+      4,
+      5
+     ]
+    },
+    "tall": {
+     "cols": [
+      1
+     ],
+     "rows": [
+      1.3,
+      1
+     ],
+     "gap": 3,
+     "pad": [
+      5,
+      3
+     ]
+    }
+   },
+   "items": [
+    {
+     "is": "photo",
+     "frame": "tape",
+     "fit": "contain",
+     "color": "accent2",
+     "rotate": 3,
+     "enter": "drop",
+     "at": {
+      "wide": [
+       2,
+       1,
+       1,
+       1
+      ],
+      "tall": [
+       1,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "is": "group",
+     "align": "start",
+     "valign": "center",
+     "gap": 1.4,
+     "enter": "fade",
+     "at": {
+      "wide": [
+       1,
+       1,
+       1,
+       1
+      ],
+      "tall": [
+       1,
+       2,
+       1,
+       1
+      ]
+     },
+     "lines": [
+      {
+       "slot": "kicker",
+       "voice": "label",
+       "size": 1.5,
+       "color": "onAccent",
+       "box": {
+        "fill": "accent",
+        "pad": 0.9,
+        "radius": 0.5
+       }
+      },
+      {
+       "slot": "title",
+       "voice": "display",
+       "size": 6,
+       "min": 0.45,
+       "color": "ink"
+      },
+      {
+       "slot": "body",
+       "voice": "body",
+       "size": 2.2,
+       "color": "soft"
+      }
+     ]
+    }
+   ]
+  },
+  "list": {
+   "grid": {
+    "wide": {
+     "cols": [
+      1.6,
+      1
+     ],
+     "rows": [
+      0.8,
+      0.1,
+      3
+     ],
+     "gap": 1.4,
+     "pad": [
+      3,
+      5
+     ]
+    },
+    "tall": {
+     "cols": [
+      1
+     ],
+     "rows": [
+      1,
+      0.3,
+      0.1,
+      4
+     ],
+     "gap": 1.2,
+     "pad": [
+      3,
+      3
+     ]
+    }
+   },
+   "items": [
+    {
+     "is": "shape",
+     "shape": "rule",
+     "color": "accent",
+     "weight": 0.22,
+     "at": {
+      "wide": [
+       1,
+       2,
+       2,
+       1
+      ],
+      "tall": [
+       1,
+       3,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "is": "text",
+     "slot": "label",
+     "voice": "display",
+     "size": 5,
+     "min": 0.5,
+     "color": "ink",
+     "valign": "end",
+     "at": {
+      "wide": [
+       1,
+       1,
+       1,
+       1
+      ],
+      "tall": [
+       1,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "is": "text",
+     "slot": "count",
+     "voice": "label",
+     "size": 1.6,
+     "color": "accent",
+     "align": "end",
+     "valign": "end",
+     "at": {
+      "wide": [
+       2,
+       1,
+       1,
+       1
+      ],
+      "tall": [
+       1,
+       2,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "is": "list",
+     "voice": "display",
+     "size": 3.8,
+     "color": "soft",
+     "lit": "accent",
+     "marker": "box",
+     "gap": 0.7,
+     "at": {
+      "wide": [
+       1,
+       3,
+       2,
+       1
+      ],
+      "tall": [
+       1,
+       4,
+       1,
+       1
+      ]
+     }
+    }
+   ]
+  },
+  "montage": {
+   "grid": {
+    "wide": {
+     "cols": [
+      1
+     ],
+     "rows": [
+      0.4,
+      3,
+      0.6
+     ],
+     "gap": 1,
+     "pad": [
+      3,
+      5
+     ]
+    },
+    "tall": {
+     "cols": [
+      1
+     ],
+     "rows": [
+      0.5,
+      1.6,
+      0.8
+     ],
+     "gap": 1.4,
+     "pad": [
+      3,
+      3
+     ]
+    }
+   },
+   "items": [
+    {
+     "is": "text",
+     "slot": "kicker",
+     "voice": "label",
+     "size": 1.5,
+     "color": "onAccent",
+     "valign": "end",
+     "box": {
+      "fill": "accent",
+      "pad": 0.9,
+      "radius": 0.5
+     },
+     "at": {
+      "wide": [
+       1,
+       1,
+       1,
+       1
+      ],
+      "tall": [
+       1,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "is": "photos",
+     "arrange": "pile",
+     "frame": "tape",
+     "color": "accent2",
+     "enter": "drop",
+     "at": {
+      "wide": [
+       1,
+       2,
+       1,
+       1
+      ],
+      "tall": [
+       1,
+       2,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "is": "text",
+     "slot": "title",
+     "voice": "display",
+     "size": 5,
+     "min": 0.5,
+     "color": "ink",
+     "align": "end",
+     "rotate": -1,
+     "at": {
+      "wide": [
+       1,
+       3,
+       1,
+       1
+      ],
+      "tall": [
+       1,
+       3,
+       1,
+       1
+      ]
+     }
+    }
+   ]
+  },
+  "voice": {
+   "grid": {
+    "wide": {
+     "cols": [
+      1,
+      1.3
+     ],
+     "rows": [
+      1.8,
+      0.7,
+      0.3
+     ],
+     "gap": 2,
+     "pad": [
+      4,
+      5
+     ]
+    },
+    "tall": {
+     "cols": [
+      1
+     ],
+     "rows": [
+      1.6,
+      0.8,
+      0.5,
+      0.25
+     ],
+     "gap": 1.5,
+     "pad": [
+      4,
+      3
+     ]
+    }
+   },
+   "items": [
+    {
+     "is": "photo",
+     "frame": "tape",
+     "fit": "contain",
+     "color": "accent2",
+     "rotate": -3,
+     "enter": "drop",
+     "at": {
+      "wide": [
+       1,
+       1,
+       1,
+       3
+      ],
+      "tall": [
+       1,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "is": "text",
+     "only": "photo",
+     "slot": "who",
+     "voice": "display",
+     "size": 9,
+     "min": 0.4,
+     "color": "ink",
+     "valign": "end",
+     "at": {
+      "wide": [
+       2,
+       1,
+       1,
+       1
+      ],
+      "tall": [
+       1,
+       2,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "is": "wave",
+     "only": "photo",
+     "look": "bars",
+     "color": "accent2",
+     "lit": "accent",
+     "at": {
+      "wide": [
+       2,
+       2,
+       1,
+       1
+      ],
+      "tall": [
+       1,
+       3,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "is": "text",
+     "only": "noPhoto",
+     "slot": "who",
+     "voice": "display",
+     "size": 12,
+     "min": 0.4,
+     "color": "ink",
+     "valign": "end",
+     "rotate": -1.5,
+     "at": {
+      "wide": [
+       1,
+       1,
+       2,
+       1
+      ],
+      "tall": [
+       1,
+       1,
+       1,
+       2
+      ]
+     }
+    },
+    {
+     "is": "wave",
+     "only": "noPhoto",
+     "look": "bars",
+     "color": "accent2",
+     "lit": "accent",
+     "at": {
+      "wide": [
+       1,
+       2,
+       2,
+       1
+      ],
+      "tall": [
+       1,
+       3,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "is": "pips",
+     "look": "squares",
+     "color": "soft",
+     "lit": "accent",
+     "align": "start",
+     "at": {
+      "wide": [
+       2,
+       3,
+       1,
+       1
+      ],
+      "tall": [
+       1,
+       4,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "is": "text",
+     "slot": "count",
+     "voice": "label",
+     "size": 1.5,
+     "color": "accent",
+     "align": "end",
+     "at": {
+      "wide": [
+       2,
+       3,
+       1,
+       1
+      ],
+      "tall": [
+       1,
+       4,
+       1,
+       1
+      ]
+     }
+    }
+   ]
+  },
+  "letter": {
+   "grid": {
+    "wide": {
+     "cols": [
+      1,
+      5,
+      1
+     ],
+     "rows": [
+      1
+     ],
+     "gap": 1,
+     "pad": [
+      4,
+      3
+     ]
+    },
+    "tall": {
+     "cols": [
+      1
+     ],
+     "rows": [
+      1
+     ],
+     "pad": [
+      4,
+      3
+     ]
+    }
+   },
+   "items": [
+    {
+     "is": "letter",
+     "voice": "body",
+     "size": 2.1,
+     "color": "ink",
+     "enter": "fade",
+     "at": {
+      "wide": [
+       2,
+       1,
+       1,
+       1
+      ],
+      "tall": [
+       1,
+       1,
+       1,
+       1
+      ]
+     }
+    }
+   ]
+  },
+  "wish": {
+   "grid": {
+    "wide": {
+     "cols": [
+      1.2,
+      1
+     ],
+     "rows": [
+      1
+     ],
+     "gap": 4,
+     "pad": [
+      4,
+      5
+     ]
+    },
+    "tall": {
+     "cols": [
+      1
+     ],
+     "rows": [
+      1,
+      1.5
+     ],
+     "gap": 2,
+     "pad": [
+      5,
+      3
+     ]
+    }
+   },
+   "items": [
+    {
+     "is": "group",
+     "align": "start",
+     "valign": "center",
+     "gap": 1.5,
+     "at": {
+      "wide": [
+       1,
+       1,
+       1,
+       1
+      ],
+      "tall": [
+       1,
+       1,
+       1,
+       1
+      ]
+     },
+     "lines": [
+      {
+       "slot": "title",
+       "voice": "display",
+       "size": 7,
+       "min": 0.42,
+       "color": "ink"
+      },
+      {
+       "slot": "body",
+       "voice": "body",
+       "size": 2.3,
+       "color": "soft"
+      }
+     ]
+    },
+    {
+     "is": "ending",
+     "button": {
+      "voice": "label",
+      "color": "onAccent",
+      "box": {
+       "fill": "accent",
+       "pad": 1.4,
+       "radius": 99
+      }
+     },
+     "at": {
+      "wide": [
+       2,
+       1,
+       1,
+       1
+      ],
+      "tall": [
+       1,
+       2,
+       1,
+       1
+      ]
+     }
+    }
+   ]
+  },
+  "reveal": {
+   "grid": {
+    "wide": {
+     "cols": [
+      1,
+      6,
+      1
+     ],
+     "rows": [
+      0.5,
+      3
+     ],
+     "gap": 1.2,
+     "pad": [
+      3,
+      4
+     ]
+    },
+    "tall": {
+     "cols": [
+      1,
+      3,
+      1
+     ],
+     "rows": [
+      0.5,
+      3
+     ],
+     "gap": 1.2,
+     "pad": [
+      3,
+      3
+     ]
+    }
+   },
+   "items": [
+    {
+     "is": "shape",
+     "shape": "tape",
+     "color": "accent2",
+     "scale": 0.9,
+     "rotate": -8,
+     "at": {
+      "wide": [
+       1,
+       1,
+       1,
+       1
+      ],
+      "tall": [
+       1,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "is": "shape",
+     "shape": "tape",
+     "color": "accent2",
+     "scale": 0.9,
+     "rotate": 8,
+     "at": {
+      "wide": [
+       3,
+       1,
+       1,
+       1
+      ],
+      "tall": [
+       3,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "is": "text",
+     "slot": "pick",
+     "voice": "label",
+     "size": 1.6,
+     "color": "onAccent",
+     "align": "center",
+     "valign": "end",
+     "box": {
+      "fill": "accent",
+      "pad": 1,
+      "radius": 0.5
+     },
+     "at": {
+      "wide": [
+       2,
+       1,
+       1,
+       1
+      ],
+      "tall": [
+       2,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "is": "text",
+     "slot": "words",
+     "voice": "display",
+     "size": 9,
+     "min": 0.4,
+     "color": "ink",
+     "align": "center",
+     "rotate": -1.5,
+     "enter": "words",
+     "at": {
+      "wide": [
+       2,
+       2,
+       1,
+       1
+      ],
+      "tall": [
+       1,
+       2,
+       3,
+       1
+      ]
+     }
+    }
+   ]
+  },
+  "credits": {
+   "grid": {
+    "wide": {
+     "cols": [
+      1
+     ],
+     "rows": [
+      0.8,
+      0.1,
+      3
+     ],
+     "gap": 1.4,
+     "pad": [
+      3,
+      6
+     ]
+    },
+    "tall": {
+     "cols": [
+      1
+     ],
+     "rows": [
+      1.1,
+      0.1,
+      3
+     ],
+     "gap": 1.4,
+     "pad": [
+      3,
+      3
+     ]
+    }
+   },
+   "items": [
+    {
+     "is": "shape",
+     "shape": "rule",
+     "color": "accent",
+     "weight": 0.22,
+     "at": {
+      "wide": [
+       1,
+       2,
+       1,
+       1
+      ],
+      "tall": [
+       1,
+       2,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "is": "group",
+     "align": "start",
+     "valign": "end",
+     "gap": 0.8,
+     "at": {
+      "wide": [
+       1,
+       1,
+       1,
+       1
+      ],
+      "tall": [
+       1,
+       1,
+       1,
+       1
+      ]
+     },
+     "lines": [
+      {
+       "slot": "last",
+       "voice": "display",
+       "size": 5,
+       "min": 0.45,
+       "color": "ink"
+      },
+      {
+       "slot": "note",
+       "voice": "label",
+       "size": 1.4,
+       "color": "soft"
+      }
+     ]
+    },
+    {
+     "is": "credits",
+     "look": "table",
+     "voice": "body",
+     "size": 2.4,
+     "color": "ink",
+     "roleColor": "accent",
+     "at": {
+      "wide": [
+       1,
+       3,
+       1,
+       1
+      ],
+      "tall": [
+       1,
+       3,
+       1,
+       1
+      ]
+     }
+    }
+   ]
+  }
+ }
+}

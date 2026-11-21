@@ -55,6 +55,8 @@ function behind(page: HTMLElement, x: number, y: number, self: Element): Rgba | 
 /** Everything wrong with the pages drawn inside `root`. Each page is a `.tp` in a frame marked `data-lab`. */
 export function measure(root: ParentNode = document): Problem[] {
   const problems: Problem[] = []
+  // Shapes are not there to be touched, so a point passes through them; while measuring they must be found.
+  document.documentElement.classList.add('tp-measuring')
   for (const frame of Array.from(root.querySelectorAll<HTMLElement>('[data-lab]'))) {
     const page = frame.querySelector<HTMLElement>('.tp')
     const name = frame.dataset.lab ?? ''
@@ -70,6 +72,7 @@ export function measure(root: ParentNode = document): Problem[] {
     const least = tall ? 11 : 13
 
     for (const el of Array.from(page.querySelectorAll<HTMLElement>('.tp-fit[data-over="1"]'))) bad(`${el.dataset.slot ?? el.className.split(' ')[0]}: the words do not fit their area even at their smallest`)
+    for (const el of Array.from(page.querySelectorAll<HTMLElement>('.tp-fit[data-broke="1"]'))) bad(`${el.dataset.slot ?? el.className.split(' ')[0]}: a word had to be broken in two to fit (give it more room, a smaller size, or a \`sizeTall\`)`)
 
     // Every run of words, with the cell it belongs to.
     // A run's box: as wide as its words, and as tall as its lines (type set tight is drawn taller than its line, so the line is what counts).
@@ -135,5 +138,6 @@ export function measure(root: ParentNode = document): Problem[] {
       if (r.left < box.left - 1 || r.right > box.right + 1 || r.top < box.top - 1 || r.bottom > box.bottom + 1) bad('a button runs off the page')
     }
   }
+  document.documentElement.classList.remove('tp-measuring')
   return problems
 }

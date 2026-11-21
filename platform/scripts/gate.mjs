@@ -60,14 +60,21 @@ for (const file of files) {
     for (const p of report.problems) found.push(`[${tag}] ${p.page}: ${p.what}`)
     for (const e of errors) found.push(`[${tag}] the page threw: ${e}`)
     if (shots && !report.invalid.length) {
-      // Shrunk for the picture only: everything above was measured at full size.
-      await page.evaluate((zoom) => {
-        document.querySelector('main').style.zoom = String(zoom)
+      // Shrunk for the picture only: everything above was measured at full size. A transform, because
+      // `zoom` leaves a template's inner sheet undrawn.
+      const scale = run.size === 'tall' ? 0.5 : 0.31
+      const height = await page.evaluate((z) => {
+        const main = document.querySelector('main')
+        main.style.width = `${1340 / z}px`
+        main.style.transformOrigin = '0 0'
+        main.style.transform = `scale(${z})`
         window.scrollTo(0, 0)
-      }, run.size === 'tall' ? 0.5 : 0.31)
-      await page.setViewportSize({ width: 1340, height: 900 })
+        return Math.ceil(main.getBoundingClientRect().height)
+      }, scale)
+      await page.setViewportSize({ width: 1340, height: Math.min(height, 9000) })
+      await page.waitForTimeout(400)
+      await page.screenshot({ path: join(shots, `${id}-${run.size}-p${run.palette}${run.hue === undefined ? '' : `-h${run.hue}`}.jpg`), type: 'jpeg', quality: 62, clip: { x: 0, y: 0, width: 1340, height: Math.min(height, 9000) } })
     }
-    if (shots && !report.invalid.length) await page.screenshot({ path: join(shots, `${id}-${run.size}-p${run.palette}${run.hue === undefined ? '' : `-h${run.hue}`}.jpg`), type: 'jpeg', quality: 62, fullPage: true })
     await page.close()
     if (report.invalid.length) break
   }

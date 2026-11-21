@@ -12,7 +12,7 @@ import type { Area, Box, Grid, Ground, Item, Page, PageKind, Palette, Template, 
 
 export const TAGS = ['tender', 'playful', 'bold', 'quiet', 'warm', 'elegant', 'handmade', 'modern', 'retro', 'photos', 'words'] as const
 const ARRANGE = ['grid', 'strip', 'pile', 'fan', 'mosaic', 'wall', 'stack']
-const MARKS = ['none', 'underline', 'highlight', 'rule-above', 'rule-below', 'quotes']
+const MARKS = ['none', 'underline', 'highlight', 'rule-above', 'rule-below', 'quotes', 'glow']
 const ALIGN = ['start', 'center', 'end']
 
 /** Which pages each widget may be on. */
@@ -97,8 +97,12 @@ export function checkTemplate(raw: unknown): Checked {
 
   /** What words not on a box of their own are read against. */
   const under: Token = sheet && isToken(obj(sheet.box).fill) ? (obj(sheet.box).fill as Token) : isToken(obj(t.ground).fill) ? (obj(t.ground).fill as Token) : 'bg'
-  const readable = (where: string, color: unknown, behind: Token, size: number) => {
-    if (!isToken(color)) return
+  /**
+   * `boxed`: the words sit on a box of their own, so what is behind them is known from the data. Words
+   * with no box may be on a shape or a panel, which only the drawn page can tell (the gate measures it).
+   */
+  const readable = (where: string, color: unknown, behind: Token, size: number, boxed = true) => {
+    if (!isToken(color) || !boxed) return
     if (color === behind) return bad(where, `${color} words on ${behind} can't be seen`)
     const least = size >= 4 ? 3 : 4.5
     for (const [i, p] of usable.entries()) {
@@ -151,10 +155,11 @@ export function checkTemplate(raw: unknown): Checked {
         if (!Array.isArray(a) || a.length !== 4 || !a.every((v) => Number.isInteger(v) && v >= 1)) bad(`${here}.at.${way}`, 'column, row, columns spanned, rows spanned (whole numbers from 1)')
         else if (cols && rows && ((a as Area)[0] + (a as Area)[2] - 1 > cols || (a as Area)[1] + (a as Area)[3] - 1 > rows)) bad(`${here}.at.${way}`, `runs off its grid (${cols} columns, ${rows} rows)`)
       }
-      if (item.rotate !== undefined && !isNum(item.rotate, -8, 8)) bad(`${here}.rotate`, '-8 to 8')
+      if (item.rotate !== undefined && !(item.is === 'shape' ? isNum(item.rotate, -180, 180) : isNum(item.rotate, -8, 8))) bad(`${here}.rotate`, item.is === 'shape' ? '-180 to 180' : '-8 to 8')
       if (item.enter !== undefined && !oneOf(item.enter, ENTERS)) bad(`${here}.enter`, `one of ${ENTERS.join(', ')}`)
       if (item.only !== undefined && !oneOf(item.only, ['photo', 'noPhoto'])) bad(`${here}.only`, 'photo or noPhoto')
 
+      let boxedGroup = false
       const words = (where: string, line: Raw, behind: Token) => {
         if (typeof line.slot !== 'string' || !allowedSlots.includes(line.slot)) bad(`${where}.slot`, `a ${kind} page has ${allowedSlots.join(', ') || 'no words'}`)
         else if (item.only === 'photo') withPhoto.add(line.slot)
@@ -162,6 +167,7 @@ export function checkTemplate(raw: unknown): Checked {
         else shown.add(line.slot)
         if (!oneOf(line.voice, VOICES)) bad(`${where}.voice`, 'display, body or label')
         if (!isNum(line.size, 1.1, 22)) bad(`${where}.size`, '1.1 to 22')
+        if (line.sizeTall !== undefined && !isNum(line.sizeTall, 1.1, 22)) bad(`${where}.sizeTall`, '1.1 to 22')
         if (line.min !== undefined && !isNum(line.min, 0.4, 1)) bad(`${where}.min`, '0.4 to 1')
         if (!isToken(line.color)) bad(`${where}.color`, 'a colour token')
         if (line.align !== undefined && !oneOf(line.align, ALIGN)) bad(`${where}.align`, 'start, center or end')
@@ -169,7 +175,7 @@ export function checkTemplate(raw: unknown): Checked {
         if (line.markColor !== undefined && !isToken(line.markColor)) bad(`${where}.markColor`, 'a colour token')
         const own = line.box === undefined ? null : obj(line.box)
         if (own) box(`${where}.box`, own)
-        readable(`${where}.color`, line.color, own && isToken(own.fill) ? own.fill : behind, isNum(line.size, 0, 99) ? line.size : 2)
+        readable(`${where}.color`, line.color, own && isToken(own.fill) ? own.fill : behind, isNum(line.size, 0, 99) ? line.size : 2, Boolean(own) || boxedGroup)
       }
 
       switch (item.is) {
@@ -181,6 +187,7 @@ export function checkTemplate(raw: unknown): Checked {
           const lines = Array.isArray(item.lines) ? item.lines : []
           if (lines.length < 1 || lines.length > 5) bad(`${here}.lines`, 'one to five lines')
           const own = item.box === undefined ? null : obj(item.box)
+          boxedGroup = Boolean(own)
           if (own) box(`${here}.box`, own)
           if (item.gap !== undefined && !isNum(item.gap, 0, 6)) bad(`${here}.gap`, '0 to 6')
           if (item.align !== undefined && !oneOf(item.align, ALIGN)) bad(`${here}.align`, 'start, center or end')
@@ -204,7 +211,8 @@ export function checkTemplate(raw: unknown): Checked {
           if (!oneOf(item.shape, SHAPES)) bad(`${here}.shape`, `one of ${SHAPES.join(', ')}`)
           if (!isToken(item.color)) bad(`${here}.color`, 'a colour token')
           if (item.opacity !== undefined && !isNum(item.opacity, 0.05, 1)) bad(`${here}.opacity`, '0.05 to 1')
-          if (item.scale !== undefined && !isNum(item.scale, 0.1, 1.6)) bad(`${here}.scale`, '0.1 to 1.6')
+          if (item.scale !== undefined && !isNum(item.scale, 0.02, 2.5)) bad(`${here}.scale`, '0.02 to 2.5')
+          if (item.anchor !== undefined && !oneOf(item.anchor, ['center', 'top', 'bottom', 'left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right'])) bad(`${here}.anchor`, 'center, top, bottom, left, right, top-left, top-right, bottom-left or bottom-right')
           if (item.weight !== undefined && !isNum(item.weight, 0.05, 3)) bad(`${here}.weight`, '0.05 to 3')
           break
         case 'wave':
@@ -219,11 +227,13 @@ export function checkTemplate(raw: unknown): Checked {
           if (!oneOf(item.voice, VOICES) || !isNum(item.size, 1.4, 8)) bad(here, 'a voice and a size of 1.4 to 8')
           if (!isToken(item.color) || !isToken(item.lit)) bad(here, 'color and lit are colour tokens')
           if (!oneOf(item.marker, ['number', 'dot', 'check', 'dash', 'none', 'box'])) bad(`${here}.marker`, 'number, dot, check, dash, box or none')
+          if (item.valign !== undefined && !oneOf(item.valign, ALIGN)) bad(`${here}.valign`, 'start, center or end')
+          if (item.sizeTall !== undefined && !isNum(item.sizeTall, 1.4, 8)) bad(`${here}.sizeTall`, '1.4 to 8')
           const own = item.box === undefined ? null : obj(item.box)
           if (own) box(`${here}.box`, own)
           const behind = own && isToken(own.fill) ? own.fill : pageUnder
-          readable(`${here}.color`, item.color, behind, 2)
-          readable(`${here}.lit`, item.lit, behind, 2)
+          readable(`${here}.color`, item.color, behind, 2, Boolean(own))
+          readable(`${here}.lit`, item.lit, behind, 2, Boolean(own))
           break
         }
         case 'letter': {
@@ -231,7 +241,7 @@ export function checkTemplate(raw: unknown): Checked {
           if (!isToken(item.color)) bad(`${here}.color`, 'a colour token')
           const own = item.sheet === undefined ? null : obj(item.sheet)
           if (own) box(`${here}.sheet`, own)
-          readable(`${here}.color`, item.color, own && isToken(own.fill) ? own.fill : pageUnder, 2)
+          readable(`${here}.color`, item.color, own && isToken(own.fill) ? own.fill : pageUnder, 2, Boolean(own))
           break
         }
         case 'ending': {
@@ -245,8 +255,7 @@ export function checkTemplate(raw: unknown): Checked {
           if (!oneOf(item.look, ['roll', 'table', 'stack'])) bad(`${here}.look`, 'roll, table or stack')
           if (!oneOf(item.voice, VOICES) || !isNum(item.size, 1.4, 5)) bad(here, 'a voice and a size of 1.4 to 5')
           if (!isToken(item.color) || !isToken(item.roleColor)) bad(here, 'color and roleColor are colour tokens')
-          readable(`${here}.color`, item.color, pageUnder, 2)
-          readable(`${here}.roleColor`, item.roleColor, pageUnder, 2)
+          // Credits have no box of their own: the gate reads them against what is drawn behind.
           break
         default:
           bad(`${here}.is`, 'text, group, photo, photos, shape, wave, pips, list, letter, ending or credits')

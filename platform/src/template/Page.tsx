@@ -123,7 +123,7 @@ export function loadFonts(template: Template): Promise<unknown> {
 const boxStyle = (box: Box | undefined): Vars =>
   box
     ? {
-        background: c(box.fill),
+        backgroundColor: c(box.fill),
         padding: `calc(var(--u) * ${box.pad ?? 1.2})`,
         borderRadius: box.radius === 99 ? '999px' : `calc(var(--u) * ${box.radius ?? 0})`,
         ...(box.border ? { border: `calc(var(--u) * ${box.border.width}) solid ${c(box.border.color)}` } : {}),
@@ -173,6 +173,7 @@ function Words({ line, text, grouped }: { line: Line; text: string; grouped?: bo
   const mark = line.mark && line.mark !== 'none' ? ` tp-mark-${line.mark}` : ''
   const style: Vars = {
     '--size': line.size,
+    ...(line.sizeTall ? { '--size-t': line.sizeTall } : {}),
     color: c(line.color),
     textAlign: line.align === 'end' ? 'right' : line.align === 'center' ? 'center' : line.align === 'start' ? 'left' : undefined,
     '--mark': c(line.markColor ?? 'accent'),
@@ -352,7 +353,7 @@ function Piece({ item, data, actions, leaving }: { item: Item; data: PageData; a
       const list = data.list
       if (!list) return null
       return (
-        <ol className={`tp-list tp-fit tp-v-${item.voice} is-${item.marker}${item.box ? ' has-box' : ''}${item.box?.stretch ? ' is-stretch' : ''}`} data-min="0.45" style={{ '--size': item.size, '--gap': item.gap ?? 0.9, color: c(item.color), '--lit': c(item.lit), textAlign: item.align === 'center' ? 'center' : 'left', ...boxStyle(item.box) } as Vars}>
+        <ol className={`tp-list tp-fit tp-v-${item.voice} is-${item.marker}${item.box ? ' has-box' : ''}${item.box?.stretch ? ' is-stretch' : ''}`} data-min="0.45" style={{ '--size': item.size, ...(item.sizeTall ? { '--size-t': item.sizeTall } : {}), '--gap': item.gap ?? 0.9, color: c(item.color), '--lit': c(item.lit), justifyContent: item.valign === 'start' ? 'flex-start' : item.valign === 'end' ? 'flex-end' : 'center', textAlign: item.align === 'center' ? 'center' : 'left', ...boxStyle(item.box) } as Vars}>
           {list.items.slice(0, list.shown).map((text, i) => (
             <li key={i} className={i === list.shown - 1 ? 'is-new' : undefined} data-n={pad2(i + 1)}>
               <span>{text}</span>
@@ -395,7 +396,7 @@ function useFit(key: string) {
         el.style.setProperty('--fit', '1')
         // A panel is as tall as its area whatever is in it, so what it holds is measured instead.
         const panel = el.classList.contains('is-stretch')
-        const inside = () => Array.from(el.children).reduce((sum, child) => sum + (child as HTMLElement).offsetHeight, 0) + (el.children.length - 1) * parseFloat(getComputedStyle(el).rowGap || '0') + parseFloat(getComputedStyle(el).paddingTop) + parseFloat(getComputedStyle(el).paddingBottom)
+        const inside = () => Array.from(el.children).reduce((sum, child) => sum + (child as HTMLElement).offsetHeight, 0) + (el.children.length - 1) * (parseFloat(getComputedStyle(el).rowGap) || 0) + (parseFloat(getComputedStyle(el).paddingTop) || 0) + (parseFloat(getComputedStyle(el).paddingBottom) || 0)
         const over = () => (panel ? inside() > el.clientHeight + 1 : el.offsetHeight > cell.clientHeight + 1) || el.scrollWidth > el.clientWidth + 1 || el.scrollWidth > cell.clientWidth + 1 || el.offsetWidth > cell.clientWidth + 1
         // Words are shrunk before any one of them is broken in two: while it is fitted, a long word may not break.
         el.classList.add('tp-whole')
@@ -403,8 +404,11 @@ function useFit(key: string) {
           fit = Math.max(least, fit - 0.04)
           el.style.setProperty('--fit', fit.toFixed(2))
         }
-        // A word still too long at its smallest is broken, as the last resort.
-        if (over()) el.classList.remove('tp-whole')
+        // A word still too long at its smallest is broken, as the last resort. The gate counts that against a template:
+        // a name cut in two is a design that gave its biggest words too little room.
+        const broke = over()
+        if (broke) el.classList.remove('tp-whole')
+        el.dataset.broke = broke && !over() ? '1' : ''
         // Still too much: the gate reads this and turns the template away.
         el.dataset.over = over() ? '1' : ''
       }
@@ -442,9 +446,10 @@ export function TemplatePage({ template, data, actions, leaving = false }: { tem
         if (!piece) return null
         const group = item as GroupItem
         const justify = item.is === 'text' || item.is === 'group' || item.is === 'list' || item.is === 'pips' ? (VALIGN[(group.align ?? 'start') as keyof typeof VALIGN] ?? 'flex-start') : 'center'
-        const align = item.is === 'text' || item.is === 'group' ? VALIGN[(group.valign ?? 'center') as keyof typeof VALIGN] : 'center'
+        const anchor = item.is === 'shape' ? (item.anchor ?? 'center') : ''
+        const align = anchor ? (anchor.startsWith('top') ? 'flex-start' : anchor.startsWith('bottom') ? 'flex-end' : 'center') : item.is === 'text' || item.is === 'group' || item.is === 'list' ? VALIGN[(group.valign ?? 'center') as keyof typeof VALIGN] : 'center'
         return (
-          <div key={i} className={`tp-cell tp-is-${item.is} tp-in-${item.enter ?? (item.is === 'shape' ? 'none' : 'fade')}`} data-is={item.is} style={{ '--aw': areaOf(item.at.wide), '--at': areaOf(item.at.tall), '--n': i, justifyContent: justify, alignItems: align } as Vars}>
+          <div key={i} className={`tp-cell tp-is-${item.is} tp-in-${item.enter ?? (item.is === 'shape' ? 'none' : 'fade')}`} data-is={item.is} style={{ '--aw': areaOf(item.at.wide), '--at': areaOf(item.at.tall), '--n': i, justifyContent: anchor ? (anchor.endsWith('left') ? 'flex-start' : anchor.endsWith('right') ? 'flex-end' : 'center') : justify, alignItems: align } as Vars}>
             <div className="tp-turn" style={item.rotate ? { transform: `rotate(${item.rotate}deg)` } : undefined}>
               {piece}
             </div>
