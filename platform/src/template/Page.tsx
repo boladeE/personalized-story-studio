@@ -71,7 +71,7 @@ export function pageOf(shot: Shot, template: Template, picked?: string): PageDat
 }
 
 /** The page before the film starts. */
-export const coverOf = (recipient: string, occasion: string | undefined, sender: string | undefined, hint: string): PageData => ({ kind: 'cover', words: { recipient, occasion, sender: sender?.trim() ? `From ${sender.trim()}` : undefined, hint } })
+export const coverOf = (recipient: string, occasion: string | undefined, sender: string | undefined, hint: string | undefined): PageData => ({ kind: 'cover', words: { recipient, occasion, sender: sender?.trim() ? `From ${sender.trim()}` : undefined, hint } })
 
 /* ---------- colour and type as CSS ---------- */
 

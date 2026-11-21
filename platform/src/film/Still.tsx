@@ -67,6 +67,7 @@ export function Still({ look, content, ghost = false, world = 'screening', templ
         className={`film still${tpl ? ' tp-film' : worldClass(world)}${(colours ? isLightGround(colours) : isLight(look, world)) ? ' is-light' : ''}${ghost ? ' is-ghost' : ''}`}
         data-look={look}
         data-world={world}
+        data-template={tpl?.id}
         data-phase={shot ? 'playing' : 'ticket'}
         data-mood={mood}
         data-kind={shot ? shot.kind : 'ticket'}

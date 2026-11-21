@@ -289,7 +289,8 @@ test('voice notes are heard in a scene of their own, a page a voice, and travel 
     for (const who of ['Ada', 'Dad']) {
       await walk(film, (shot) => shot.kind === 'voice' && shot.text.startsWith(who))
       const current = film.locator('.film:not(.still) .shot.is-current')
-      await expect(current.locator('.vp-who')).toHaveText(who)
+      // Drawn by whichever template the film was given: the name is its `who`.
+      await expect(current.locator('[data-slot="who"]').first()).toHaveText(who, { ignoreCase: true })
       await expect.poll(() => film.evaluate(() => Number(document.documentElement.dataset.voice ?? 0)), { timeout: 15_000 }).toBeGreaterThan(1)
       expect(await film.evaluate(() => Number(getComputedStyle(document.documentElement).getPropertyValue('--voice-at')))).toBeGreaterThan(0.05)
     }

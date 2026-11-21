@@ -790,7 +790,9 @@ function Opening({ recipient, sender, template, occasion, torn, count, onBegin, 
     return (
       <div className={`opening tp-opening${torn ? ' is-torn' : ''}${locked ? ' is-locked' : ''}`}>
         <button type="button" className="ticket-hit" onClick={torn ? onSkip : onBegin} disabled={Boolean(locked)} aria-label={locked ? `A film made for ${recipient}. ${locked}` : torn ? 'Skip the opening' : `A film made for ${recipient}. Tap to begin`} />
-        <TemplatePage template={template} data={coverOf(recipient, occasion, sender, locked ?? 'Tap to begin')} />
+        {/* While the film can't start yet, the cover says why in the studio's own words and offers nothing to tap. */}
+        <TemplatePage template={template} data={coverOf(recipient, occasion, sender, locked ? undefined : 'Tap to begin')} />
+        {locked && <p className="opening-hint">{locked}</p>}
       </div>
     )
   }

@@ -17,6 +17,14 @@ export const filmState = (page: Page) =>
   }))
 
 /** The film is watched first. Its editor opens around it from Edit; `part` goes on to the look of the film, or to the song's room. */
+/**
+ * Have new films made as one of the studio's three older kinds (Screening, Scrapbook, Mixtape), by
+ * telling the page there are no templates to draw from. For tests of those kinds and of choosing between them.
+ */
+export async function olderKinds(page: Page) {
+  await page.route('**/templates/index.json', (route) => route.fulfill({ json: [] }))
+}
+
 export async function openEditor(page: Page, part?: 'Look' | 'Song') {
   await page.getByRole('link', { name: 'Edit', exact: true }).click()
   if (part === 'Look') await page.getByRole('button', { name: /^Look/ }).click()

@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
-import { audioState, chooseStyle, closeEditor, filmState, open, openEditor, pickScene, sceneTile, startFilm, trackErrors, undoButton, walk } from './helpers'
+import { olderKinds, audioState, chooseStyle, closeEditor, filmState, open, openEditor, pickScene, sceneTile, startFilm, trackErrors, undoButton, walk } from './helpers'
 
 // Tiny valid PNG (1x1) for upload tests.
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64')
@@ -391,6 +391,7 @@ const NOTE =
   'Moving day. The lift broke, and you carried the sofa up five floors arguing about the angle. You always steal the duvet, then ask why I am cold. You never finish your tea. I love you because you remember the small things I mention once.'
 
 test('the home page is one screen, and a link with an occasion starts a short flow that makes a film for it', async ({ page }) => {
+  await olderKinds(page)
   test.setTimeout(90_000)
   const errors = trackErrors(page)
   await open(page, '/')
@@ -457,6 +458,7 @@ test('the home page is one screen, and a link with an occasion starts a short fl
 })
 
 test('the short flow writes the film’s own scenes from the sender’s words, plays it at once and brings the song in behind it', async ({ page }) => {
+  await olderKinds(page)
   test.setTimeout(90_000)
   const errors = trackErrors(page)
   await open(page, '/')
@@ -850,7 +852,8 @@ for (const [width, height] of [[1360, 800], [360, 740]]) {
     expect(end.kind).toBe('credits')
     expect(end.text).toMatch(/Music: /)
     // The film has played through: sending it, changing it and watching it again are offered where it ends.
-    const next = film.locator('.shot.is-current .credits-next')
+    // (`.tp-next` when the film is drawn in a template, `.credits-next` in the older kinds.)
+    const next = film.locator('.shot.is-current').locator('.credits-next, .tp-next')
     await expect(next.getByRole('link', { name: 'Send this gift' })).toHaveAttribute('href', '/send')
     await expect(next.getByRole('button', { name: 'Watch it again' })).toBeVisible()
     for (const box of await next.locator('a, button').evaluateAll((els) => els.map((el) => el.getBoundingClientRect().toJSON()))) {
@@ -1035,4 +1038,55 @@ test('the opening can be skipped, and clearing a draft can be undone', async ({ 
   await expect(page.getByLabel('Their name')).toHaveValue('Zara-Rose')
   await expect(page.locator('.reel-count')).toHaveText('9 of 9 scenes ready')
   await expect(page.locator('.undo-toast')).toHaveCount(0)
+})
+
+test('a new film is drawn in one of the studio’s templates, and another version is another design', async ({ page }) => {
+  test.setTimeout(120_000)
+  const errors = trackErrors(page)
+  await open(page, '/start')
+  await page.getByRole('button', { name: 'Friend', exact: true }).click()
+  await page.getByLabel('Their name').fill('Kemi')
+  await page.getByLabel('Your name').fill('Ada')
+  await page.getByLabel('Your name').press('Enter')
+  await page.getByRole('button', { name: 'Thank you' }).click()
+  await page.getByRole('button', { name: 'Skip this' }).click()
+  await page.getByLabel('About Kemi').fill('Moving day. The lift broke, and you carried the sofa up five floors arguing about the angle. You never finish your tea. You always text to check I got home.')
+  await page.getByRole('button', { name: 'Next' }).click()
+  await page.getByRole('button', { name: 'Skip these' }).click()
+  await page.getByRole('button', { name: 'Make the film' }).click()
+  await expect(page).toHaveURL(/\/preview$/)
+  await expect(page.locator('.song-status')).toHaveCount(0, { timeout: 15_000 })
+
+  // The film is a template's: its cover is a page of that design, with their name, and the whole of it starts the film.
+  const film = page.locator('.preview-body > .film')
+  await expect(film).toHaveClass(/tp-film/)
+  const first = await film.getAttribute('data-template')
+  expect(first).toMatch(/^[a-z][a-z0-9-]+$/)
+  await expect(film.locator('.tp-opening [data-slot="recipient"]')).toHaveText('Kemi', { ignoreCase: true })
+  // It is one the studio lists, and it carries the film's colours.
+  const listed = (await (await page.request.get('/templates/index.json')).json()) as string[]
+  expect(listed).toContain(first)
+  expect(await film.evaluate((el) => getComputedStyle(el).getPropertyValue('--c-bg'))).toMatch(/^#[0-9a-f]{6}$/)
+
+  // It plays through to the ending, every page drawn by the template, with no words left not fitting.
+  await startFilm(page)
+  await expect(film.locator('.shot.is-current .tp')).toHaveAttribute('data-page', 'name')
+  const seen = await walk(page, (shot) => shot.kind === 'wish')
+  expect(new Set(seen.map((s) => s.kind))).toEqual(new Set(['name', 'card', 'line', 'photo', 'flag', 'reason', 'montage', 'wish'].filter((k) => seen.some((s) => s.kind === k))))
+  await expect(film.locator('.shot.is-current .tp')).toHaveAttribute('data-page', 'wish')
+  await expect(film.locator('.tp-fit[data-over="1"]')).toHaveCount(0)
+  await film.locator('.tp-button').first().click()
+  await expect.poll(async () => (await filmState(page)).kind, { timeout: 15_000 }).toBe('reveal')
+
+  // In the editor the scenes are stills of the same design; there is no kind of film to pick, and another version is another design.
+  await openEditor(page)
+  await expect(page.locator('.scene-strip .film.still').first()).toHaveAttribute('data-template', first!)
+  await expect(page.getByRole('button', { name: /^Look/ })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Try another version' }).click()
+  await expect.poll(() => page.locator('.scene-strip .film.still').first().getAttribute('data-template')).not.toBe(first)
+  expect(listed).toContain(await page.locator('.scene-strip .film.still').first().getAttribute('data-template'))
+  // Undo brings the first design back.
+  await undoButton(page).click()
+  await expect(page.locator('.scene-strip .film.still').first()).toHaveAttribute('data-template', first!)
+  expect(errors).toEqual([])
 })
