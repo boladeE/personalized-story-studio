@@ -43,6 +43,8 @@ export type Shot = ShotBase &
     /** `label`: the scene's own name, when the list is an outlined scene's and not the older "Reasons". */
     | { kind: 'reason'; text: string; n: number; total: number; all: string[]; label?: string }
     | { kind: 'montage'; kicker: string; title: string; photos: Photo[] }
+    /** One voice note: `lead` is how long the page is up before the voice starts, `length` how long the voice runs. */
+    | { kind: 'voice'; who: string; peaks: number[]; photo?: Photo; n: number; total: number; lead: number; length: number }
     | { kind: 'letter'; greeting: string; paragraphs: string[]; signoff: string }
     /** `choices`: the answers the viewer picks from, when the ending is the sender's question or invitation. */
     | { kind: 'wish'; title: string; body: string; prop: EndingProp; action: string; choices?: string[] }
@@ -56,18 +58,30 @@ export interface FilmScene {
   scene: number
   name: string
   start: number
-  /** The sender's voice over this scene: where it starts in the film and how long it runs. */
-  voice?: { src: string; start: number; seconds: number }
+}
+
+/** A voice note in the film: where it starts, how long it runs, and when the page it is heard on goes. */
+export interface VoiceCue {
+  src: string
+  start: number
+  seconds: number
+  until: number
 }
 
 export interface Film {
   shots: Shot[]
   scenes: FilmScene[]
+  /** Every voice note, in the order they are heard. */
+  voices: VoiceCue[]
   duration: number
 }
 
+/** How long a voice's page is up before the voice starts, and after it ends. */
+const VOICE_LEAD = 1.6
+const VOICE_TAIL = 1.1
+
 type DistOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never
-type Draft = DistOmit<Shot, 'id' | 'index' | 'start' | 'duration' | 'scene' | 'sceneName' | 'sceneType' | 'design' | 'mood' | 'text'> & { seconds: number; text?: string }
+type Draft = DistOmit<Shot, 'id' | 'index' | 'start' | 'duration' | 'scene' | 'sceneName' | 'sceneType' | 'design' | 'mood' | 'text'> & { seconds: number; text?: string; /** A voice note's recording. */ src?: string }
 
 const ORDINALS = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
 const words = (...parts: Array<string | undefined>) => parts.join(' ').split(/\s+/).filter(Boolean).length
@@ -79,6 +93,7 @@ export const DEFAULT_BPM = 88
 export function buildFilm(story: Story): Film {
   const shots: Shot[] = []
   const scenes: FilmScene[] = []
+  const voices: VoiceCue[] = []
   let clock = 0
   let numbered = 0
   let opened = false
@@ -186,6 +201,23 @@ export function buildFilm(story: Story): Film {
             text: [frame.kicker, frame.title, ...frame.photos.map((p) => p.caption)].filter(Boolean).join('. '),
           })
           break
+        case 'voice':
+          drafts.push({
+            kind: 'voice',
+            who: frame.who,
+            peaks: frame.peaks,
+            ...(frame.photo ? { photo: frame.photo } : {}),
+            n: frame.index + 1,
+            total: frame.total,
+            lead: VOICE_LEAD,
+            length: frame.seconds,
+            src: frame.src,
+            seconds: VOICE_LEAD + frame.seconds + VOICE_TAIL,
+            enter: 'type',
+            exit: 'fade',
+            text: `${frame.who}, a voice note.`,
+          })
+          break
         case 'letter':
           drafts.push({
             kind: 'letter',
@@ -223,9 +255,9 @@ export function buildFilm(story: Story): Film {
     scenes.push(entry)
     const firstOfScene = shots.length
     for (const draft of drafts) {
-      const { seconds, text, ...rest } = draft
-      // Whole bars for most shots; the playful scenes cut twice as fast.
-      const unit = beat * (playful && (rest.kind === 'flag' || rest.kind === 'line') ? 2 : 4)
+      const { seconds, text, src, ...rest } = draft
+      // Whole bars for most shots; the playful scenes cut twice as fast, and a voice's page ends a beat after the voice does.
+      const unit = beat * (rest.kind === 'voice' ? 1 : playful && (rest.kind === 'flag' || rest.kind === 'line') ? 2 : 4)
       const duration = Math.ceil(seconds / unit - 1e-6) * unit
       const index = shots.length
       shots.push({
@@ -241,9 +273,11 @@ export function buildFilm(story: Story): Film {
         duration,
         text: text ?? spoken(rest),
       } as Shot)
+      if (rest.kind === 'voice' && src) voices.push({ src, start: clock + rest.lead, seconds: rest.length, until: clock + duration })
       clock += duration
     }
-    // A voice note starts once the scene's title card has gone, and the scene stays until it has been heard out.
+    // Films made before voice notes had a scene of their own carry one over a whole scene: it starts once
+    // the scene's title card has gone, and the scene stays until it has been heard out.
     if (scene.voice?.src && shots.length > firstOfScene) {
       const mine = shots.slice(firstOfScene)
       const from = (mine.find((s) => s.kind !== 'card') ?? mine[0]).start
@@ -253,11 +287,11 @@ export function buildFilm(story: Story): Film {
         shots[shots.length - 1].duration += extra
         clock += extra
       }
-      entry.voice = { src: scene.voice.src, start: from, seconds: scene.voice.seconds }
+      voices.push({ src: scene.voice.src, start: from, seconds: scene.voice.seconds, until: from + scene.voice.seconds })
     }
   })
 
-  return { shots, scenes, duration: clock }
+  return { shots, scenes, voices: voices.sort((a, b) => a.start - b.start), duration: clock }
 }
 
 function spoken(shot: Record<string, unknown>): string {

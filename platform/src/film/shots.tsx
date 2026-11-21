@@ -71,6 +71,44 @@ export function Type({
   )
 }
 
+/**
+ * One voice note: who is speaking, the recording drawn as a bar that fills as far as the voice has
+ * got, their photo when the sender chose one, and a dot for each voice in the scene. The same page
+ * in every kind of film, dressed by each (film.css, scrapbook.css, mixtape.css). The film sets
+ * `--voice-at` (0 to 1) while the voice plays.
+ */
+export function VoicePage({ shot }: { shot: Extract<Shot, { kind: 'voice' }> }) {
+  const bars = shot.peaks.map((h, i) => <i key={i} style={vars({ '--h': h })} />)
+  return (
+    <div className={`vp${shot.photo ? ' has-photo' : ''}`} aria-hidden="true">
+      {shot.photo && (
+        <div className="vp-blur">
+          <img src={shot.photo.src} alt="" />
+        </div>
+      )}
+      <div className="vp-note">
+        <Type as="h2" text={shot.who} className="vp-who" by="char" delay={0.25} step={46} />
+        <div className="vp-wave">
+          <div className="vp-bars">{bars}</div>
+          <div className="vp-bars vp-lit">{bars}</div>
+        </div>
+      </div>
+      {shot.photo && (
+        <figure className="vp-print">
+          <Media photo={shot.photo} />
+        </figure>
+      )}
+      {shot.total > 1 && (
+        <ol className="vp-dots">
+          {Array.from({ length: shot.total }, (_, i) => (
+            <li key={i} className={i + 1 < shot.n ? 'is-heard' : i + 1 === shot.n ? 'is-now' : undefined} />
+          ))}
+        </ol>
+      )}
+    </div>
+  )
+}
+
 export const seconds = (text: string | undefined, perWord = 0.07) => (text ? text.split(/\s+/).length * perWord : 0)
 
 export interface ShotActions {
@@ -148,6 +186,8 @@ function ShotBody({ shot, actions, leaving }: { shot: Shot; actions: ShotActions
       )
     case 'photo':
       return <Plate shot={shot} />
+    case 'voice':
+      return <VoicePage shot={shot} />
     case 'flag':
       if (shot.design === 'docket') return <Roll shot={shot} />
       return (

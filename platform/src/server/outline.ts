@@ -42,8 +42,8 @@ export interface OutlineBrief {
    * beside the photo that shows it (`placePhotos`); without them photos are dealt out blind.
    */
   peeks?: Array<{ id: string; jpeg: string }>
-  /** Voice notes the sender added, by id, with what each says (written down first, so the director can place them). */
-  voices?: Array<{ id: string; said: string }>
+  /** The film's voice notes: who speaks in each and what they say (written down first). They are heard in a scene of their own. */
+  voices?: Array<{ id: string; who: string; said: string }>
 }
 
 /** Whether the director is shown the sender's photos. On (the owner's decision of 2026-11-20) unless the studio turns it off. */
@@ -54,6 +54,8 @@ export interface Outlined {
   wish: string
   /** The film's first words, written for it. Absent when the film was outlined by rule. */
   opening?: { title: string; body: string }
+  /** What the scene of voice notes is called and the line that leads into it, when the film has voice notes and the model wrote them. */
+  voices?: { name: string; intro: string }
   direction: DirectionPlan
   by: 'model' | 'rule'
 }
@@ -71,7 +73,6 @@ const SCHEMA = {
           mood: { type: 'string', enum: ['playful', 'tender', 'warm'] },
           lines: { type: 'array', items: { type: 'string' } },
           intro: { type: 'string' },
-          voice: { type: 'integer' },
         },
         required: ['name', 'intro', 'layout', 'mood', 'lines'],
       },
@@ -80,6 +81,8 @@ const SCHEMA = {
     about: { type: 'string' },
     opening_line: { type: 'string' },
     opening_sub: { type: 'string' },
+    voices_name: { type: 'string' },
+    voices_intro: { type: 'string' },
     world: { type: 'string', enum: DIRECTED_WORLDS },
     look: { type: 'string', enum: ['screening', 'garden', 'paper'] },
     because: { type: 'string', enum: [...DIRECTION_REASONS] },
@@ -124,10 +127,11 @@ export function outlineBrief(brief: OutlineBrief) {
     ...(brief.voices?.length
       ? [
           [
-            `${from} also added ${brief.voices.length === 1 ? 'a voice note' : `${brief.voices.length} voice notes`}, which ${who} will hear in ${from}'s own voice during the film. What ${brief.voices.length === 1 ? 'it says' : 'each says'}:`,
-            ...brief.voices.map((v, i) => `${i + 1}. ${v.said ? `"${v.said}"` : '(could not be made out)'}`),
-            `For each scene, \`voice\` is the number of the voice note that plays over it, or 0. Put each voice note on the scene it is about. One that is about no scene in particular goes on the scene near the end that suits it best. Every voice note is placed, each on one scene only, and no scene has two.`,
-            'A voice note is heard, so do not also write its words as lines of the film. You may let what it says shape a scene around it.',
+            `The film also has ${brief.voices.length === 1 ? 'a voice note' : `${brief.voices.length} voice notes`}: recordings ${who} will hear, each on a page of its own, in a scene near the end of the film that the studio builds. Who speaks and what they say:`,
+            ...brief.voices.map((v, i) => `${i + 1}. ${v.who || from}: ${v.said ? `"${v.said}"` : '(could not be made out)'}`),
+            `Do not write that scene, and do not write what the voice notes say as lines of the film: they are heard, not read. Give the scene its name and its lead-in:`,
+            `- voices_name: two to five words, in ${from}'s voice, saying whose voices these are or what they are for ("From all of us", "What Dad wanted to say"). Not "Voice notes", not "Messages".`,
+            `- voices_intro: one short line, at most ten words, in ${from}'s voice, that leads ${who} into hearing them. It may not quote the voice notes or give away what they say.`,
           ].join('\n'),
         ]
       : []),
@@ -185,13 +189,7 @@ async function askModel(brief: OutlineBrief, model: string, timeoutMs: number): 
 export function checkOutline(raw: unknown, brief: OutlineBrief): Omit<Outlined, 'by'> | null {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
   const written = withAnswers(brief.text, brief.answered)
-  // The director names a voice note by its number; the film knows it by its id.
-  const scenes = (Array.isArray(r.scenes) ? r.scenes : []).map((scene) => {
-    const at = scene && typeof scene === 'object' ? Number((scene as { voice?: unknown }).voice) : 0
-    const note = Number.isInteger(at) && at > 0 ? brief.voices?.[at - 1] : undefined
-    return note ? { ...(scene as object), voiceId: note.id } : scene
-  })
-  const outline = cleanOutline(scenes, { source: written, photos: brief.photos, proper: [brief.recipient, brief.sender] })
+  const outline = cleanOutline(r.scenes, { source: written, photos: brief.photos, proper: [brief.recipient, brief.sender] })
   if (!outline.some((c) => c.layout !== 'photos')) return null
   const said = typeof r.wish === 'string' ? r.wish.replace(/\s+/g, ' ').trim().slice(0, LIMITS.wish) : ''
   const wish = said && closeToTheirWords(said, written) ? said : ''
@@ -202,7 +200,8 @@ export function checkOutline(raw: unknown, brief: OutlineBrief): Omit<Outlined, 
   const sung = { ...(song?.tune ? { tune: song.tune } : {}), ...(song?.voice ? { voice: song.voice } : {}) }
   const short = (value: unknown, max: number) => (typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, max).trim() : '')
   const opening = short(r.opening_line, 60) ? { title: short(r.opening_line, 60), body: short(r.opening_sub, 140) } : undefined
-  return { outline, wish, ...(opening ? { opening } : {}), direction: chosen ?? { ...directLocally({ ...facts, notes: notesOf(outline, wish) }), designs: {}, order: [], ...sung } }
+  const voices = brief.voices?.length && short(r.voices_name, 40) ? { name: short(r.voices_name, 40).replace(/[.:;,]+$/, ''), intro: short(r.voices_intro, 90) } : undefined
+  return { outline, wish, ...(opening ? { opening } : {}), ...(voices ? { voices } : {}), direction: chosen ?? { ...directLocally({ ...facts, notes: notesOf(outline, wish) }), designs: {}, order: [], ...sung } }
 }
 
 /** The outline by rule: the note read a sentence at a time, each moment a scene. */

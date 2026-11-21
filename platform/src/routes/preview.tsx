@@ -522,7 +522,7 @@ function SongStatus({ job, name, kept, onPlay, onRetry, onDismiss }: { job: Song
  * scenes, the names and the occasion.
  */
 const fieldsOf = (row: { type: string; layout?: string }, outlined: boolean): Array<keyof Intake> =>
-  hasWords(row.type) ? [SCENE_FIELDS[row.type]] : row.layout === 'photos' ? ['photos'] : row.layout ? ['outline'] : outlined && row.type === 'hello' ? ['recipient', 'sender', 'occasion', 'occasionName', 'opening'] : []
+  hasWords(row.type) ? [SCENE_FIELDS[row.type]] : row.layout === 'photos' ? ['photos'] : row.layout === 'voices' ? ['outline', 'voices'] : row.layout ? ['outline'] : outlined && row.type === 'hello' ? ['recipient', 'sender', 'occasion', 'occasionName', 'opening'] : []
 
 /** The words on the line being written, to find the shot of the scene that shows them. */
 function writingNow(intake: Intake, type: string, at: number): string {

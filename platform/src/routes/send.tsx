@@ -71,10 +71,9 @@ function Send() {
           }
         }
       }
-      for (const chapter of intake.outline ?? []) {
-        if (!chapter.voice?.src) continue
+      for (const note of intake.voices ?? []) {
         try {
-          form.append(`voice:${chapter.id}`, await (await fetch(chapter.voice.src)).blob(), `${chapter.id}-voice`)
+          form.append(`voice:${note.id}`, await (await fetch(note.src)).blob(), `${note.id}-voice`)
         } catch {
           throw new Error('A voice note couldn’t be read. Record it again, or remove it.')
         }

@@ -90,6 +90,8 @@ function parseEnding(raw: unknown): EndingChoice | null {
 }
 
 const MAX_SCENES = 12
+/** How many voice notes one film holds. */
+export const MAX_VOICES = 6
 const MOODS: Mood[] = ['warm', 'playful', 'tender', 'glow']
 
 /** A film's own scenes, as the sender left them: shapes and lengths only. A scene with nothing in it yet is harmless. */
@@ -113,8 +115,6 @@ function parseOutline(raw: unknown): Chapter[] | undefined {
       mood,
       lines: lines.map((l) => text(l, layout === 'moment' ? LIMITS.memoryStory : LIMITS.listItem, `Scene ${i + 1}`)),
       ...(typeof r.intro === 'string' && r.intro.trim() ? { intro: text(r.intro, 120, `Scene ${i + 1}’s intro`) } : {}),
-      // A voice note's sound arrives beside the gift; here it is only how long it runs.
-      ...(r.voice && typeof r.voice === 'object' && typeof (r.voice as { seconds?: unknown }).seconds === 'number' ? { voice: { src: '', seconds: Math.max(0.5, Math.min(60, (r.voice as { seconds: number }).seconds)) } } : {}),
       ...(r.photoId ? { photoId: id(r.photoId, `Scene ${i + 1}’s photo`) } : {}),
     }
   })
@@ -161,6 +161,16 @@ export function parseIntake(raw: unknown): { ok: true; intake: Intake } | { ok: 
     const direction = r.direction === undefined ? null : cleanStoredDirection(r.direction)
     const ending = parseEnding(r.ending)
     const outline = parseOutline(r.outline)
+    // A voice note's sound arrives beside the gift; here it is who speaks, how long, and the shape of it.
+    const voices = list(r.voices ?? [], 'Voice notes').map((v, i) => {
+      const note = (v ?? {}) as Record<string, unknown>
+      const photoId = typeof note.photoId === 'string' && photoIds.has(note.photoId) ? note.photoId : ''
+      const peaks = Array.isArray(note.peaks) ? note.peaks.slice(0, 64).map((p) => (typeof p === 'number' && p >= 0 && p <= 1 ? Math.round(p * 100) / 100 : 0.3)) : []
+      if (typeof note.seconds !== 'number' || !(note.seconds > 0)) throw new IntakeError(`Voice note ${i + 1} is not valid`)
+      return { id: id(note.id, `Voice note ${i + 1}`), src: '', seconds: Math.max(0.5, Math.min(61, note.seconds)), ...(typeof note.who === 'string' && note.who.trim() ? { who: text(note.who, LIMITS.name, `Voice note ${i + 1}’s name`) } : {}), ...(photoId ? { photoId } : {}), ...(peaks.length ? { peaks } : {}) }
+    })
+    if (voices.length > MAX_VOICES) throw new IntakeError(`Up to ${MAX_VOICES} voice notes`)
+    if (new Set(voices.map((v) => v.id)).size !== voices.length) throw new IntakeError('Duplicate voice notes')
 
     const intake: Intake = {
       occasion: r.occasion,
@@ -182,6 +192,7 @@ export function parseIntake(raw: unknown): { ok: true; intake: Intake } | { ok: 
       ...(direction ? { direction } : {}),
       ...(ending ? { ending } : {}),
       ...(outline ? { outline } : {}),
+      ...(voices.length ? { voices } : {}),
       ...(r.opening && typeof r.opening === 'object' && typeof (r.opening as { title?: unknown }).title === 'string'
         ? { opening: { title: text((r.opening as { title: string }).title, 80, 'The opening line'), body: text((r.opening as { body?: unknown }).body, 180, 'The opening') } }
         : {}),

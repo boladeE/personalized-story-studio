@@ -867,3 +867,43 @@
   line-height: 1.3;
   color: var(--f-soft);
 }
+
+/* ---------- A voice note on the tape: a name in capitals, the voice as level bars, cover art ---------- */
+
+.film.mx .vp {
+  --vp-lit: var(--mx-pop);
+}
+.film.mx .vp-blur {
+  display: none;
+}
+.film.mx .vp-who {
+  font: 800 clamp(34px, min(8.6cqw, 17cqh), 120px) / 0.9 var(--caps);
+  font-stretch: 75%;
+  text-transform: uppercase;
+}
+.film.mx .vp-bars {
+  gap: clamp(2px, 0.5cqw, 6px);
+}
+.film.mx .vp-bars i {
+  border-radius: 0;
+  background: var(--mx-line);
+}
+.film.mx .vp-lit i {
+  background: var(--mx-pop);
+}
+.film.mx .vp-print {
+  animation: mx-fade 0.5s 0.2s both;
+}
+.film.mx .vp-print :is(img, video) {
+  border-radius: 0;
+  outline: none;
+  box-shadow: clamp(6px, 1.2cqw, 14px) clamp(6px, 1.2cqw, 14px) 0 var(--mx-hot);
+}
+@container (max-aspect-ratio: 1 / 1) {
+  .film.mx .vp-who {
+    font-size: clamp(40px, 16cqw, 88px);
+  }
+}
+.film.mx .vp-dots li {
+  border-radius: 0;
+}

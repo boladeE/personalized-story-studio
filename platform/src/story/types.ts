@@ -58,22 +58,37 @@ export interface Memory {
   photoId: string
 }
 
-/** A recording of the sender speaking, and how long it runs. */
+/** A recording of someone speaking, and how long it runs. */
 export interface VoiceNote {
   src: string
   seconds: number
 }
 
-/** How a scene written for one film is laid out. These few layouts are the only fixed thing about such a scene. */
-export const SCENE_LAYOUTS = ['line', 'list', 'moment', 'photos'] as const
+/**
+ * A voice note in a film: the sender's own, or one a friend or relative recorded for it. `who` is
+ * who is speaking (the sender, when empty), `photoId` a photo of them to show while they speak, and
+ * `peaks` the shape of the recording, drawn as a bar that fills while it plays.
+ */
+export interface Voiced extends VoiceNote {
+  id: string
+  who?: string
+  photoId?: string
+  peaks?: number[]
+}
+
+/**
+ * How a scene written for one film is laid out. These few layouts are the only fixed thing about such a scene.
+ * `voices` is the scene the film's voice notes are heard in, one page a voice.
+ */
+export const SCENE_LAYOUTS = ['line', 'list', 'moment', 'photos', 'voices'] as const
 export type SceneLayout = (typeof SCENE_LAYOUTS)[number]
 
 /**
  * One scene of a film's outline: a scene that exists because of what this
  * sender wrote, with a name of its own. `lines` are the sender's words:
  * a `line` shows the first by itself, a `list` shows each in turn, a `moment`
- * tells them as one passage beside a photo, and `photos` has none (it shows
- * the photos no other scene used).
+ * tells them as one passage beside a photo, and `photos` and `voices` have none
+ * (one shows the photos no other scene used, the other plays the film's voice notes).
  */
 export interface Chapter {
   id: string
@@ -83,10 +98,6 @@ export interface Chapter {
   lines: string[]
   /** A short line on the scene's title card that leads the viewer into it. */
   intro?: string
-  /** The sender's own voice, recorded for this scene. It plays over the scene, with the song turned down under it. */
-  voice?: VoiceNote
-  /** Which of the voice notes added while the film was being made the director put on this scene. Replaced by `voice` once the film is built. */
-  voiceId?: string
   /** The photo a moment is told beside, if the sender picked one. */
   photoId?: string
 }
@@ -145,8 +156,8 @@ export interface Intake {
    * `spotlight`, `memories`, `habits` and `reasons` above are not used.
    */
   outline?: Chapter[]
-  /** Voice notes the sender added while making the film. The director puts each on a scene, where it becomes that scene's `voice`. */
-  voices?: Array<VoiceNote & { id: string }>
+  /** The film's voice notes, in the order they are heard. They play in a scene of their own (the outline's `voices` scene). */
+  voices?: Voiced[]
   /** The film's first words under their name, written for this film. Unset, the occasion's stock opening is used. */
   opening?: { title: string; body: string }
 }
@@ -180,6 +191,8 @@ export type Frame =
   /** `flag` and `reason` are the older fixed scenes' items. `loud` and `calm` are an outlined scene's, drawn the same two ways under the scene's own name. */
   | { kind: 'item'; kicker: string; text: string; index: number; total: number; marker: 'flag' | 'reason' | 'loud' | 'calm' }
   | { kind: 'montage'; kicker: string; title: string; photos: Photo[] }
+  /** One voice note: who is speaking, the recording, and a photo of them when the sender chose one. */
+  | { kind: 'voice'; who: string; src: string; seconds: number; peaks: number[]; photo?: Photo; index: number; total: number }
   | { kind: 'letter'; title: string; paragraphs: string[]; signoff: string }
   /** The film's last beat: something to do (blow out a candle, open a note), then the sender's last line. */
   | { kind: 'wish'; title: string; body: string; reveal: string; prop?: EndingProp; action?: string; choices?: string[] }
@@ -196,7 +209,7 @@ export interface Scene {
   layout?: SceneLayout
   /** The line under the scene's name on its title card. */
   intro?: string
-  /** The sender's voice, played over this scene. */
+  /** A voice note played over the whole scene: how films made before voice notes had a scene of their own carry one. */
   voice?: VoiceNote
   /** Which of the world's designs this scene is drawn in. Gifts stored before designs existed carry none. */
   design?: string

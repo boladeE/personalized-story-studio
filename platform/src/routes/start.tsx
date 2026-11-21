@@ -5,14 +5,14 @@ import { useDraft } from '../components/draft'
 import { UndoToast } from '../components/UndoToast'
 import { Working } from '../components/Working'
 import { useRecorder } from '../components/recorder'
-import { useVoiceNotes, VoiceTile } from '../components/VoiceNotes'
+import { useVoiceNotes, VoiceNames, VoiceTile } from '../components/VoiceNotes'
 import { usePhotos } from '../components/photos'
 import { cleanDirection, directLocally, DIRECTED_WORLDS } from '../story/direction'
 import type { DirectionPlan } from '../story/direction'
 import { cleanAnswers, cleanFollowups, FOLLOWUP_LIMITS, followupsLocally, withAnswers } from '../story/followups'
 import { canGenerate, LOOKS } from '../story/generate'
 import { closeToTheirWords, NOTES_LIMIT } from '../story/notes'
-import { cleanOutline, notesOf, outlineByWords, withVoices } from '../story/outline'
+import { cleanOutline, notesOf, outlineByWords, speakerOf, voicesChapter } from '../story/outline'
 import { OCCASIONS, occasionFor, occasionOf } from '../story/occasions'
 import { RELATIONSHIPS } from '../story/relationships'
 import { newSeed } from '../story/rng'
@@ -209,36 +209,38 @@ function Start() {
       let wish = ''
       let opening: Intake['opening']
       let directed: DirectionPlan | null = null
-      // What each voice note says is written down first, so the director can put it on the scene it is about.
+      let voicesNamed: { name?: string; intro?: string } | undefined
+      // What each voice note says is written down first, so the director knows what the film's voices add.
       const notes = intake.voices ?? []
       const voices = await Promise.all(
         notes.map(async (note) => {
           try {
             const blob = await (await fetch(note.src)).blob()
-            const heard = await fetch(`/api/transcribe?names=${encodeURIComponent([them, me].filter(Boolean).join(','))}`, { method: 'POST', headers: { 'content-type': blob.type || 'audio/webm' }, body: blob })
-            return { id: note.id, said: heard.ok ? String(((await heard.json()) as { text?: string }).text ?? '') : '' }
+            const heard = await fetch(`/api/transcribe?note=1&names=${encodeURIComponent([them, me].filter(Boolean).join(','))}`, { method: 'POST', headers: { 'content-type': blob.type || 'audio/webm' }, body: blob })
+            return { id: note.id, who: speakerOf(note, me), said: heard.ok ? String(((await heard.json()) as { text?: string }).text ?? '') : '' }
           } catch {
-            return { id: note.id, said: '' }
+            return { id: note.id, who: speakerOf(note, me), said: '' }
           }
         }),
       )
       const facts = { occasion: intake.occasion, occasionName: intake.occasionName?.trim() || undefined, relationship: intake.relationship, photos: intake.photos.length, letter: intake.letter.trim().length >= 40 }
       try {
         const response = await fetch('/api/sort', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text, sender: me, recipient: them, ...facts, answers, peeks: await photoPeeks(intake.photos), voices }) })
-        const body = (await response.json()) as { outline?: unknown; wish?: unknown; direction?: unknown; opening?: { title?: unknown; body?: unknown } }
+        const body = (await response.json()) as { outline?: unknown; wish?: unknown; direction?: unknown; opening?: { title?: unknown; body?: unknown }; voices?: { name?: unknown; intro?: unknown } }
         if (!response.ok) throw new Error('outline failed')
         // Checked again here: the studio may tidy the sender's words, but every line must stay close to what they wrote.
         outline = cleanOutline(body.outline, { source: written, photos: intake.photos.length, proper: [them, me] })
         if (!outline.some((c) => c.layout !== 'photos')) throw new Error('no scenes')
         wish = typeof body.wish === 'string' && closeToTheirWords(body.wish, written) ? body.wish.trim().slice(0, LIMITS.wish) : ''
         if (typeof body.opening?.title === 'string' && body.opening.title.trim()) opening = { title: body.opening.title.trim().slice(0, 60), body: typeof body.opening.body === 'string' ? body.opening.body.trim().slice(0, 140) : '' }
+        if (typeof body.voices?.name === 'string') voicesNamed = { name: body.voices.name.trim().slice(0, 40), intro: typeof body.voices.intro === 'string' ? body.voices.intro.trim().slice(0, 90) : '' }
         // And the direction can only name a kind of film and colours the studio has.
         directed = cleanDirection(body.direction, DIRECTED_WORLDS)
       } catch {
         outline = outlineByWords(text, answers, them)
       }
-      // Each voice note goes on the scene the director chose for it; any it left out still gets a scene.
-      outline = withVoices(outline, notes)
+      // The voice notes are heard in a scene of their own, last before the film's ending.
+      if (notes.length) outline = [...outline, voicesChapter({ voices: notes, sender: me, recipient: them }, voicesNamed)]
       directed ??= directLocally({ ...facts, recipient: them, notes: notesOf(outline, wish) })
       // The colours are drawn for each film. Left to the director they came out the same for every film of a kind.
       const look = LOOKS[seed % LOOKS.length].id
@@ -425,6 +427,7 @@ function Start() {
               {voiceNotes.problem}
             </p>
           )}
+          <VoiceNames notes={intake.voices ?? []} onChange={voiceNotes.change} />
           {photos.reading > 0 && <Working className="photo-reading">Reading {photos.reading === 1 ? 'a photo' : `${photos.reading} photos`}…</Working>}
           {photos.removed && (
             <UndoToast token={photos.removed.photo.id} onUndo={photos.restore} onDone={photos.forget}>

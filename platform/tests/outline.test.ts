@@ -184,7 +184,74 @@ describe('a film with its own scenes', () => {
     const named = generateStory(maya({ photos, outline: [{ id: 'pics', name: 'Us, lately', layout: 'photos', mood: 'warm', lines: [] }, OUTLINE[0]] }), 5)
     expect(named.scenes.map((s) => s.name)).toContain('Us, lately')
     // A film always has a scene for its photos, so there is somewhere to add one.
-    expect(outlineOf(maya())!.map((c) => c.layout)).toEqual([...OUTLINE.map((c) => c.layout), 'photos'])
+    // And one for its voice notes, last, for the same reason.
+    expect(outlineOf(maya())!.map((c) => c.layout)).toEqual([...OUTLINE.map((c) => c.layout), 'photos', 'voices'])
+  })
+
+  it('plays voice notes in a scene of their own, a page a voice, with who is speaking', () => {
+    const photos = [1, 2, 3].map((n) => ({ id: `p${n}`, src: `/p${n}.jpg`, caption: '' }))
+    const voices = [
+      { id: 'v-me', src: '/me.webm', seconds: 6, peaks: [0.2, 0.9, 0.5] },
+      { id: 'v-dad', src: '/dad.m4a', seconds: 10, who: 'Dad', photoId: 'p2' },
+    ]
+    const intake = maya({ photos, voices })
+    // No voice notes, no such scene in the film; with them it comes last before the ending.
+    expect(generateStory(maya({ photos }), 5).scenes.some((s) => s.layout === 'voices')).toBe(false)
+    const story = generateStory(intake, 5)
+    const types = story.scenes.map((s) => s.layout ?? s.type)
+    expect(types.slice(-2)).toEqual(['voices', 'wish'])
+    const scene = story.scenes.find((s) => s.layout === 'voices')!
+    // Named by who is speaking until the director or the sender names it.
+    expect(scene.name).toBe('From all of us')
+    expect(generateStory(maya({ voices: [voices[0]] }), 5).scenes.find((s) => s.layout === 'voices')!.name).toBe('In my own voice')
+    expect(scene.frames).toMatchObject([
+      { kind: 'voice', who: 'Tobi', src: '/me.webm', seconds: 6, peaks: [0.2, 0.9, 0.5], index: 0, total: 2 },
+      { kind: 'voice', who: 'Dad', src: '/dad.m4a', seconds: 10, photo: { id: 'p2' }, index: 1, total: 2 },
+    ])
+    // A recording whose shape could not be read still gets a bar to fill.
+    const drawn = scene.frames[1].kind === 'voice' ? scene.frames[1].peaks : []
+    expect(drawn.length).toBeGreaterThan(20)
+    expect(drawn.every((h) => h > 0 && h <= 1)).toBe(true)
+    // Dad's photo is his page's: no other scene shows it.
+    const elsewhere = story.scenes.filter((s) => s.layout !== 'voices').flatMap((s) => s.frames).flatMap((f) => (f.kind === 'photo' ? [f.photo.id] : f.kind === 'montage' ? f.photos.map((p) => p.id) : []))
+    expect(elsewhere).not.toContain('p2')
+
+    // In the film each voice has a page that lasts as long as it does, and starts a moment after the page arrives.
+    const film = buildFilm(story)
+    const pages = film.shots.filter((s) => s.kind === 'voice')
+    expect(pages.map((s) => s.text)).toEqual(['Tobi, a voice note.', 'Dad, a voice note.'])
+    expect(film.voices.map((v) => v.src)).toEqual(['/me.webm', '/dad.m4a'])
+    film.voices.forEach((cue, i) => {
+      expect(cue.start).toBeGreaterThan(pages[i].start + 1)
+      expect(cue.start + cue.seconds).toBeLessThan(pages[i].start + pages[i].duration)
+      expect(pages[i].duration).toBeLessThan(cue.seconds + 4.5)
+    })
+    // The scene is introduced like any other.
+    const card = film.shots[pages[0].index - 1]
+    expect(card).toMatchObject({ kind: 'card', title: 'From all of us', sub: 'A few people wanted to say something.' })
+
+    // A gift made when a voice note played over a whole scene still plays it.
+    const old = generateStory(maya(), 5)
+    old.scenes[2] = { ...old.scenes[2], voice: { src: '/old.webm', seconds: 30 } }
+    expect(buildFilm(old).voices).toMatchObject([{ src: '/old.webm', seconds: 30 }])
+
+    // Who is speaking, the photo and the shape travel with the gift; the sound arrives beside it.
+    const kept = parseIntake(intake)
+    expect(kept.ok && kept.intake.voices).toEqual([
+      { id: 'v-me', src: '', seconds: 6, peaks: [0.2, 0.9, 0.5] },
+      { id: 'v-dad', src: '', seconds: 10, who: 'Dad', photoId: 'p2' },
+    ])
+  })
+
+  it('has the director name the scene of voice notes, and never write what they say', () => {
+    const brief = { ...BRIEF, voices: [{ id: 'v-dad', who: 'Dad', said: 'Happy anniversary, you two.' }] }
+    const asked = outlineBrief(brief)
+    expect(asked).toContain('Dad: "Happy anniversary, you two."')
+    expect(asked).toContain('voices_name')
+    expect(checkOutline({ ...ANSWER, voices_name: 'What Dad wanted to say.', voices_intro: 'He asked to go first.' }, brief)!.voices).toEqual({ name: 'What Dad wanted to say', intro: 'He asked to go first.' })
+    // Without voice notes there is no such scene to name.
+    expect(checkOutline({ ...ANSWER, voices_name: 'Voices' }, BRIEF)!.voices).toBeUndefined()
+    expect(outlineBrief(BRIEF)).not.toContain('voices_name')
   })
 
   it('draws two lists that follow each other differently, and a design the sender picks stays', () => {

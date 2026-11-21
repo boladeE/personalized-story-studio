@@ -68,21 +68,20 @@ export const Route = createFileRoute('/api/gifts')({
           }
         }
 
-        // A scene's voice note travels with it.
-        for (const chapter of parsed.intake.outline ?? []) {
-          if (!chapter.voice) continue
-          const file = form.get(`voice:${chapter.id}`)
-          if (!(file instanceof File) || file.size > MAX_VOICE) {
-            delete chapter.voice
-            continue
-          }
+        // Each voice note travels beside the gift, like a photo. One whose sound did not arrive is left out.
+        const heard: NonNullable<typeof parsed.intake.voices> = []
+        for (const note of parsed.intake.voices ?? []) {
+          const file = form.get(`voice:${note.id}`)
+          if (!(file instanceof File) || file.size > MAX_VOICE) continue
           const bytes = new Uint8Array(await file.arrayBuffer())
           const type = sniffAudio(bytes)
           if (!type) return json({ error: 'A voice note couldn’t be read.' }, { status: 415 })
-          files.push({ id: `${chapter.id}-voice`, bytes })
-          media[`${chapter.id}-voice`] = type
-          chapter.voice = { src: `/api/media/${slug}/${chapter.id}-voice`, seconds: chapter.voice.seconds }
+          files.push({ id: `${note.id}-voice`, bytes })
+          media[`${note.id}-voice`] = type
+          heard.push({ ...note, src: `/api/media/${slug}/${note.id}-voice` })
         }
+        if (heard.length) parsed.intake.voices = heard
+        else delete parsed.intake.voices
 
         let soundtrack: GiftRecord['story']['soundtrack']
         if (typeof payload.songId === 'string' && payload.songId) {

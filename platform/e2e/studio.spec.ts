@@ -565,7 +565,7 @@ test('the short flow writes the film’s own scenes from the sender’s words, p
   await page.getByRole('button', { name: /^Back to / }).click()
   // The film's scenes are its own: each moment a scene called by its own words, with no stock scenes waiting to be filled.
   // Both photos sit beside scenes (the moment, and the single line), so none are left for the scene of photos.
-  await expect(page.locator('.scene-tile-name')).toHaveText(['Before we begin', 'Moving day', 'The way Zara is', 'I love you because…', 'One last thing', 'Zara, in pictures', 'A letter', 'Add a scene'])
+  await expect(page.locator('.scene-tile-name')).toHaveText(['Before we begin', 'Moving day', 'The way Zara is', 'I love you because…', 'One last thing', 'Zara, in pictures', 'Voice notes', 'A letter', 'Add a scene'])
   await expect(sceneTile(page, 'Moving day')).toHaveClass(/is-in/)
   await expect(sceneTile(page, 'A letter')).toHaveClass(/is-missing/)
   await pickScene(page, 'The way Zara is')
@@ -1010,7 +1010,7 @@ test('an iPhone photo (HEIC) is converted on the device, and files that are not 
 test('the opening can be skipped, and clearing a draft can be undone', async ({ page }) => {
   await open(page, '/preview?sample=1')
   const film = page.locator('.preview-body > .film')
-  await page.getByRole('button', { name: 'Admit one: Zara. Tap to begin' }).click()
+  await page.getByRole('button', { name: 'Admit one: Sarah. Tap to begin' }).click()
   await expect(film).toHaveAttribute('data-phase', 'leader')
   await expect(page.locator('.opening-skip')).toHaveText('Tap to skip')
   // A second tap goes straight to the film, well before the countdown would have finished.

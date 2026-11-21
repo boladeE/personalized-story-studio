@@ -1699,3 +1699,60 @@
   font-size: clamp(17px, min(2.6cqw, 5cqh), 34px);
   line-height: 1.25;
 }
+
+/* ---------- A voice note on an album page: a name written by hand, the voice in pen, a taped print ---------- */
+
+.film.sb .vp {
+  --vp-lit: var(--sb-pen);
+}
+.film.sb .vp-blur {
+  display: none;
+}
+.film.sb .vp-who {
+  font: 700 clamp(34px, min(8.4cqw, 17cqh), 112px) / 0.95 var(--hand);
+}
+.film.sb .vp-bars i {
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--f-ink) 22%, transparent);
+}
+.film.sb .vp-lit i {
+  background: var(--sb-pen);
+}
+.film.sb .vp-print {
+  padding: clamp(6px, 1.3cqw, 14px) clamp(6px, 1.3cqw, 14px) clamp(18px, 4.4cqw, 46px);
+  background: var(--sb-paper);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.3);
+  transform: rotate(2.2deg);
+  animation: vp-drop 0.7s 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+.film.sb .vp-print::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: clamp(-14px, -1.6cqw, -8px);
+  width: clamp(54px, 11cqw, 120px);
+  height: clamp(16px, 3cqw, 30px);
+  background: var(--sb-tape-2);
+  transform: translateX(-50%) rotate(-3deg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+.film.sb .vp-print :is(img, video) {
+  max-height: calc(100cqh - clamp(120px, 34cqh, 250px));
+  border-radius: 1px;
+  box-shadow: none;
+  outline: none;
+}
+.film.sb .vp-dots li {
+  border-color: color-mix(in srgb, var(--f-ink) 45%, transparent);
+}
+@keyframes vp-drop {
+  from { opacity: 0; transform: translateY(-5%) rotate(7deg) scale(1.06); }
+}
+@container (max-aspect-ratio: 1 / 1) {
+  .film.sb .vp-print :is(img, video) {
+    max-height: 40cqh;
+  }
+  .film.sb .vp-who {
+    font-size: clamp(40px, 15cqw, 84px);
+  }
+}

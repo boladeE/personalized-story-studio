@@ -1,6 +1,6 @@
 import { sceneLabel, SCENES, SKELETONS } from './library'
 import type { BuildContext } from './library'
-import { chapterLines, chapterMissing, chapterName, NO_PHOTO, outlineOf, pagesOf } from './outline'
+import { chapterLines, chapterMissing, chapterName, NO_PHOTO, outlineOf, pagesOf, speakerOf } from './outline'
 import { createRng } from './rng'
 import type { Chapter, Cut, Frame, Intake, LookId, Photo, PhotoLayout, Scene, SceneLayout, Story, WorldId } from './types'
 import { designKey, designsFor, WORLDS } from './worlds'
@@ -65,6 +65,17 @@ function arrange(types: string[], cut: Cut | undefined): string[] {
 
 const sameStart = (name: string, text: string) => text.toLowerCase().startsWith(name.toLowerCase().replace(/[.!?…]+$/, ''))
 
+/** A recording whose shape could not be read still gets a bar: an even, speech-like one drawn from its id. */
+function drawnPeaks(id: string): number[] {
+  let seed = 7
+  for (const ch of id) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0
+  return Array.from({ length: 44 }, (_, i) => {
+    seed = (seed * 1664525 + 1013904223) >>> 0
+    const swell = 0.55 + 0.35 * Math.sin(i / 3.1)
+    return Math.round(Math.max(0.12, Math.min(1, swell * (0.45 + (seed / 0xffffffff) * 0.55))) * 100) / 100
+  })
+}
+
 /** An outlined scene's frames: the sender's words, under the scene's own name, in its layout. */
 function chapterFrames(chapter: Chapter, ctx: BuildContext, loud: boolean): Frame[] {
   const name = chapterName(chapter)
@@ -99,6 +110,14 @@ function chapterFrames(chapter: Chapter, ctx: BuildContext, loud: boolean): Fram
       const photos = ctx.unusedPhotos().slice(0, 6)
       return photos.length ? [{ kind: 'montage', kicker: '', title: name, photos }] : []
     }
+    case 'voices': {
+      // One page a voice: who is speaking, the recording, and their photo when the sender chose one.
+      const notes = (ctx.intake.voices ?? []).filter((n) => n.src)
+      return notes.map<Frame>((note, index) => {
+        const photo = note.photoId ? ctx.photoById(note.photoId) : undefined
+        return { kind: 'voice', who: speakerOf(note, ctx.intake.sender), src: note.src, seconds: note.seconds, peaks: note.peaks?.length ? note.peaks : drawnPeaks(note.id), ...(photo ? { photo } : {}), index, total: notes.length }
+      })
+    }
   }
 }
 
@@ -115,7 +134,7 @@ export function generateStory(intake: Intake, seed: number): Story {
   const direct = createRng((seed ^ 0x5bd1e995) >>> 0)
   const used = new Set<string>()
   // Photos the sender chose for a scene are kept for it.
-  const reserved = new Set([...intake.memories.map((m) => m.photoId), ...(intake.outline ?? []).map((c) => c.photoId ?? '')].filter(Boolean))
+  const reserved = new Set([...intake.memories.map((m) => m.photoId), ...(intake.outline ?? []).map((c) => c.photoId ?? ''), ...(intake.voices ?? []).map((v) => v.photoId ?? '')].filter(Boolean))
 
   const ctx: BuildContext = {
     intake,
@@ -193,6 +212,8 @@ export function generateStory(intake: Intake, seed: number): Story {
       const design = designsFor(world, 'list').find((d) => d.id === drawn.get(c.id))
       return design ? Boolean(design.loud) : c.mood === 'playful'
     }
+    // A voice keeps the photo of who is speaking; then told scenes take theirs.
+    for (const chapter of outline) if (chapter.layout === 'voices') frames.set(chapter.id, chapterFrames(chapter, ctx, false))
     for (const chapter of outline) if (chapter.layout === 'moment') frames.set(chapter.id, chapterFrames(chapter, ctx, false))
     for (const chapter of outline) if (chapter.layout === 'line' || chapter.layout === 'list') frames.set(chapter.id, chapterFrames(chapter, ctx, loud(chapter)))
     for (const chapter of outline) if (chapter.layout === 'photos') frames.set(chapter.id, chapterFrames(chapter, ctx, false))
@@ -200,7 +221,7 @@ export function generateStory(intake: Intake, seed: number): Story {
       const made = frames.get(chapter.id) ?? []
       if (!made.length) continue
       order.push(chapter.id)
-      built.set(chapter.id, { type: chapter.id, name: chapterName(chapter), mood: chapter.mood, layout: chapter.layout, ...(chapter.intro?.trim() ? { intro: chapter.intro.trim() } : {}), ...(chapter.voice?.src ? { voice: chapter.voice } : {}), ...(drawn.has(chapter.id) ? { design: drawn.get(chapter.id) } : {}), frames: made })
+      built.set(chapter.id, { type: chapter.id, name: chapterName(chapter), mood: chapter.mood, layout: chapter.layout, ...(chapter.intro?.trim() ? { intro: chapter.intro.trim() } : {}), ...(drawn.has(chapter.id) ? { design: drawn.get(chapter.id) } : {}), frames: made })
     }
     fixed('letter')
     fixed('wish')

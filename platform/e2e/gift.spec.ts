@@ -248,3 +248,71 @@ test('a video clip plays silently in the film, is a still in the editor, and tra
   expect((await fresh.request.get(new URL((await video.getAttribute('src'))!, link).href)).status()).toBe(401)
   expect(errors).toEqual([])
 })
+
+test('voice notes are heard in a scene of their own, a page a voice, and travel with the gift', async ({ page, browser }) => {
+  test.setTimeout(120_000)
+  const errors = trackErrors(page)
+  const note = readFileSync(new URL('./fixtures/voice.ogg', import.meta.url))
+  await open(page, '/start')
+  await page.getByRole('button', { name: 'Friend', exact: true }).click()
+  await page.getByLabel('Their name').fill('Kemi')
+  await page.getByLabel('Your name').fill('Ada')
+  await page.getByLabel('Your name').press('Enter')
+  await page.getByRole('button', { name: 'Thank you' }).click()
+
+  // Two voice notes go in the tray: the sender's own, and one somebody else recorded, named here.
+  await page.getByLabel('Upload voice notes').setInputFiles([
+    { name: 'mine.ogg', mimeType: 'audio/ogg', buffer: note },
+    { name: 'dad.ogg', mimeType: 'audio/ogg', buffer: note },
+  ])
+  await expect(page.locator('.voice-tile')).toHaveCount(2)
+  await page.getByLabel('Who is speaking in voice note 2').fill('Dad')
+  await page.getByRole('button', { name: 'Next' }).click()
+  await page.getByLabel('About Kemi').fill('Moving day. The lift broke, and you carried the sofa up five floors arguing about the angle. You never finish your tea.')
+  await page.getByRole('button', { name: 'Next' }).click()
+  await page.getByRole('button', { name: 'Skip these' }).click()
+  await page.getByRole('button', { name: 'Make the film' }).click()
+  await expect(page).toHaveURL(/\/preview$/)
+  await expect(page.locator('.song-status')).toHaveCount(0, { timeout: 15_000 })
+
+  // The film has a scene for them, named by who speaks, where each can be changed.
+  await openEditor(page)
+  await expect(page.locator('.scene-tile-name').filter({ hasText: 'From all of us' })).toHaveCount(1)
+  await pickScene(page, 'From all of us')
+  await expect(page.locator('.voice-row')).toHaveCount(2)
+  await expect(page.locator('.voice-row').nth(1).getByLabel(/Who is speaking/)).toHaveValue('Dad')
+  await closeEditor(page)
+
+  // Each voice has its own page: the name, and a bar that fills as the recording plays.
+  const heard = async (film: typeof page) => {
+    await startFilm(film)
+    for (const who of ['Ada', 'Dad']) {
+      await walk(film, (shot) => shot.kind === 'voice' && shot.text.startsWith(who))
+      const current = film.locator('.film:not(.still) .shot.is-current')
+      await expect(current.locator('.vp-who')).toHaveText(who)
+      await expect.poll(() => film.evaluate(() => Number(document.documentElement.dataset.voice ?? 0)), { timeout: 15_000 }).toBeGreaterThan(1)
+      expect(await film.evaluate(() => Number(getComputedStyle(document.documentElement).getPropertyValue('--voice-at')))).toBeGreaterThan(0.05)
+    }
+  }
+  await heard(page)
+
+  // Sent, the recordings are stored with the gift and play for the recipient from behind the lock.
+  await page.getByRole('link', { name: 'Send this gift' }).click()
+  await page.getByLabel('A question only Kemi can answer').fill('What broke on moving day?')
+  await page.getByLabel('The answer').fill('The lift')
+  await page.getByRole('button', { name: 'Create the private link' }).click()
+  const link = await page.getByLabel('Their private link').inputValue()
+  const slug = link.split('/g/')[1]
+  const recipient = await (await browser.newContext()).newPage()
+  const fetched: string[] = []
+  recipient.on('request', (r) => r.url().endsWith('-voice') && fetched.push(new URL(r.url()).pathname))
+  await open(recipient, link)
+  await recipient.getByLabel('What broke on moving day?').fill('the lift')
+  await recipient.getByRole('button', { name: 'Open it' }).click()
+  await heard(recipient)
+  expect(new Set(fetched).size).toBe(2)
+  for (const path of fetched) expect(path).toMatch(new RegExp(`^/api/media/${slug}/v-[a-z0-9]+-voice$`))
+  const fresh = await (await browser.newContext()).newPage()
+  expect((await fresh.request.get(new URL(fetched[0], link).href)).status()).toBe(401)
+  expect(errors).toEqual([])
+})

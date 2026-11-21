@@ -2,7 +2,7 @@ import { Media } from './Media'
 import { useLayoutEffect, useRef } from 'react'
 import type { Photo } from '../story/types'
 import { fit } from './scrapbook'
-import { Choice, FlagIcon, Letter, Type, vars } from './shots'
+import { Choice, FlagIcon, Letter, Type, vars, VoicePage } from './shots'
 import type { ShotActions } from './shots'
 import type { Shot } from './timeline'
 
@@ -93,6 +93,8 @@ export function MixBody({ shot, actions, leaving }: { shot: Shot; actions: ShotA
       return <LineTrack shot={shot} />
     case 'photo':
       return <PhotoTrack shot={shot} />
+    case 'voice':
+      return <VoicePage shot={shot} />
     case 'flag':
       return shot.design === 'tracklist' ? <TrackList id={shot.id} label={shot.label} items={shot.all} shown={shot.n} side="B" fresh flag={shot.sceneType === 'redFlags'} /> : <Shout shot={shot} />
     case 'reason':

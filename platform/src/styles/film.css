@@ -1546,12 +1546,170 @@
   animation-play-state: paused !important;
 }
 
+/* ---------- A voice note: who is speaking, their voice as a bar that fills, their photo ---------- */
+
+.vp {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  justify-items: center;
+  gap: clamp(18px, 6cqw, 90px);
+}
+.vp.has-photo {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+}
+/* Over the darkened photo the words are always light, whatever the film's colours. */
+.film:not(.sb, .mx) .vp.has-photo {
+  --vp-ink: #f7f1e7;
+}
+/* The same photo, out of focus, behind everything: the page takes its colour from who is speaking. */
+.vp-blur {
+  position: absolute;
+  inset: calc(-1 * clamp(14px, 4cqh, 44px)) calc(-1 * clamp(20px, 7cqw, 110px));
+  overflow: hidden;
+  animation: vp-fade 1.8s both;
+}
+.vp-blur img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(clamp(24px, 5cqw, 60px)) saturate(1.15) brightness(0.5);
+  transform: scale(1.25);
+}
+.vp-note {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: clamp(10px, 3.4cqh, 30px);
+  width: 100%;
+  max-width: 62cqw;
+  justify-items: center;
+  text-align: center;
+}
+.vp.has-photo .vp-note {
+  justify-self: end;
+  max-width: 40cqw;
+  justify-items: start;
+  text-align: left;
+}
+.vp-who {
+  margin: 0;
+  font: 400 clamp(30px, min(7cqw, 14cqh), 96px) / 1 var(--serif);
+  color: var(--vp-ink, var(--f-ink));
+  overflow-wrap: anywhere;
+}
+.vp-wave {
+  position: relative;
+  width: 100%;
+  height: clamp(30px, 11cqh, 84px);
+  animation: vp-fade 0.9s 0.8s both;
+}
+.vp-bars {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: clamp(1px, 0.34cqw, 4px);
+}
+.vp-bars i {
+  flex: 1;
+  min-width: 0;
+  height: max(3px, calc(var(--h) * 100%));
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--vp-ink, var(--f-ink)) 30%, transparent);
+}
+.vp-lit i {
+  background: var(--vp-lit, var(--f-accent));
+}
+/* The lit bars are uncovered from the left as far as the voice has got. */
+.vp-lit {
+  clip-path: inset(0 calc((1 - var(--voice-at, 0)) * 100%) 0 0);
+}
+.shot.is-leaving .vp-lit {
+  clip-path: none;
+}
+.vp-print {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  justify-self: start;
+  animation: plate-in 1.25s 0.15s cubic-bezier(0.2, 0.7, 0.1, 1) both;
+}
+.vp-print :is(img, video) {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: calc(100cqh - var(--bar, 0px) * 2 - clamp(70px, 18cqh, 150px));
+  border-radius: 3px;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.55);
+  outline: 1px solid color-mix(in srgb, var(--vp-ink, var(--f-ink)) 30%, transparent);
+  outline-offset: clamp(5px, 1cqw, 10px);
+}
+.vp-dots {
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  gap: clamp(7px, 1.3cqw, 13px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  animation: vp-fade 0.9s 1s both;
+}
+.vp-dots li {
+  width: clamp(6px, min(1cqw, 1.8cqh), 10px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--vp-ink, var(--f-ink)) 45%, transparent);
+}
+.vp-dots li.is-heard {
+  background: color-mix(in srgb, var(--vp-ink, var(--f-ink)) 55%, transparent);
+  border-color: transparent;
+}
+.vp-dots li.is-now {
+  background: var(--vp-lit, var(--f-accent));
+  border-color: var(--vp-lit, var(--f-accent));
+  box-shadow: 0 0 0 clamp(3px, 0.5cqw, 5px) color-mix(in srgb, var(--vp-lit, var(--f-accent)) 26%, transparent);
+}
+@keyframes vp-fade {
+  from { opacity: 0; }
+}
+
 /* ---------- Tall screens (phones held upright) ---------- */
 
 @container (max-aspect-ratio: 1 / 1) {
   .shot {
     padding-left: clamp(18px, 6cqw, 40px);
     padding-right: clamp(18px, 6cqw, 40px);
+  }
+  .vp.has-photo {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-content: center;
+    gap: clamp(18px, 5cqh, 44px);
+  }
+  .vp.has-photo .vp-print {
+    order: -1;
+    justify-self: center;
+  }
+  .vp-print :is(img, video) {
+    max-height: 44cqh;
+  }
+  .vp-note,
+  .vp.has-photo .vp-note {
+    justify-self: center;
+    max-width: 84cqw;
+    justify-items: center;
+    text-align: center;
+  }
+  .vp-who {
+    font-size: clamp(30px, 12cqw, 68px);
   }
   .headline {
     font-size: clamp(30px, 10.5cqw, 64px);
@@ -1808,6 +1966,17 @@
 }
 .film.still .deal li {
   animation-delay: calc(var(--i) * 0.09s);
+}
+/* A still of a voice's page shows it part-way through, so the bar reads as a voice and not a rule. */
+.film.still .vp-lit {
+  clip-path: inset(0 58% 0 0);
+}
+.film.still .vp-wave,
+.film.still .vp-dots,
+.film.still .vp-blur,
+.film.still .vp-print {
+  animation-duration: 0.45s;
+  animation-delay: 0s;
 }
 .film.still .film-frame,
 .film.still .opening {

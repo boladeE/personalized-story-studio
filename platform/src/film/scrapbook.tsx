@@ -2,7 +2,7 @@ import { Media } from './Media'
 import { useLayoutEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 import type { Photo } from '../story/types'
-import { Choice, FlagIcon, Letter, Type, vars } from './shots'
+import { Choice, FlagIcon, Letter, Type, vars, VoicePage } from './shots'
 import type { ShotActions } from './shots'
 import type { Shot } from './timeline'
 
@@ -113,6 +113,8 @@ export function PageBody({ shot, actions, leaving }: { shot: Shot; actions: Shot
       return <LinePage shot={shot} />
     case 'photo':
       return <PhotoPage shot={shot} />
+    case 'voice':
+      return <VoicePage shot={shot} />
     case 'flag':
       return shot.design === 'checklist' ? <Checklist items={shot.all} shown={shot.n} name={shot.sceneName} fresh flag={shot.sceneType === 'redFlags'} /> : <Stickies items={shot.all} shown={shot.n} name={shot.sceneName} fresh flag={shot.sceneType === 'redFlags'} />
     case 'reason':

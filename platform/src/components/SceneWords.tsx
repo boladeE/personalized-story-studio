@@ -2,11 +2,11 @@ import { useRef, useState } from 'react'
 import { OCCASIONS, occasionOf } from '../story/occasions'
 import { NO_PHOTO, OUTLINE_LIMITS, outlineOf, withChapter } from '../story/outline'
 import { endingOf } from '../story/types'
-import type { Chapter, Intake, Memory, SceneLayout, VoiceNote } from '../story/types'
+import type { Chapter, Intake, Memory, SceneLayout } from '../story/types'
 import { LIMITS } from '../story/validate'
 import { Cross, Field, GrowingText, ListEditor, oneLine } from './fields'
 import { usePhotos } from './photos'
-import { lengthOf, UPLOAD_BYTES, UPLOAD_SECONDS, useRecorder, VOICE_SECONDS } from './recorder'
+import { clock, MAX_VOICE_NOTES, useVoiceNotes } from './VoiceNotes'
 import { UndoToast } from './UndoToast'
 import { Working } from './Working'
 
@@ -128,76 +128,96 @@ export function SceneWords({
 type Setter = <K extends keyof Intake>(key: K, value: Intake[K]) => void
 
 
-/** The sender's own voice for a scene: recorded here, heard in the film over that scene with the song turned down. */
-function VoiceField({ voice, onChange }: { voice?: VoiceNote; onChange: (voice: VoiceNote | undefined) => void }) {
-  const recorder = useRecorder(VOICE_SECONDS)
-  const [problem, setProblem] = useState('')
+/**
+ * The film's voice notes, where they are changed: who is speaking in each, the photo shown while
+ * they speak, the order they are heard in, and adding or removing one. A note may be the sender's
+ * own or one somebody else recorded for the film.
+ */
+function VoicesEditor({ intake, set }: { intake: Intake; set: Setter }) {
+  const notes = intake.voices ?? []
+  const voiceNotes = useVoiceNotes(notes, (voices) => set('voices', voices))
   const picker = useRef<HTMLInputElement>(null)
-  const record = async () => {
-    setProblem('')
-    const made = await recorder.start()
-    if (made) onChange({ src: URL.createObjectURL(made.blob), seconds: made.seconds })
+  const move = (at: number, by: -1 | 1) => {
+    const next = [...notes]
+    ;[next[at], next[at + by]] = [next[at + by], next[at]]
+    set('voices', next)
   }
-  /** A voice note the sender already has, brought in as it is. */
-  const upload = async (file: File | undefined) => {
-    if (!file) return
-    setProblem('')
-    if (file.size > UPLOAD_BYTES) return setProblem('That recording is over 4 MB. A voice note of up to a minute fits.')
-    const src = URL.createObjectURL(file)
-    const seconds = await lengthOf(src)
-    if (seconds === null || seconds > UPLOAD_SECONDS + 0.5) {
-      URL.revokeObjectURL(src)
-      return setProblem(seconds === null ? 'This browser can’t play that recording. Try an MP3 or M4A, or record it here.' : 'That recording is longer than a minute. Trim it, or record a shorter one here.')
-    }
-    onChange({ src, seconds })
-  }
-  const uploader = (
-    <>
+  return (
+    <div className="voices-editor">
+      {notes.map((note, i) => (
+        <fieldset key={note.id} className="voice-row">
+          <legend>
+            Voice note {i + 1} <small>{clock(note.seconds)}</small>
+          </legend>
+          <audio controls src={note.src} aria-label={`Voice note ${i + 1}`} />
+          <Field label="Who is speaking (leave empty if it is you)">
+            {(id) => <input id={id} maxLength={40} value={note.who ?? ''} onChange={(e) => voiceNotes.change(note.id, { who: oneLine(e.target.value) })} />}
+          </Field>
+          {intake.photos.length > 0 && (
+            <fieldset className="photo-pick">
+              <legend>Photo shown while they speak</legend>
+              <div className="photo-pick-row">
+                <label className="pick pick-auto">
+                  <input type="radio" name={`voice-photo-${note.id}`} checked={!note.photoId} onChange={() => voiceNotes.change(note.id, { photoId: undefined })} />
+                  <span>No photo</span>
+                </label>
+                {intake.photos.map((p, n) => (
+                  <label key={p.id} className="pick">
+                    <input type="radio" name={`voice-photo-${note.id}`} checked={note.photoId === p.id} onChange={() => voiceNotes.change(note.id, { photoId: p.id })} />
+                    <img src={p.src} alt="" />
+                    <span className="visually-hidden">
+                      Photo {n + 1}
+                      {p.caption ? `: ${p.caption}` : ''}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          )}
+          <div className="voice-row-tools">
+            {i > 0 && (
+              <button type="button" className="text-button" onClick={() => move(i, -1)}>
+                Play it earlier
+              </button>
+            )}
+            {i < notes.length - 1 && (
+              <button type="button" className="text-button" onClick={() => move(i, 1)}>
+                Play it later
+              </button>
+            )}
+            <button type="button" className="text-button" onClick={() => voiceNotes.remove(note.id)}>
+              Remove it
+            </button>
+          </div>
+        </fieldset>
+      ))}
       <input
         ref={picker}
         type="file"
         accept="audio/*,.m4a,.mp3,.ogg,.opus,.wav,.aac"
+        multiple
         hidden
-        aria-label="Upload a voice note"
+        aria-label="Upload voice notes"
         onChange={(e) => {
-          void upload(e.target.files?.[0])
+          void voiceNotes.upload(Array.from(e.target.files ?? []))
           e.target.value = ''
         }}
       />
-      <button type="button" className="chip-button" onClick={() => picker.current?.click()}>
-        {voice?.src ? 'Upload a different one' : 'Upload one you have'}
-      </button>
-    </>
-  )
-  return (
-    <div className="voice-field">
-      <b>Your voice</b>
-      {recorder.state === 'recording' ? (
-        <button type="button" className="chip-button is-main" onClick={recorder.stop}>
-          Stop ({Math.floor(recorder.seconds)}s)
-        </button>
-      ) : voice?.src ? (
-        <>
-          <audio controls src={voice.src} aria-label="Your voice note" />
-          <button type="button" className="chip-button" onClick={() => void record()}>
-            Record it again
+      <div className="voice-row-add">
+        {voiceNotes.recording ? (
+          <button type="button" className="chip-button is-main" onClick={voiceNotes.stop}>
+            Stop recording ({Math.floor(voiceNotes.seconds)}s)
           </button>
-          {uploader}
-          <button type="button" className="text-button" onClick={() => onChange(undefined)}>
-            Remove the voice note
-          </button>
-        </>
-      ) : (
-        <>
-          <button type="button" className="chip-button" onClick={() => void record()}>
+        ) : (
+          <button type="button" className="chip-button" disabled={voiceNotes.room <= 0} onClick={() => void voiceNotes.record()}>
             Record a voice note
           </button>
-          {uploader}
-        </>
-      )}
-      <small role="status">
-        {problem || (recorder.state === 'denied' ? 'The microphone is blocked for this site. Allow it in the browser, then try again.' : 'Record up to 45 seconds, or upload a voice note of up to a minute. It plays over this scene, with the song turned down under it.')}
-      </small>
+        )}
+        <button type="button" className="chip-button" disabled={voiceNotes.room <= 0} onClick={() => picker.current?.click()}>
+          Upload a voice note
+        </button>
+      </div>
+      <small role="status">{voiceNotes.problem || `Up to ${MAX_VOICE_NOTES} voice notes, each up to a minute. Each plays on a page of its own, with the song turned down under it.`}</small>
     </div>
   )
 }
@@ -214,6 +234,8 @@ export function chapterAsk(layout: SceneLayout, intake: Intake): string {
       return 'What this scene says. A blank line starts a new page.'
     case 'photos':
       return `The photos of ${them} that no other scene shows.`
+    case 'voices':
+      return `Voice notes for ${them}: yours, and anyone else’s. Each is heard on a page of its own.`
   }
 }
 
@@ -335,7 +357,7 @@ export function ChapterWords({
     <>
       <Field label="Scene name">{(id) => <input id={id} maxLength={OUTLINE_LIMITS.name} value={chapter.name} onFocus={() => onWriting(-1)} onChange={(e) => change({ name: oneLine(e.target.value) })} />}</Field>
       <Field label="Line that leads into it">{(id) => <input id={id} maxLength={90} value={chapter.intro ?? ''} onFocus={() => onWriting(-1)} onChange={(e) => change({ intro: oneLine(e.target.value) })} />}</Field>
-      {chapter.layout !== 'photos' && (
+      {chapter.layout !== 'photos' && chapter.layout !== 'voices' && (
         <fieldset className="scene-shape">
           <legend>Shown as</legend>
           <div className="scene-shape-row">
@@ -375,7 +397,7 @@ export function ChapterWords({
           {photoPick}
         </>
       )}
-      {chapter.layout !== 'photos' && <VoiceField voice={chapter.voice} onChange={(voice) => change({ voice })} />}
+      {chapter.layout === 'voices' && <VoicesEditor intake={intake} set={set} />}
       {chapter.layout === 'photos' && <Roll intake={intake} set={set} />}
     </>
   )

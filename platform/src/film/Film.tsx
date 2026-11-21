@@ -267,7 +267,7 @@ export function Film({
 
   /* ---------- the clock ---------- */
 
-  // The sender's voice notes. One plays over its scene, in step with the film's own clock, with the
+  // The film's voice notes. Each plays on its own page, in step with the film's own clock, with the
   // song turned down under it; it stops when the film is paused, rewound or moved elsewhere.
   //
   // Each has its own player, fetched while the opening is still up. Fetched only as its scene arrived
@@ -277,17 +277,17 @@ export function Film({
   const voiceSync = useRef(0)
   useEffect(() => {
     const players = voices.current
-    for (const scene of film.scenes) {
-      if (!scene.voice || players.has(scene.voice.src)) continue
+    for (const cue of film.voices) {
+      if (players.has(cue.src)) continue
       const el = new Audio()
       el.preload = 'auto'
-      el.src = scene.voice.src
+      el.src = cue.src
       el.load()
-      players.set(scene.voice.src, el)
+      players.set(cue.src, el)
     }
     return () => {
       for (const [src, el] of players) {
-        if (film.scenes.some((s) => s.voice?.src === src)) continue
+        if (film.voices.some((cue) => cue.src === src)) continue
         el.pause()
         players.delete(src)
       }
@@ -335,9 +335,15 @@ export function Film({
     delete document.documentElement.dataset.voice
   }
   const voiceAt = (t: number) => {
-    const now = film.scenes.find((s) => s.voice && t >= s.voice.start && t < s.voice.start + s.voice.seconds)?.voice
+    const now = film.voices.find((cue) => t >= cue.start && t < cue.start + cue.seconds)
     const el = now && voices.current.get(now.src)
-    if (!now || !el) return hushVoice()
+    if (!now || !el) {
+      // On the page of a voice that has just been heard out, its bar stays full.
+      const heard = film.voices.some((cue) => t >= cue.start + cue.seconds && t < cue.until)
+      if (heard) document.documentElement.style.setProperty('--voice-at', '1')
+      else document.documentElement.style.removeProperty('--voice-at')
+      return hushVoice()
+    }
     for (const other of voices.current.values()) if (other !== el && !other.paused && other.dataset.primed !== 'now') other.pause()
     speaking.current = el
     el.muted = live.current.muted
@@ -352,6 +358,8 @@ export function Film({
     }
     // For tests and for anyone looking: a voice note is playing, and how far in it is.
     document.documentElement.dataset.voice = el.currentTime.toFixed(1)
+    // And for the page it plays on, whose bar fills as far as the voice has got.
+    document.documentElement.style.setProperty('--voice-at', Math.min(1, el.currentTime / Math.max(0.1, now.seconds)).toFixed(3))
   }
   useEffect(() => {
     if (phase !== 'playing') hushVoice()

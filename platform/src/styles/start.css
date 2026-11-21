@@ -802,3 +802,53 @@ body:has(.start-shell)::before {
   padding: 0 18px;
   font-size: 16px;
 }
+
+/* Who is speaking in each voice note: one short field a note, under the tray. */
+.voice-names {
+  display: grid;
+  gap: 10px;
+  margin: 22px 0 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.voice-names legend {
+  padding: 0;
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--palm);
+}
+.voice-names-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14.5px;
+}
+.voice-name {
+  display: grid;
+  grid-template-columns: minmax(0, 11em) minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  font-size: 15.5px;
+}
+.voice-name small {
+  color: var(--muted);
+}
+.voice-name input {
+  min-width: 0;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  font: inherit;
+}
+.voice-name input:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--hibiscus) 45%, transparent);
+  outline-offset: 1px;
+}
+@media (max-width: 520px) {
+  .voice-name {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+}

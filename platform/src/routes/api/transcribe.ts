@@ -14,7 +14,10 @@ export const Route = createFileRoute('/api/transcribe')({
       POST: async ({ request }) => {
         if (Number(request.headers.get('content-length') ?? 0) > MAX_AUDIO) return json({ error: 'That recording is too long. Try a shorter one.' }, { status: 413 })
         const client = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local'
-        if (!allowSort(client)) return json({ error: 'That’s a lot of recordings in an hour. Type it for now.' }, { status: 429 })
+        // A voice note for the film is written down only so the director knows what it adds. When that can't
+        // be done the film is made without knowing, so `note=1` gets an empty answer and not an error.
+        const note = new URL(request.url).searchParams.get('note') === '1'
+        if (!allowSort(client)) return note ? json({ text: '' }) : json({ error: 'That’s a lot of recordings in an hour. Type it for now.' }, { status: 429 })
         const bytes = new Uint8Array(await request.arrayBuffer())
         const type = sniffAudio(bytes)
         if (!bytes.byteLength || bytes.byteLength > MAX_AUDIO || !type) return json({ error: 'That recording couldn’t be read.' }, { status: 415 })
@@ -22,9 +25,10 @@ export const Route = createFileRoute('/api/transcribe')({
           // The two names, so they are written the way the sender spells them.
           const names = (new URL(request.url).searchParams.get('names') ?? '').split(',').map((n) => n.replace(/[^\p{L}\p{N} '’.-]/gu, '').trim().slice(0, 60)).filter(Boolean).slice(0, 2)
           const text = await transcribe(bytes, type, names)
-          record('spoken')
+          if (!note) record('spoken')
           return json({ text })
         } catch (error) {
+          if (note) return json({ text: '' })
           if (error instanceof MusicError) return json({ error: error.message }, { status: error.status })
           throw error
         }

@@ -148,7 +148,7 @@ export function previewFor(step: StepId, intake: Intake, focus: StepFocus, look:
 }
 
 /** Which kind of shot stands for a scene in a small picture of it, best first. */
-const POSTER_KINDS: Array<Shot['kind']> = ['flag', 'photo', 'montage', 'reason', 'letter', 'name', 'wish', 'line']
+const POSTER_KINDS: Array<Shot['kind']> = ['flag', 'photo', 'montage', 'voice', 'reason', 'letter', 'name', 'wish', 'line']
 
 /**
  * One frame for each scene of a finished story, by scene type: the shot that

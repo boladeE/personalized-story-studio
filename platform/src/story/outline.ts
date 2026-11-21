@@ -3,7 +3,7 @@ import type { Answered } from './followups'
 import { closeToTheirWords, HABIT, isTheirWords, REASON } from './notes'
 import type { SortedNotes } from './notes'
 import { SCENE_LAYOUTS } from './types'
-import type { Chapter, Intake, Mood, SceneLayout } from './types'
+import type { Chapter, Intake, Mood, SceneLayout, Voiced } from './types'
 import { LIMITS } from './validate'
 
 /**
@@ -48,17 +48,18 @@ const firstWords = (text: string, count: number) => {
 /** The lines of a scene that say something and are shown: a `line` shows only its first. */
 export const chapterLines = (chapter: Chapter) => {
   const said = chapter.lines.map((l) => l.trim()).filter(Boolean)
-  return chapter.layout === 'line' ? said.slice(0, 1) : chapter.layout === 'photos' ? [] : said
+  return chapter.layout === 'line' ? said.slice(0, 1) : chapter.layout === 'photos' || chapter.layout === 'voices' ? [] : said
 }
 
 /** What a scene is called: its name, or the opening of its own words until it has one. */
 export function chapterName(chapter: Chapter): string {
-  return chapter.name.trim() || firstWords(chapterLines(chapter)[0] ?? '', 4) || (chapter.layout === 'photos' ? 'Photos' : 'New scene')
+  return chapter.name.trim() || firstWords(chapterLines(chapter)[0] ?? '', 4) || (chapter.layout === 'photos' ? 'Photos' : chapter.layout === 'voices' ? 'Voice notes' : 'New scene')
 }
 
 /** Null when the scene can play, otherwise what it still needs. */
-export function chapterMissing(chapter: Chapter, intake: Pick<Intake, 'photos'>): string | null {
+export function chapterMissing(chapter: Chapter, intake: Pick<Intake, 'photos' | 'voices'>): string | null {
   if (chapter.layout === 'photos') return intake.photos.length ? null : 'Add a photo'
+  if (chapter.layout === 'voices') return intake.voices?.length ? null : 'Add a voice note'
   return chapterLines(chapter).length ? null : 'Add its words'
 }
 
@@ -70,7 +71,7 @@ const STOCK_NAMES = /^(the\s+)?(red flags?|reasons?( i love you| why)?|memor(y|i
 
 /** Give each line to one layout: a scene's shape follows from how much it says. */
 function shape(layout: SceneLayout, lines: string[]): { layout: SceneLayout; lines: string[] } {
-  if (layout === 'photos') return { layout, lines: [] }
+  if (layout === 'photos' || layout === 'voices') return { layout, lines: [] }
   // A told scene keeps its pages: each is a screen of its own.
   if (layout === 'moment') return { layout, lines: lines.slice(0, OUTLINE_LIMITS.pages) }
   if (lines.length > 1) return { layout: 'list', lines: lines.slice(0, OUTLINE_LIMITS.lines) }
@@ -99,12 +100,13 @@ export function cleanOutline(raw: unknown, { source, photos = 0, proper = [] }: 
   const names = new Set<string>()
   // A photo sits beside one scene.
   const photoIds = new Set<string>()
-  const voiceIds = new Set<string>()
   const out: Chapter[] = []
   for (const item of Array.isArray(raw) ? raw : []) {
     if (out.length === OUTLINE_LIMITS.scenes) break
     const r = (item && typeof item === 'object' ? item : {}) as Record<string, unknown>
     const wanted = SCENE_LAYOUTS.find((l) => l === r.layout) ?? 'line'
+    // The scene of voice notes is the film's own (see `outlineOf`), never one an outline writes.
+    if (wanted === 'voices') continue
     if (wanted === 'photos' && (!photos || out.some((c) => c.layout === 'photos'))) continue
     const kept = (Array.isArray(r.lines) ? r.lines : [])
       .map((l) => oneLine(l, wanted === 'moment' ? LIMITS.memoryStory : LIMITS.listItem))
@@ -122,8 +124,7 @@ export function cleanOutline(raw: unknown, { source, photos = 0, proper = [] }: 
     ids.add(id)
     const mood = MOODS.find((m) => m === r.mood) ?? 'warm'
     const intro = layout === 'photos' && !oneLine(r.intro, 90) ? '' : oneLine(r.intro, 90)
-    const voiceId = layout !== 'photos' && typeof r.voiceId === 'string' && /^[a-z0-9-]{1,32}$/i.test(r.voiceId) && !voiceIds.has(r.voiceId) && (voiceIds.add(r.voiceId), true) ? r.voiceId : ''
-    out.push({ id, name, layout, mood, lines, ...(intro ? { intro } : {}), ...(voiceId ? { voiceId } : {}), ...(typeof r.photoId === 'string' && /^[a-z0-9-]{1,64}$/i.test(r.photoId) && !photoIds.has(r.photoId) && (photoIds.add(r.photoId), true) ? { photoId: r.photoId } : {}) })
+    out.push({ id, name, layout, mood, lines, ...(intro ? { intro } : {}), ...(typeof r.photoId === 'string' && /^[a-z0-9-]{1,64}$/i.test(r.photoId) && !photoIds.has(r.photoId) && (photoIds.add(r.photoId), true) ? { photoId: r.photoId } : {}) })
   }
   return out
 }
@@ -213,16 +214,41 @@ export function pagesOf(chapter: Chapter): string[] {
   return pages
 }
 
+/** The id of the scene a film's voice notes are heard in. */
+export const VOICES_ID = 'voices'
+
+/** Who is speaking in a voice note: the name the sender gave, or the sender. */
+export const speakerOf = (note: Pick<Voiced, 'who'>, sender: string) => note.who?.trim() || sender.trim() || 'Me'
+
 /**
- * The scenes an outlined film is made of. One of them is always the photos: when the outline has
- * no such scene it is added last, so a photo the sender adds is always seen, and so there is a
- * place in the editor to add one. Null when the film has no outline and is told in the older fixed scenes.
+ * The scene the voice notes are heard in, as the studio words it when nothing better has been
+ * written: called by who is speaking. The director names it for the film (src/server/outline.ts),
+ * and the sender can rename it.
  */
-export function outlineOf(intake: Pick<Intake, 'outline' | 'photos' | 'recipient'>): Chapter[] | null {
+export function voicesChapter(intake: Pick<Intake, 'voices' | 'sender' | 'recipient'>, named?: { name?: string; intro?: string }): Chapter {
+  const notes = intake.voices ?? []
+  const others = notes.some((n) => n.who?.trim() && n.who.trim().toLowerCase() !== intake.sender.trim().toLowerCase())
+  const name = named?.name?.trim() || (!notes.length ? 'Voice notes' : others ? 'From all of us' : 'In my own voice')
+  const intro = named?.intro?.trim() || (!notes.length ? '' : others ? 'A few people wanted to say something.' : 'This part I wanted you to hear.')
+  return { id: VOICES_ID, name, layout: 'voices', mood: 'tender', lines: [], ...(intro ? { intro } : {}) }
+}
+
+/**
+ * The scenes an outlined film is made of. Two of them are always there. One is the photos: when the
+ * outline has no such scene it is added, so a photo the sender adds is always seen and there is a
+ * place in the editor to add one. The other is the voice notes, last before the film's ending, for
+ * the same reasons. Null when the film has no outline and is told in the older fixed scenes.
+ */
+export function outlineOf(intake: Pick<Intake, 'outline' | 'photos' | 'recipient' | 'sender' | 'voices'>): Chapter[] | null {
   const outline = intake.outline
   if (!outline) return null
-  if (outline.some((c) => c.layout === 'photos')) return outline
-  return [...outline, { id: 'photos', name: `${intake.recipient.trim() || 'Them'}, in pictures`, layout: 'photos', mood: 'warm', lines: [] }]
+  const photos: Chapter = { id: 'photos', name: `${intake.recipient.trim() || 'Them'}, in pictures`, layout: 'photos', mood: 'warm', lines: [] }
+  const voices = outline.find((c) => c.layout === 'voices') ?? voicesChapter(intake)
+  // The photos go in ahead of the voices, which are the last thing before the ending unless the sender moves them.
+  const rest = outline.filter((c) => c !== voices)
+  const last = outline[outline.length - 1] === voices || !outline.includes(voices)
+  if (outline.some((c) => c.layout === 'photos')) return outline.includes(voices) ? outline : [...outline, voices]
+  return last ? [...rest, photos, voices] : [...outline, photos]
 }
 
 /**
@@ -248,26 +274,4 @@ export const blankChapter = (taken: string[]): Chapter => {
   let id = newSceneId()
   while (taken.includes(id)) id = newSceneId()
   return { id, name: '', layout: 'line', mood: 'warm', lines: [''] }
-}
-
-/**
- * Put the voice notes added while the film was being made onto its scenes: each where the director
- * placed it, and any it left out on the scenes of words nearest the end that have none, so nothing
- * the sender recorded goes unheard.
- */
-export function withVoices(outline: Chapter[], voices: Array<{ id: string; src: string; seconds: number }>): Chapter[] {
-  const left = [...voices]
-  const placed = outline.map((chapter) => {
-    const { voiceId, ...rest } = chapter
-    const at = left.findIndex((v) => v.id === voiceId)
-    if (at < 0) return rest
-    const [note] = left.splice(at, 1)
-    return { ...rest, voice: { src: note.src, seconds: note.seconds } }
-  })
-  for (let i = placed.length - 1; i >= 0 && left.length; i--) {
-    if (placed[i].layout === 'photos' || placed[i].voice) continue
-    const note = left.pop()!
-    placed[i] = { ...placed[i], voice: { src: note.src, seconds: note.seconds } }
-  }
-  return placed
 }
