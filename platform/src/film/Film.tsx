@@ -267,31 +267,92 @@ export function Film({
 
   /* ---------- the clock ---------- */
 
-  // The sender's voice notes. One plays over its scene, kept in step with the film's own clock, with
-  // the song turned down under it; it stops when the film is paused, rewound or moved elsewhere.
-  const voice = useRef<HTMLAudioElement | null>(null)
+  // The sender's voice notes. One plays over its scene, in step with the film's own clock, with the
+  // song turned down under it; it stops when the film is paused, rewound or moved elsewhere.
+  //
+  // Each has its own player, fetched while the opening is still up. Fetched only as its scene arrived
+  // and nudged into step on every frame, a voice note that had to come over the network was restarted
+  // sixty times a second and never played.
+  const voices = useRef(new Map<string, HTMLAudioElement>())
+  const voiceSync = useRef(0)
+  useEffect(() => {
+    const players = voices.current
+    for (const scene of film.scenes) {
+      if (!scene.voice || players.has(scene.voice.src)) continue
+      const el = new Audio()
+      el.preload = 'auto'
+      el.src = scene.voice.src
+      el.load()
+      players.set(scene.voice.src, el)
+    }
+    return () => {
+      for (const [src, el] of players) {
+        if (film.scenes.some((s) => s.voice?.src === src)) continue
+        el.pause()
+        players.delete(src)
+      }
+    }
+  }, [film])
+  useEffect(
+    () => () => {
+      for (const el of voices.current.values()) el.pause()
+    },
+    [],
+  )
+  /**
+   * Phones only let sound start from a tap. The tap that starts the film also starts each voice note,
+   * silently and for an instant, so it may play by itself when its scene comes.
+   */
+  const primeVoices = () => {
+    for (const el of voices.current.values()) {
+      // One already allowed, or the one being heard right now, is left alone.
+      if (el.dataset.primed || !el.paused) continue
+      el.dataset.primed = 'now'
+      el.muted = true
+      void el.play().then(
+        () => {
+          // Unless its scene arrived in the meantime and it is the one speaking.
+          if (el !== speaking.current) {
+            el.pause()
+            el.currentTime = 0
+          }
+          el.dataset.primed = 'yes'
+          el.muted = live.current.muted
+        },
+        () => {
+          delete el.dataset.primed
+          el.muted = live.current.muted
+        },
+      )
+    }
+  }
+  const speaking = useRef<HTMLAudioElement | null>(null)
   const hushVoice = () => {
-    if (voice.current && !voice.current.paused) voice.current.pause()
+    speaking.current = null
+    // One still being let in by the tap is not cut off: stopping it there would undo the tap.
+    for (const el of voices.current.values()) if (!el.paused && el.dataset.primed !== 'now') el.pause()
     engine.current?.duck(false)
     delete document.documentElement.dataset.voice
   }
   const voiceAt = (t: number) => {
     const now = film.scenes.find((s) => s.voice && t >= s.voice.start && t < s.voice.start + s.voice.seconds)?.voice
-    if (!now) return hushVoice()
-    const el = (voice.current ??= new Audio())
-    if (el.dataset.src !== now.src) {
-      el.dataset.src = now.src
-      el.src = now.src
-    }
+    const el = now && voices.current.get(now.src)
+    if (!now || !el) return hushVoice()
+    for (const other of voices.current.values()) if (other !== el && !other.paused && other.dataset.primed !== 'now') other.pause()
+    speaking.current = el
     el.muted = live.current.muted
-    const at = t - now.start
-    if (Math.abs(el.currentTime - at) > 0.45) el.currentTime = at
-    if (el.paused) void el.play().catch(() => {})
     engine.current?.duck(true)
+    if (el.paused) void el.play().catch(() => {})
+    // Brought back into step only when it has what it needs to move, and never more than once a second.
+    const at = t - now.start
+    const clock = performance.now()
+    if (el.readyState >= 2 && !el.seeking && Math.abs(el.currentTime - at) > 0.75 && clock - voiceSync.current > 1000) {
+      voiceSync.current = clock
+      el.currentTime = at
+    }
     // For tests and for anyone looking: a voice note is playing, and how far in it is.
     document.documentElement.dataset.voice = el.currentTime.toFixed(1)
   }
-  useEffect(() => () => voice.current?.pause(), [])
   useEffect(() => {
     if (phase !== 'playing') hushVoice()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -383,6 +444,7 @@ export function Film({
   const begin = useCallback(async () => {
     if (live.current.phase !== 'ticket' || lockedNow.current) return
     begun.current = true
+    primeVoices()
     window.dispatchEvent(new Event(FILM_SOUND))
     const ok = (await engine.current?.start()) ?? false
     setAudioBlocked(!ok)
@@ -426,6 +488,8 @@ export function Film({
   const playFrom = useCallback(
     async (sceneType?: string) => {
       if (lockedNow.current) return
+      // Every tap that plays a scene: a voice note added since the film was first started is let in too.
+      primeVoices()
       const target = (sceneType ? film.shots.find((s) => s.sceneType === sceneType) : undefined) ?? film.shots[0]
       if (!begun.current) {
         begun.current = true
