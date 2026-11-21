@@ -25,7 +25,11 @@
   color: var(--c-ink);
 }
 .film.tp-film {
-  background-color: var(--c-bg);
+  background: var(--c-bg);
+}
+/* The page is the whole frame: there are no cinema bars to leave room for. */
+.film.tp-film .film-frame {
+  inset: 0;
 }
 .film.tp-film .shot {
   padding: 0;
@@ -808,6 +812,9 @@ p.is-stretch {
   font-size: calc(var(--u) * max(var(--size) * var(--fit, 1), min(var(--size), 1.45)));
   min-width: 0;
 }
+.tp-list.is-stretch {
+  justify-content: center;
+}
 .tp-list li {
   display: flex;
   gap: 0.7em;
@@ -1196,6 +1203,18 @@ p.is-stretch {
 @keyframes tp-cut-wipe-in {
   from { clip-path: inset(0 100% 0 0); }
   to { clip-path: inset(0); }
+}
+
+/* The cover: a page like any other, under the button that starts the film. It gives way when tapped. */
+.tp-opening {
+  display: block;
+  perspective: none;
+}
+.tp-opening.is-torn {
+  animation: tp-out-fade 0.6s 0.25s both;
+}
+.tp-opening.is-locked .tp {
+  filter: saturate(0.7);
 }
 
 /* A still shows a page as it rests: everything arrived. */

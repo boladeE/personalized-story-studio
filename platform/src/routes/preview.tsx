@@ -16,6 +16,7 @@ import type { Shot } from '../film/timeline'
 import { songChoiceLine, directionLine } from '../story/direction'
 import { canGenerate, generateStory, sceneBoard } from '../story/generate'
 import { blankChapter, outlineOf } from '../story/outline'
+import { drawTemplate } from '../template/load'
 import { newSeed } from '../story/rng'
 import { SAMPLE_INTAKE, SAMPLE_NOTE, SAMPLE_SOUNDTRACK } from '../story/sample'
 import { isWorld } from '../story/types'
@@ -192,7 +193,7 @@ function Preview() {
     record(change ? { label: change.label, undo: () => applyCut(before, change.cue) } : undefined)
   }
   const applyLook = (look: Intake['look']) => (useSample ? setSampleLook(look as LookId) : setIntake((c) => ({ ...c, look })))
-  const applyWorld = (next: Intake['world']) => (useSample ? setSampleWorld(isWorld(next) ? next : 'screening') : setIntake((c) => ({ ...c, world: next })))
+  const applyWorld = (next: Intake['world']) => (useSample ? setSampleWorld(isWorld(next) ? next : 'screening') : setIntake((c) => ({ ...c, world: next, template: undefined })))
   /** A scene's words, changed beside the still. What they were before the first change is kept for Undo. */
   const writeWords: typeof setIntake = (update) => {
     const fields = selected ? fieldsOf(selected, Boolean(intake.outline)) : []
@@ -222,8 +223,18 @@ function Preview() {
   }
   const shuffle = () => {
     const before = seed
-    setSeed(newSeed())
-    record({ label: 'The film has another version.', undo: () => setSeed(before) })
+    const design = intake.template
+    const next = newSeed()
+    setSeed(next)
+    // Another version is another design too: a different template, drawn for the new version.
+    if (!useSample && design) void drawTemplate(next, intake.photos, design.id).then((template) => template && setIntake((c) => ({ ...c, template })))
+    record({
+      label: 'The film has another version.',
+      undo: () => {
+        setSeed(before)
+        if (!useSample && design) setIntake((c) => ({ ...c, template: design }))
+      },
+    })
   }
 
   // While editing, the stage is the film only while it plays. Otherwise it is a still of the chosen scene.
@@ -319,7 +330,7 @@ function Preview() {
           <div className="stage-still">
             {shown.state === 'in' && stageShot ? (
               <div className="stage-still-frame">
-                <Still look={story.look} world={world} content={{ kind: 'shot', shot: stageShot }} />
+                <Still look={story.look} world={world} template={story.template} content={{ kind: 'shot', shot: stageShot }} />
               </div>
             ) : (
               <p className="stage-still-empty">

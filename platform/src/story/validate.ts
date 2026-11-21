@@ -161,6 +161,9 @@ export function parseIntake(raw: unknown): { ok: true; intake: Intake } | { ok: 
     const direction = r.direction === undefined ? null : cleanStoredDirection(r.direction)
     const ending = parseEnding(r.ending)
     const outline = parseOutline(r.outline)
+    const t = r.template && typeof r.template === 'object' ? (r.template as Record<string, unknown>) : null
+    const hues = t && Array.isArray(t.hues) && t.hues.length === 2 && t.hues.every((h) => typeof h === 'number' && h >= 0 && h < 360) ? ([t.hues[0], t.hues[1]] as [number, number]) : undefined
+    const template = t && typeof t.id === 'string' && /^[a-z][a-z0-9-]{2,39}$/.test(t.id) ? { id: t.id, palette: Number.isInteger(t.palette) && (t.palette as number) >= 0 && (t.palette as number) < 1000 ? (t.palette as number) : 0, ...(hues ? { hues } : {}) } : null
     // A voice note's sound arrives beside the gift; here it is who speaks, how long, and the shape of it.
     const voices = list(r.voices ?? [], 'Voice notes').map((v, i) => {
       const note = (v ?? {}) as Record<string, unknown>
@@ -193,6 +196,7 @@ export function parseIntake(raw: unknown): { ok: true; intake: Intake } | { ok: 
       ...(ending ? { ending } : {}),
       ...(outline ? { outline } : {}),
       ...(voices.length ? { voices } : {}),
+      ...(template ? { template } : {}),
       ...(r.opening && typeof r.opening === 'object' && typeof (r.opening as { title?: unknown }).title === 'string'
         ? { opening: { title: text((r.opening as { title: string }).title, 80, 'The opening line'), body: text((r.opening as { body?: unknown }).body, 180, 'The opening') } }
         : {}),

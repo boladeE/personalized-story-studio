@@ -13,6 +13,7 @@ import { cleanAnswers, cleanFollowups, FOLLOWUP_LIMITS, followupsLocally, withAn
 import { canGenerate, LOOKS } from '../story/generate'
 import { closeToTheirWords, NOTES_LIMIT } from '../story/notes'
 import { cleanOutline, notesOf, outlineByWords, speakerOf, voicesChapter } from '../story/outline'
+import { drawTemplate } from '../template/load'
 import { OCCASIONS, occasionFor, occasionOf } from '../story/occasions'
 import { RELATIONSHIPS } from '../story/relationships'
 import { newSeed } from '../story/rng'
@@ -245,12 +246,14 @@ function Start() {
       // The colours are drawn for each film. Left to the director they came out the same for every film of a kind.
       const look = LOOKS[seed % LOOKS.length].id
       // New scenes: any cut the sender made of the last ones no longer applies.
-      draft = { ...intake, outline, opening, wish: wish || intake.wish, cut: undefined, direction: { ...directed, look, designs: {}, order: [], seed } }
+      // The film's design: one of the studio's templates, drawn evenly, in colours turned toward its own photos.
+      const template = await drawTemplate(seed, intake.photos)
+      draft = { ...intake, outline, opening, wish: wish || intake.wish, cut: undefined, direction: { ...directed, look, designs: {}, order: [], seed }, template: template ?? undefined }
       setIntake(() => draft)
       setSortedFrom(written)
     } else if (intake.direction) {
       // The same words, built again: the studio's direction goes with the new version, in colours of its own.
-      draft = { ...intake, direction: { ...intake.direction, look: LOOKS[seed % LOOKS.length].id, seed } }
+      draft = { ...intake, direction: { ...intake.direction, look: LOOKS[seed % LOOKS.length].id, seed }, template: (await drawTemplate(seed, intake.photos, intake.template?.id)) ?? intake.template }
       setIntake(() => draft)
     }
     setSeed(seed)

@@ -160,7 +160,9 @@ export function generateStory(intake: Intake, seed: number): Story {
   const drawnLook = rng.pick(LOOKS).id
   const look: LookId = intake.look === 'surprise' ? (directed?.look ?? drawnLook) : intake.look
   const drawnWorld = direct.pick(WORLDS).id
-  const world: WorldId = intake.world && intake.world !== 'surprise' ? intake.world : (directed?.world ?? drawnWorld)
+  // A film in a template is built the way a Mixtape is (one opening page, flat pages); the template draws it.
+  const template = outlineOf(intake) ? intake.template : undefined
+  const world: WorldId = template ? 'mixtape' : intake.world && intake.world !== 'surprise' ? intake.world : (directed?.world ?? drawnWorld)
   // Every scene type draws a design whether or not it is used, so one choice never moves another.
   const designs = new Map<string, string>()
   for (const type of Object.keys(SCENES)) {
@@ -226,7 +228,7 @@ export function generateStory(intake: Intake, seed: number): Story {
     fixed('letter')
     fixed('wish')
     const scenes = arrange(order, intake.cut).map((type, index) => ({ id: `${type}-${index}`, ...built.get(type)! }))
-    return { occasion: intake.occasion, seed, look, world, sender: intake.sender.trim(), recipient: intake.recipient.trim(), scenes }
+    return { occasion: intake.occasion, seed, look, world, ...(template ? { template } : {}), sender: intake.sender.trim(), recipient: intake.recipient.trim(), scenes }
   }
 
   for (const slot of skeletonFor(intake)) {

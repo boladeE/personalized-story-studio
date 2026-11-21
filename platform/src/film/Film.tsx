@@ -10,6 +10,9 @@ import { CoverArt } from './scrapbook'
 import { Icon, ShotView } from './shots'
 import { buildFilm, formatTime, shotAt } from './timeline'
 import type { Shot } from './timeline'
+import { coverOf, TemplatePage } from '../template/Page'
+import { coloursOf, filmVars, isLightGround, useTemplate } from '../template/load'
+import type { Template } from '../template/types'
 
 declare global {
   interface Window {
@@ -82,6 +85,10 @@ export function Film({
     return () => kept.forEach((img) => (img.src = ''))
   }, [story])
   const world = story.world ?? 'screening'
+  // The template the film is drawn in: undefined while it is fetched, null when it has none (or it couldn't be had,
+  // and the film plays as the kind of film its shots were built for).
+  const tpl = useTemplate(story.template?.id)
+  const colours = useMemo(() => (tpl && story.template ? coloursOf(tpl, story.template) : null), [tpl, story.template])
   const album = world === 'scrapbook'
   // The album and the mixtape are drawn on flat stock: no smoke, no dust, and no loud cards of the Screening's.
   const flat = world !== 'screening'
@@ -125,7 +132,7 @@ export function Film({
 
   const shot = film.shots[Math.min(index, film.shots.length - 1)]
   const wishIndex = useMemo(() => film.shots.findIndex((s) => s.kind === 'wish'), [film])
-  const light = isLight(story.look, world)
+  const light = colours ? isLightGround(colours) : isLight(story.look, world)
   const palette = paletteFor(story.look, shot.mood, world)
   const loudOf = useCallback(
     (s: Shot) => {
@@ -477,6 +484,8 @@ export function Film({
       clearTimers()
       play()
     }
+    // A template's cover gives way to its first page.
+    if (tpl) return later(900, play)
     // The album's cover opens onto its first page.
     if (album) return later(1500, play)
     // The cassette clicks into the deck and the reels take up the slack.
@@ -490,7 +499,7 @@ export function Film({
       }),
     )
     later(1250 + 3 * beat, play)
-  }, [songSrc, album, world])
+  }, [songSrc, album, world, tpl])
 
   // Asked for by the page around the film: straight to a scene, with no opening.
   const playFrom = useCallback(
@@ -660,6 +669,7 @@ export function Film({
     '--f-ink': palette.ink,
     '--f-soft': palette.soft,
     '--f-accent': palette.accent,
+    ...(tpl && colours ? filmVars(tpl, colours) : {}),
   } as CSSProperties
   const actions = { onBlow: blow, onReplay: () => jump(0), waiting, ended: phase === 'ended', ending, picked }
   const glow = started && shot.kind === 'photo' ? shot.photo.src : null
@@ -667,9 +677,11 @@ export function Film({
   return (
     <div
       ref={root}
-      className={`film${worldClass(world)}${paused ? ' is-paused' : ''}${idle && phase === 'playing' && !paused && !waiting ? ' is-idle' : ''}${light ? ' is-light' : ''}`}
+      className={`film${tpl ? ' tp-film' : worldClass(world)}${paused ? ' is-paused' : ''}${idle && phase === 'playing' && !paused && !waiting ? ' is-idle' : ''}${light ? ' is-light' : ''}`}
       data-look={story.look}
       data-world={world}
+      data-template={tpl?.id}
+      data-cut={tpl?.motion.cut}
       data-phase={phase}
       data-mood={shot.mood}
       data-kind={started ? shot.kind : 'ticket'}
@@ -684,8 +696,8 @@ export function Film({
       </div>
 
       <div className="film-frame">
-        {started && leaving && leaving.index !== shot.index && <ShotView key={leaving.id} shot={leaving} state="leaving" loud={loudOf(leaving)} actions={actions} world={world} />}
-        {started && <ShotView key={shot.id} shot={shot} state="current" loud={loud} actions={actions} world={world} />}
+        {started && leaving && leaving.index !== shot.index && <ShotView key={leaving.id} shot={leaving} state="leaving" loud={tpl ? null : loudOf(leaving)} actions={actions} world={world} template={tpl} />}
+        {started && tpl !== undefined && <ShotView key={shot.id} shot={shot} state="current" loud={tpl ? null : loud} actions={actions} world={world} template={tpl} />}
       </div>
 
       <canvas ref={dustCanvas} className="film-dust" aria-hidden="true" />
@@ -705,7 +717,7 @@ export function Film({
         </p>
       )}
 
-      {!started && <Opening recipient={story.recipient} occasion={ticketLabel(story)} torn={phase === 'leader'} count={count} onBegin={begin} onSkip={() => skipOpening.current?.()} world={world} locked={locked} />}
+      {!started && tpl !== undefined && <Opening recipient={story.recipient} sender={story.sender} template={tpl} occasion={ticketLabel(story)} torn={phase === 'leader'} count={count} onBegin={begin} onSkip={() => skipOpening.current?.()} world={world} locked={locked} />}
 
       <p className="visually-hidden" role="status" aria-live="polite">
         {started ? shot.text : ''}
@@ -771,8 +783,17 @@ function ticketLabel(story: Story) {
   return 'Your birthday'
 }
 
-function Opening({ recipient, occasion, torn, count, onBegin, onSkip, world, locked }: { recipient: string; occasion: string; torn: boolean; count: number; onBegin: () => void; onSkip: () => void; world: WorldId; locked?: string }) {
+function Opening({ recipient, sender, template, occasion, torn, count, onBegin, onSkip, world, locked }: { recipient: string; sender?: string; template?: Template | null; occasion: string; torn: boolean; count: number; onBegin: () => void; onSkip: () => void; world: WorldId; locked?: string }) {
   const hint = locked ?? 'Sound on, if you can. It plays by itself.'
+  // A template's cover is a page of its own, and the whole of it is the button.
+  if (template) {
+    return (
+      <div className={`opening tp-opening${torn ? ' is-torn' : ''}${locked ? ' is-locked' : ''}`}>
+        <button type="button" className="ticket-hit" onClick={torn ? onSkip : onBegin} disabled={Boolean(locked)} aria-label={locked ? `A film made for ${recipient}. ${locked}` : torn ? 'Skip the opening' : `A film made for ${recipient}. Tap to begin`} />
+        <TemplatePage template={template} data={coverOf(recipient, occasion, sender, locked ?? 'Tap to begin')} />
+      </div>
+    )
+  }
   const tilt = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.pointerType !== 'mouse' || torn) return
     const box = event.currentTarget.getBoundingClientRect()

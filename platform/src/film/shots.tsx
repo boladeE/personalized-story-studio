@@ -5,6 +5,8 @@ import type { WorldId } from '../story/types'
 import { MixBody } from './mixtape'
 import { PageBody } from './scrapbook'
 import type { Shot } from './timeline'
+import { pageOf, TemplatePage } from '../template/Page'
+import type { Template } from '../template/types'
 
 /**
  * What each kind of shot looks like. Words are split into spans so they can
@@ -123,7 +125,7 @@ export interface ShotActions {
   ending?: ReactNode
 }
 
-export function ShotView({ shot, state, loud, actions, world = 'screening' }: { shot: Shot; state: 'current' | 'leaving'; loud: { bg: string; ink: string; accent: string } | null; actions: ShotActions; world?: WorldId }) {
+export function ShotView({ shot, state, loud, actions, world = 'screening', template }: { shot: Shot; state: 'current' | 'leaving'; loud: { bg: string; ink: string; accent: string } | null; actions: ShotActions; world?: WorldId; /** The template the film is drawn in, when it has one. */ template?: Template | null }) {
   const style = vars({
     '--dur': `${shot.duration}s`,
     ...(loud ? { '--loud-bg': loud.bg, '--f-ink': loud.ink, '--f-soft': loud.ink, '--f-accent': loud.accent } : {}),
@@ -137,12 +139,14 @@ export function ShotView({ shot, state, loud, actions, world = 'screening' }: { 
       data-text={shot.text}
       style={style}
     >
-      {shot.kind === 'reveal' && shot.names && actions.picked && (
+      {!template && shot.kind === 'reveal' && shot.names && actions.picked && (
         <p className="reveal-pick" aria-hidden="true">
           {actions.picked} it is.
         </p>
       )}
-      {world === 'scrapbook' ? (
+      {template ? (
+        <TemplatePage template={template} data={pageOf(shot, template, actions.picked)} actions={actions} leaving={state === 'leaving'} />
+      ) : world === 'scrapbook' ? (
         <PageBody shot={shot} actions={actions} leaving={state === 'leaving'} />
       ) : world === 'mixtape' ? (
         <MixBody shot={shot} actions={actions} leaving={state === 'leaving'} />

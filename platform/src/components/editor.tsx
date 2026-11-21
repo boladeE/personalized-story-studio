@@ -226,10 +226,13 @@ export function SceneNav({
       <div className="scene-nav-head">
         <b>Scenes</b>
         <span className="scene-nav-hint">In playing order. Pick one to change it.</span>
-        <button type="button" className="chip-button look-button" aria-expanded={lookOpen} data-look={story.look} data-world={world} onClick={onLook}>
-          <span className="swatch" aria-hidden="true" />
-          Look<span className="wide-only">: {worldOf(world).name}, {worldOf(world).looks[story.look]}</span>
-        </button>
+        {/* A film in a template has no kind-of-film or colourway to pick: another version is another design. */}
+        {!story.template && (
+          <button type="button" className="chip-button look-button" aria-expanded={lookOpen} data-look={story.look} data-world={world} onClick={onLook}>
+            <span className="swatch" aria-hidden="true" />
+            Look<span className="wide-only">: {worldOf(world).name}, {worldOf(world).looks[story.look]}</span>
+          </button>
+        )}
         <button type="button" className="chip-button" onClick={onShuffle}>
           Try another version
         </button>
@@ -242,7 +245,7 @@ export function SceneNav({
               {/* The still holds the film's own buttons, so it sits beside the tile's button, which covers the whole tile. */}
               {r.state === 'in' && poster ? (
                 <span className="scene-thumb">
-                  <Still look={story.look} world={world} content={{ kind: 'shot', shot: poster }} />
+                  <Still look={story.look} world={world} template={story.template} content={{ kind: 'shot', shot: poster }} />
                 </span>
               ) : (
                 <span className="scene-thumb is-empty" aria-hidden="true">

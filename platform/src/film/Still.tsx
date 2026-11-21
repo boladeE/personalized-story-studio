@@ -1,3 +1,6 @@
+import { coverOf, TemplatePage } from '../template/Page'
+import { coloursOf, filmVars, isLightGround, useTemplate } from '../template/load'
+import type { TemplateRef } from '../story/types'
 import { Stilled } from './Media'
 import { useLayoutEffect, useRef } from 'react'
 import type { CSSProperties } from 'react'
@@ -21,7 +24,8 @@ const noop = { onBlow: () => {}, onReplay: () => {}, waiting: false, ended: fals
 
 export type StillContent = { kind: 'ticket'; recipient: string; occasion?: string } | { kind: 'shot'; shot: Shot }
 
-export function Still({ look, content, ghost = false, world = 'screening' }: { look: LookId; content: StillContent; ghost?: boolean; world?: WorldId }) {
+export function Still({ look, content, ghost = false, world = 'screening', template }: { look: LookId; content: StillContent; ghost?: boolean; world?: WorldId; /** The template the film is drawn in, when it has one. */ template?: TemplateRef }) {
+  const tpl = useTemplate(template?.id)
   const box = useRef<HTMLDivElement>(null)
   useLayoutEffect(() => {
     const el = box.current
@@ -43,6 +47,7 @@ export function Still({ look, content, ghost = false, world = 'screening' }: { l
   const flat = world !== 'screening'
   const palette = paletteFor(look, mood, world)
   const loud = flat || !shot || shot.mood !== 'playful' ? null : shot.kind === 'flag' ? loudFor(look, shot.design === 'docket' ? 0 : shot.n - 1) : shot.kind === 'montage' ? tableFor(look) : null
+  const colours = tpl && template ? coloursOf(tpl, template) : null
   const style = {
     '--f-a': palette.a,
     '--f-b': palette.b,
@@ -50,6 +55,7 @@ export function Still({ look, content, ghost = false, world = 'screening' }: { l
     '--f-ink': palette.ink,
     '--f-soft': palette.soft,
     '--f-accent': palette.accent,
+    ...(tpl && colours ? filmVars(tpl, colours) : {}),
     width: WIDTH,
     height: HEIGHT,
   } as CSSProperties
@@ -58,7 +64,7 @@ export function Still({ look, content, ghost = false, world = 'screening' }: { l
   return (
     <div ref={box} className="still-box" aria-hidden="true" inert>
       <div
-        className={`film still${worldClass(world)}${isLight(look, world) ? ' is-light' : ''}${ghost ? ' is-ghost' : ''}`}
+        className={`film still${tpl ? ' tp-film' : worldClass(world)}${(colours ? isLightGround(colours) : isLight(look, world)) ? ' is-light' : ''}${ghost ? ' is-ghost' : ''}`}
         data-look={look}
         data-world={world}
         data-phase={shot ? 'playing' : 'ticket'}
@@ -69,13 +75,18 @@ export function Still({ look, content, ghost = false, world = 'screening' }: { l
         <div className="film-glow">{glow && <img key={glow} src={glow} alt="" />}</div>
         <div className="film-frame">
           {/* A still never plays a clip: it shows its first frame. */}
-          <Stilled.Provider value={true}>{shot && <ShotView key={shot.id} shot={shot} state="current" loud={loud} actions={noop} world={world} />}</Stilled.Provider>
+          <Stilled.Provider value={true}>{shot && tpl !== undefined && <ShotView key={shot.id} shot={shot} state="current" loud={tpl ? null : loud} actions={noop} world={world} template={tpl} />}</Stilled.Provider>
         </div>
         <div className="film-vignette" />
         <div className="film-grain" />
         <div className="film-bar top" />
         <div className="film-bar bottom" />
-        {content.kind === 'ticket' && (
+        {content.kind === 'ticket' && tpl && (
+          <div className="opening tp-opening">
+            <TemplatePage template={tpl} data={coverOf(content.recipient, content.occasion, undefined, 'Tap to begin')} />
+          </div>
+        )}
+        {content.kind === 'ticket' && tpl === null && (
           <div className={`opening${album ? ' sb-opening' : world === 'mixtape' ? ' mx-opening' : ''}`}>
             {album ? (
               <CoverArt recipient={content.recipient} occasion={content.occasion} />

@@ -352,7 +352,7 @@ function Piece({ item, data, actions, leaving }: { item: Item; data: PageData; a
       const list = data.list
       if (!list) return null
       return (
-        <ol className={`tp-list tp-fit tp-v-${item.voice} is-${item.marker}${item.box ? ' has-box' : ''}`} data-min="0.45" style={{ '--size': item.size, '--gap': item.gap ?? 0.9, color: c(item.color), '--lit': c(item.lit), textAlign: item.align === 'center' ? 'center' : 'left', ...boxStyle(item.box) } as Vars}>
+        <ol className={`tp-list tp-fit tp-v-${item.voice} is-${item.marker}${item.box ? ' has-box' : ''}${item.box?.stretch ? ' is-stretch' : ''}`} data-min="0.45" style={{ '--size': item.size, '--gap': item.gap ?? 0.9, color: c(item.color), '--lit': c(item.lit), textAlign: item.align === 'center' ? 'center' : 'left', ...boxStyle(item.box) } as Vars}>
           {list.items.slice(0, list.shown).map((text, i) => (
             <li key={i} className={i === list.shown - 1 ? 'is-new' : undefined} data-n={pad2(i + 1)}>
               <span>{text}</span>

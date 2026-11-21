@@ -28,6 +28,17 @@ export type WorldId = (typeof WORLD_IDS)[number]
 export const isWorld = (value: unknown): value is WorldId => (WORLD_IDS as readonly unknown[]).includes(value)
 
 /**
+ * The template a film is drawn in (src/template): which one, which of its palettes, and the two
+ * main hues of the film's own photos that the palette is turned toward. A film with one is drawn
+ * by the template engine; its `world` is then only what its shots are built on.
+ */
+export interface TemplateRef {
+  id: string
+  palette: number
+  hues?: [number, number]
+}
+
+/**
  * The sender's own cut of the film: which scenes are left out, the order of the
  * rest, and the design picked for a scene. Anything not set here is the studio's choice.
  */
@@ -160,6 +171,8 @@ export interface Intake {
   voices?: Voiced[]
   /** The film's first words under their name, written for this film. Unset, the occasion's stock opening is used. */
   opening?: { title: string; body: string }
+  /** The template this film is drawn in. Unset, it is one of the studio's three older kinds of film (`world`). */
+  template?: TemplateRef
 }
 
 /**
@@ -232,6 +245,8 @@ export interface Story {
   look: LookId
   /** Gifts stored before worlds existed are Screenings. */
   world?: WorldId
+  /** The template the film is drawn in, when it has one. */
+  template?: TemplateRef
   sender: string
   recipient: string
   scenes: Scene[]
