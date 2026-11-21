@@ -36,10 +36,12 @@ test('end to end: build, write and make a song, lock, send, recipient unlocks an
 
   // The song can be rewritten and sung again. Its words are the ones the studio wrote for the first take.
   await page.getByRole('link', { name: 'Hear it or change it' }).click()
-  await expect(page.locator('.songroom')).toContainText('Written and sung for Zara')
   await expect(page.getByText(/studio score/i)).toHaveCount(0)
-  await page.getByRole('button', { name: /Rewrite the words/ }).click()
+  // The words are on their paper, open to be typed on. With nothing changed, the one button offers the same song again.
   const sheet = page.getByLabel('Lyrics')
+  const recordIt = page.locator('.song-record')
+  await expect(recordIt).toContainText('Record it again')
+  await expect(recordIt).toContainText('same words, voice and tune')
   await expect(sheet).toHaveValue(/Zara/, { timeout: live ? 90_000 : 5_000 })
   await expect(page.getByLabel('Song title')).not.toHaveValue('')
 
@@ -47,12 +49,15 @@ test('end to end: build, write and make a song, lock, send, recipient unlocks an
   const written = await sheet.inputValue()
   await sheet.fill(`${written}\nHappy birthday to you`)
   await expect(page.getByRole('alert')).toContainText('line from another song')
-  await expect(page.getByRole('button', { name: 'Sing these words' })).toBeDisabled()
+  await expect(recordIt).toBeDisabled()
   await sheet.fill(`${written}\nAnd yes, you can have my chips`)
   await expect(page.getByRole('alert')).toHaveCount(0)
+  // The button now says what it will record.
+  await expect(recordIt).toContainText('Make a new recording')
+  await expect(recordIt).toContainText('with your new words')
 
-  // Pick a tune by ear. The changed words stay on the sheet, and the new tune sings them.
-  await page.getByRole('button', { name: /Change the sound/ }).click()
+  // Pick a tune by ear. The changed words stay on the paper, and the new tune sings them.
+  await page.locator('.song-tune').click()
   const sample = page.waitForResponse((r) => r.url().endsWith('/tunes/highlife.mp3'))
   await page.getByRole('button', { name: 'Hear Highlife guitar' }).click()
   expect((await sample).status()).toBeLessThan(300)
@@ -61,20 +66,23 @@ test('end to end: build, write and make a song, lock, send, recipient unlocks an
 
   // Hear it sung: the approved words go to the music model as they are.
   const songRequest = page.waitForRequest((r) => r.url().endsWith('/api/music') && r.method() === 'POST')
-  await page.getByRole('button', { name: 'Make it with this tune' }).click()
+  await expect(recordIt).toContainText('with your new words, Highlife guitar')
+  await recordIt.click()
   const asked = (await songRequest).postDataJSON() as { vibe: string; details?: Record<string, unknown>; lyrics?: string }
   expect(asked.vibe).toBe('highlife')
   expect(asked.details).toMatchObject({ recipient: 'Zara', sender: 'Tobi' })
   expect(asked.lyrics).toContain('And yes, you can have my chips')
   expect(JSON.stringify(asked)).not.toContain('holding everything together')
-  await expect(page.getByRole('radio', { name: 'Take 2, Highlife guitar' })).toBeChecked({ timeout: live ? 260_000 : 5_000 })
-  // The new recording is the film's song, and its words are the ones read here.
-  await expect(page.locator('.song-lyrics')).toContainText('And yes, you can have my chips')
+  await expect(page.getByRole('group', { name: 'Recordings' })).toContainText('2 of 2', { timeout: live ? 260_000 : 5_000 })
+  await expect(page.locator('#song-tune-now')).toHaveText('Highlife guitar')
+  // The new recording is the film's song, its words are the ones on the paper, and there is nothing new left to record.
+  await expect(sheet).toHaveValue(/And yes, you can have my chips/)
+  await expect(recordIt).toContainText('Record it again')
   await closeEditor(page)
   await startFilm(page)
   await expect.poll(async () => (await audioState(page))?.trackId).toBe('song')
   await openEditor(page, 'Song')
-  await expect(page.locator('.song-lyrics')).toContainText('And yes, you can have my chips')
+  await expect(page.getByLabel('Lyrics')).toHaveValue(/And yes, you can have my chips/)
   await closeEditor(page)
 
   // Lock and send.
