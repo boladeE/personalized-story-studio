@@ -67,6 +67,16 @@ export function templateIds(): Promise<string[]> {
   return listed
 }
 
+let named: Promise<Array<{ id: string; name: string }>> | null = null
+/** The same templates with what the studio calls each, for a sender choosing one by eye. */
+export function templateCatalogue(): Promise<Array<{ id: string; name: string }>> {
+  named ??= fetch('/templates/catalogue.json')
+    .then((r) => (r.ok ? r.json() : []))
+    .then((list) => (Array.isArray(list) ? list.filter((t): t is { id: string; name: string } => Boolean(t) && typeof t.id === 'string' && typeof t.name === 'string') : []))
+    .catch(() => [])
+  return named
+}
+
 /** A whole number from a seed and a salt, spread evenly: which template, which palette. */
 const spread = (seed: number, salt: number) => {
   let x = (seed ^ salt) >>> 0

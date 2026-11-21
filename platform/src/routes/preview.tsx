@@ -4,7 +4,7 @@ import { Film } from '../film/Film'
 import type { FilmHandle, Phase } from '../film/Film'
 import { StudioHeader } from '../components/StudioHeader'
 import { useDraft } from '../components/draft'
-import { LookPanel, SceneNav, ScenePanel, SongBar } from '../components/editor'
+import { DesignPanel, LookPanel, SceneNav, ScenePanel, SongBar } from '../components/editor'
 import type { CutChange } from '../components/editor'
 import { hasWords, SCENE_FIELDS } from '../components/SceneWords'
 import { SongRoom } from '../components/SongRoom'
@@ -392,7 +392,25 @@ function Preview() {
             onShuffle={shuffle}
             onAdd={!useSample && intake.outline ? addScene : undefined}
           />
-          {side === 'look' ? (
+          {side === 'look' && story.template && !useSample ? (
+            <DesignPanel
+              story={story}
+              back={selected.name}
+              onClose={() => setSide('scene')}
+              onPick={(id) => {
+                const before = intake.template
+                if (!before || before.id === id) return
+                setIntake((c) => ({ ...c, template: { ...before, id } }))
+                record({ label: 'The film has another design.', undo: () => setIntake((c) => ({ ...c, template: before })) })
+              }}
+              onColours={(palette) => {
+                const before = intake.template
+                if (!before) return
+                setIntake((c) => ({ ...c, template: { ...before, palette } }))
+                record({ label: 'The colours changed.', undo: () => setIntake((c) => ({ ...c, template: before })) })
+              }}
+            />
+          ) : side === 'look' ? (
             <LookPanel
               story={story}
               back={selected.name}

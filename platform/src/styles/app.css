@@ -1921,3 +1921,79 @@ select:focus-visible {
   padding: 7px 0;
   border-bottom: 1px solid var(--line);
 }
+
+/* While it plays in the editor the film sits where the still of it did: the same frame, in the same place. */
+.preview-shell.is-editing:not(.is-song) > .preview-body {
+  container-type: size;
+  place-items: center;
+  padding: clamp(10px, 1.8vw, 22px) clamp(12px, 3vw, 40px) calc(var(--foot) + 4px);
+}
+.preview-shell.is-editing:not(.is-song) > .preview-body > .film {
+  width: min(100cqw, 100cqh * 1.6);
+  height: auto;
+  aspect-ratio: 16 / 10;
+  border-radius: 10px;
+  box-shadow: 0 0 0 1px rgba(20, 38, 31, 0.12), 0 18px 40px rgba(11, 40, 31, 0.18);
+}
+@media (max-width: 999.98px) {
+  .preview-shell.is-editing:not(.is-song) > .preview-body {
+    padding: 0 12px var(--foot);
+  }
+}
+
+/* Choosing a design: every template as a small picture of one of its pages. */
+.scene-panel.is-design .pager.is-row {
+  display: flex;
+  margin: 0 0 12px;
+  padding: 0 0 8px;
+  border-bottom: 1px solid var(--line);
+}
+.pager.is-row > span {
+  margin-right: auto;
+  font-weight: 700;
+}
+.design-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 10px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+.design-grid button {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.design-grid img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 10;
+  border-radius: 8px;
+  background: var(--line);
+  box-shadow: 0 0 0 1px rgba(20, 38, 31, 0.14);
+}
+.design-grid button[aria-pressed='true'] img {
+  box-shadow: 0 0 0 3px var(--hibiscus);
+}
+.design-grid button[aria-pressed='true'] span {
+  color: var(--hibiscus-deep);
+}
+.design-grid button:hover img {
+  box-shadow: 0 0 0 2px var(--palm);
+}
+@media (max-width: 999.98px) {
+  .design-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+}

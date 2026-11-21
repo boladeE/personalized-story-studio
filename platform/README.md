@@ -77,6 +77,12 @@ Senders didn't find that the words could be written again: the lyrics looked rea
 - **Steering** (`steerNote` in `src/server/lyrics.ts`): the writer is given the words as they stand and what the sender asked. A thing the sender names there counts as one of their details.
 - The notice that the words and song are made by Google's models is gone from this room, as the user asked for the creation flow on 2026-11-20.
 
+## Tunes, the design picker and the editor's stage (2026-11-21)
+
+- **Fourteen tunes, up from five** (`VIBES` in `src/story/vibes.ts`). The first five leaned one way (three were Afro styles) for a studio sold everywhere; the nine added are Acoustic guitar, Pop ballad, Gospel choir, Classic soul, Country, Jazz lounge, Reggae, Amapiano and Latin guitar. Each has the recipe a sung song is asked for with and a 16-second sample (`public/tunes/<id>.mp3`), made by `scripts/tune-samples.mjs` from a real instrumental. "Surprise me" draws a teasing film's tune from the livelier ones and a tender film's from the gentler ones; the director may name any.
+- **Choosing a design** (`DesignPanel` in `src/components/editor.tsx`): a film in a template has a "Design" button beside "Try another version". It opens every template as a small picture of one of its pages (`public/templates/thumbs`, made by `scripts/thumbs.mjs`; names from `public/templates/catalogue.json`) and a pager for the colours of the one in use. Each choice can be undone.
+- **The film plays where its still was.** In the editor the playing film used to fill the stage edge to edge while a still of it sat in a rounded frame; it now takes the same frame, so nothing moves when it starts or stops. The floating song credit is not shown over a template's pages (its credits name the song).
+
 ## Templates (v3, 2026-11-21)
 
 The user's aim for v3: two people's films should be very unlikely to look alike. The three kinds of film (Screening, Scrapbook, Mixtape) are code, about 1,300 to 2,400 lines each, so there could never be many. A **template** is a film's look as a data file, drawn by one engine, so there can be hundreds.

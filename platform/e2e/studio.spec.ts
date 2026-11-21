@@ -1087,6 +1087,19 @@ test('a new film is drawn in one of the studio’s templates, and another versio
   await openEditor(page)
   await expect(page.locator('.scene-strip .film.still').first()).toHaveAttribute('data-template', first!)
   await expect(page.getByRole('button', { name: /^Look/ })).toHaveCount(0)
+  // The design can be chosen by eye from all of them, and its colours stepped through. Each choice can be taken back.
+  await page.getByRole('button', { name: 'Design', exact: true }).click()
+  const designs = page.locator('.design-grid button')
+  await expect(designs).toHaveCount(listed.length)
+  await expect(designs.filter({ has: page.locator('img') }).first().locator('img')).toHaveJSProperty('complete', true)
+  const other = listed.find((id) => id !== first)!
+  const catalogue = (await (await page.request.get('/templates/catalogue.json')).json()) as Array<{ id: string; name: string }>
+  await designs.filter({ hasText: catalogue.find((t) => t.id === other)!.name }).first().click()
+  await expect(page.locator('.stage-still-frame .film')).toHaveAttribute('data-template', other)
+  await expect(page.locator('.scene-strip .film.still').first()).toHaveAttribute('data-template', other)
+  await undoButton(page).click()
+  await expect(page.locator('.scene-strip .film.still').first()).toHaveAttribute('data-template', first!)
+  await page.getByRole('button', { name: /^Back to / }).click()
   await page.getByRole('button', { name: 'Try another version' }).click()
   await expect.poll(() => page.locator('.scene-strip .film.still').first().getAttribute('data-template')).not.toBe(first)
   expect(listed).toContain(await page.locator('.scene-strip .film.still').first().getAttribute('data-template'))

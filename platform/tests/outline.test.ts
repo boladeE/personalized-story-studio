@@ -320,10 +320,16 @@ describe('the sample', () => {
 describe('“Surprise me” for the song', () => {
   const directed = (because: 'teasing' | 'tender', seed: number) => maya({ direction: { seed, world: 'mixtape', look: 'garden', designs: {}, order: [], because } })
   it('picks a style that suits the film, not the same one for every film, and keeps it when the song is tried again', () => {
-    const lively = new Set(Array.from({ length: 12 }, (_, seed) => surpriseVibe(directed('teasing', seed))))
-    const gentle = new Set(Array.from({ length: 12 }, (_, seed) => surpriseVibe(directed('tender', seed))))
-    expect([...lively].sort()).toEqual(['afrobeats', 'highlife', 'lofi-rnb'])
-    expect([...gentle].sort()).toEqual(['afro-soul', 'lofi-rnb', 'piano'])
+    const lively = new Set(Array.from({ length: 60 }, (_, seed) => surpriseVibe(directed('teasing', seed))))
+    const gentle = new Set(Array.from({ length: 60 }, (_, seed) => surpriseVibe(directed('tender', seed))))
+    // A teasing film is never given the slow ones, nor a tender film the dancing ones, and each has several to draw from.
+    expect(lively.size).toBeGreaterThan(5)
+    expect(gentle.size).toBeGreaterThan(4)
+    for (const slow of ['piano', 'pop-ballad', 'acoustic', 'afro-soul']) expect(lively).not.toContain(slow)
+    for (const quick of ['afrobeats', 'highlife', 'amapiano', 'country', 'reggae']) expect(gentle).not.toContain(quick)
+    // Every tune has a sample to hear and the recipe a sung song is asked for with.
+    expect(VIBES.length).toBe(14)
+    for (const v of VIBES) expect(v.prompt && v.genre && v.tempo && v.instruments && v.mood && v.feel).toBeTruthy()
     expect(surpriseVibe(directed('teasing', 41))).toBe(surpriseVibe(directed('teasing', 41)))
     // A film that was never directed still gets a style of its own, from its two names.
     const undirected = new Set(['Zara', 'Kemi', 'Maya', 'Rin', 'Ada', 'Tobi', 'Leo', 'Sam'].map((recipient) => surpriseVibe({ sender: 'Tola', recipient })))

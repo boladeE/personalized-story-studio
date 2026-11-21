@@ -62,6 +62,97 @@ export const VIBES = [
     instruments: 'dusty laid-back drums, warm bass, soft electric piano',
     mood: 'mellow, late-night, intimate',
   },
+  // Added 2026-11-21 so the list is not one part of the world's: the studio is sold everywhere.
+  {
+    id: 'acoustic',
+    name: 'Acoustic guitar',
+    feel: 'Fingerpicked guitar, close and warm',
+    prompt: 'intimate acoustic folk-pop with fingerpicked steel-string guitar, soft brushed percussion and a warm upright bass, around 88 BPM',
+    genre: 'Acoustic folk-pop',
+    tempo: '88 BPM',
+    instruments: 'fingerpicked steel-string acoustic guitar, soft brushed percussion, warm upright bass, a light second guitar',
+    mood: 'close, warm, honest',
+  },
+  {
+    id: 'pop-ballad',
+    name: 'Pop ballad',
+    feel: 'Piano that builds to a big chorus',
+    prompt: 'modern pop ballad that starts on piano and builds with drums, bass and a wide string pad into a full chorus, around 76 BPM',
+    genre: 'Pop ballad',
+    tempo: '76 BPM',
+    instruments: 'piano, building drums, bass, a wide string pad, soft backing harmonies',
+    mood: 'heartfelt, building, open',
+  },
+  {
+    id: 'gospel',
+    name: 'Gospel choir',
+    feel: 'Organ, hand claps and a choir behind the voice',
+    prompt: 'joyful contemporary gospel with Hammond organ, piano, hand claps, a tambourine and a full choir answering, around 92 BPM',
+    genre: 'Contemporary gospel',
+    tempo: '92 BPM',
+    instruments: 'Hammond organ, piano, hand claps, tambourine, bass and drums, a full choir answering the lead',
+    mood: 'grateful, uplifting, full',
+  },
+  {
+    id: 'soul',
+    name: 'Classic soul',
+    feel: 'Horns, tambourine and a warm backbeat',
+    prompt: 'classic sixties-style soul with a warm backbeat, tambourine, clean rhythm guitar, a walking bass and a tight horn section, around 104 BPM',
+    genre: 'Classic soul',
+    tempo: '104 BPM',
+    instruments: 'warm backbeat drums, tambourine, clean rhythm guitar, walking bass, a tight horn section',
+    mood: 'joyful, warm, moving',
+  },
+  {
+    id: 'country',
+    name: 'Country',
+    feel: 'Steady strum, steel guitar, a story told plainly',
+    prompt: 'easygoing modern country with a steady acoustic strum, pedal steel guitar, light fiddle and brushed drums, around 100 BPM',
+    genre: 'Country',
+    tempo: '100 BPM',
+    instruments: 'strummed acoustic guitar, pedal steel guitar, light fiddle, brushed drums, bass',
+    mood: 'easy, honest, sunlit',
+  },
+  {
+    id: 'jazz',
+    name: 'Jazz lounge',
+    feel: 'Brushed drums, upright bass, a little swing',
+    prompt: 'relaxed lounge jazz with brushed drums, a walking upright bass, soft piano chords and a muted trumpet, a gentle swing around 108 BPM',
+    genre: 'Vocal jazz, lounge',
+    tempo: '108 BPM, swung',
+    instruments: 'brushed drums, walking upright bass, soft piano, a muted trumpet',
+    mood: 'smooth, playful, unhurried',
+  },
+  {
+    id: 'reggae',
+    name: 'Reggae',
+    feel: 'Off-beat guitar and a deep, easy bass',
+    prompt: 'sunny roots reggae with off-beat rhythm guitar, a deep melodic bass, a one-drop drum groove and a bubbling organ, around 78 BPM',
+    genre: 'Roots reggae',
+    tempo: '78 BPM',
+    instruments: 'off-beat rhythm guitar, deep melodic bass, one-drop drums, bubbling organ',
+    mood: 'sunny, easy, steady',
+  },
+  {
+    id: 'amapiano',
+    name: 'Amapiano',
+    feel: 'Log drum, shakers and soft keys',
+    prompt: 'smooth amapiano with a deep log-drum bassline, shakers, soft jazzy keys and airy pads, around 112 BPM',
+    genre: 'Amapiano',
+    tempo: '112 BPM',
+    instruments: 'deep log-drum bassline, shakers, soft jazzy keys, airy pads',
+    mood: 'smooth, dancing, warm',
+  },
+  {
+    id: 'latin',
+    name: 'Latin guitar',
+    feel: 'Nylon guitar and hand drums, a slow sway',
+    prompt: 'romantic Latin pop with nylon-string guitar, congas and bongos, a soft bass and light claves, a slow sway around 96 BPM',
+    genre: 'Latin pop, bolero-pop',
+    tempo: '96 BPM',
+    instruments: 'nylon-string guitar, congas and bongos, soft bass, light claves',
+    mood: 'romantic, swaying, warm',
+  },
 ] as const
 
 /** Who sings. `surprise` leaves it to the music model. */
@@ -163,8 +254,8 @@ export function surpriseVibe(intake: Pick<Intake, 'direction' | 'sender' | 'reci
   // The director's own choice for this film, when it made one.
   const directed = VIBES.find((v) => v.id === intake.direction?.tune)
   if (directed) return directed.id
-  const lively: VibeId[] = ['afrobeats', 'highlife', 'lofi-rnb']
-  const gentle: VibeId[] = ['afro-soul', 'piano', 'lofi-rnb']
+  const lively: VibeId[] = ['afrobeats', 'highlife', 'lofi-rnb', 'soul', 'country', 'reggae', 'amapiano', 'gospel', 'jazz']
+  const gentle: VibeId[] = ['afro-soul', 'piano', 'lofi-rnb', 'acoustic', 'pop-ballad', 'latin', 'jazz']
   const because = intake.direction?.because
   const pool = because === 'teasing' || because === 'short' ? lively : because === 'tender' || because === 'memories' ? gentle : VIBES.map((v) => v.id)
   const names = `${intake.sender}|${intake.recipient}`

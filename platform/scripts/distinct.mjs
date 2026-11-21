@@ -40,7 +40,7 @@ const alike = (a, b) => {
   return scores.length ? scores.reduce((s, v) => s + v, 0) / scores.length : 0
 }
 
-const others = readdirSync(DIR).filter((f) => f.endsWith('.json') && f !== 'index.json').map((f) => ({ file: resolve(join(DIR, f)), data: JSON.parse(readFileSync(join(DIR, f), 'utf8')) }))
+const others = readdirSync(DIR).filter((f) => f.endsWith('.json') && f !== 'index.json' && f !== 'catalogue.json').map((f) => ({ file: resolve(join(DIR, f)), data: JSON.parse(readFileSync(join(DIR, f), 'utf8')) }))
 let failed = false
 for (const file of process.argv.slice(2)) {
   const mine = JSON.parse(readFileSync(file, 'utf8'))

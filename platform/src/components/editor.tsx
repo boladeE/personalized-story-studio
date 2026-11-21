@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Still } from '../film/Still'
 import type { Shot } from '../film/timeline'
 import { LOOKS, moveScene, nextDesign, toggleScene } from '../story/generate'
@@ -8,6 +8,7 @@ import { SAMPLE_SOUNDTRACK } from '../story/sample'
 import { outlineOf } from '../story/outline'
 import type { Cut, Intake, LookId, Story, WorldId } from '../story/types'
 import { WORLDS, worldOf } from '../story/worlds'
+import { templateCatalogue, useTemplate } from '../template/load'
 import type { DraftSong, SongJob } from './draft'
 import { chapterAsk, ChapterWords, hasWords, OpeningWords, sceneAsk, SceneWords } from './SceneWords'
 
@@ -189,6 +190,65 @@ export function LookPanel({ story, back, note, onClose, onLook, onWorld }: { sto
   )
 }
 
+/**
+ * Choosing the film's design by eye: every template the studio has, each shown as one of its pages, and
+ * the colours of the one in use. The still beside it shows the film's own scene in whichever is picked.
+ */
+export function DesignPanel({ story, back, onClose, onPick, onColours }: { story: Story; /** The scene to go back to. */ back: string; onClose: () => void; onPick: (id: string) => void; onColours: (palette: number) => void }) {
+  const [list, setList] = useState<Array<{ id: string; name: string }>>([])
+  useEffect(() => {
+    let live = true
+    void templateCatalogue().then((all) => live && setList(all))
+    return () => {
+      live = false
+    }
+  }, [])
+  const current = story.template
+  const template = useTemplate(current?.id)
+  const count = template?.palettes.length ?? 1
+  const at = current ? Math.abs(current.palette) % count : 0
+  return (
+    <aside className="scene-panel is-look is-design" aria-label="The design of the film">
+      <header className="scene-panel-head">
+        <h1>The design</h1>
+      </header>
+      {count > 1 && (
+        <div className="pager is-row" role="group" aria-label="Colours">
+          <span>Colours</span>
+          <button type="button" aria-label="The colours before these" onClick={() => onColours((at + count - 1) % count)}>
+            <PagerChevron />
+          </button>
+          <b>
+            {at + 1} of {count}
+          </b>
+          <button type="button" className="is-next" aria-label="The next colours" onClick={() => onColours((at + 1) % count)}>
+            <PagerChevron />
+          </button>
+        </div>
+      )}
+      <ul className="design-grid">
+        {list.map((t) => (
+          <li key={t.id}>
+            <button type="button" aria-pressed={t.id === current?.id} onClick={() => onPick(t.id)}>
+              <img src={`/templates/thumbs/${t.id}.jpg`} alt="" loading="lazy" width={320} height={200} />
+              <span>{t.name}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <button type="button" className="chip-button is-main scene-panel-close" onClick={onClose}>
+        Back to {back}
+      </button>
+    </aside>
+  )
+}
+
+const PagerChevron = () => (
+  <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="m15 5-7 7 7 7" />
+  </svg>
+)
+
 /** The film's scenes, left to right in the order they play, then what was left out and what could still go in. */
 export function SceneNav({
   story,
@@ -226,8 +286,12 @@ export function SceneNav({
       <div className="scene-nav-head">
         <b>Scenes</b>
         <span className="scene-nav-hint">In playing order. Pick one to change it.</span>
-        {/* A film in a template has no kind-of-film or colourway to pick: another version is another design. */}
-        {!story.template && (
+        {/* A film in a template picks its design from all of them; one of the older kinds picks its kind and colours. */}
+        {story.template ? (
+          <button type="button" className="chip-button" aria-expanded={lookOpen} onClick={onLook}>
+            Design
+          </button>
+        ) : (
           <button type="button" className="chip-button look-button" aria-expanded={lookOpen} data-look={story.look} data-world={world} onClick={onLook}>
             <span className="swatch" aria-hidden="true" />
             Look<span className="wide-only">: {worldOf(world).name}, {worldOf(world).looks[story.look]}</span>

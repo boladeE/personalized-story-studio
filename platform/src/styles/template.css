@@ -1220,6 +1220,11 @@ p.is-stretch {
   to { clip-path: inset(0); }
 }
 
+/* The song's name floats over the older kinds of film in their own type; a template's credits name it instead. */
+.film.tp-film .film-now {
+  display: none;
+}
+
 /* The cover: a page like any other, under the button that starts the film. It gives way when tapped. */
 .tp-opening {
   display: block;
