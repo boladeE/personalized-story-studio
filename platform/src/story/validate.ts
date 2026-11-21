@@ -163,7 +163,7 @@ export function parseIntake(raw: unknown): { ok: true; intake: Intake } | { ok: 
     const outline = parseOutline(r.outline)
     const t = r.template && typeof r.template === 'object' ? (r.template as Record<string, unknown>) : null
     const hues = t && Array.isArray(t.hues) && t.hues.length === 2 && t.hues.every((h) => typeof h === 'number' && h >= 0 && h < 360) ? ([t.hues[0], t.hues[1]] as [number, number]) : undefined
-    const template = t && typeof t.id === 'string' && /^[a-z][a-z0-9-]{2,39}$/.test(t.id) ? { id: t.id, palette: Number.isInteger(t.palette) && (t.palette as number) >= 0 && (t.palette as number) < 1000 ? (t.palette as number) : 0, ...(hues ? { hues } : {}) } : null
+    const template = t && typeof t.id === 'string' && /^[a-z][a-z0-9-]{2,39}$/.test(t.id) ? { id: t.id, palette: Number.isInteger(t.palette) && (t.palette as number) >= 0 && (t.palette as number) < 1000 ? (t.palette as number) : 0, ...(hues ? { hues } : {}), ...(t && typeof t.own === 'string' && /^#[0-9a-f]{6}$/i.test(t.own) ? { own: t.own.toLowerCase() } : {}) } : null
     // A voice note's sound arrives beside the gift; here it is who speaks, how long, and the shape of it.
     const voices = list(r.voices ?? [], 'Voice notes').map((v, i) => {
       const note = (v ?? {}) as Record<string, unknown>

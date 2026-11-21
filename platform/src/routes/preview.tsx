@@ -227,7 +227,7 @@ function Preview() {
     const next = newSeed()
     setSeed(next)
     // Another version is another design too: a different template, drawn for the new version.
-    if (!useSample && design) void drawTemplate(next, intake.photos, design.id).then((template) => template && setIntake((c) => ({ ...c, template })))
+    if (!useSample && design) void drawTemplate(next, intake.photos, design.id).then((template) => template && setIntake((c) => ({ ...c, template: design.own ? { ...template, own: design.own } : template })))
     record({
       label: 'The film has another version.',
       undo: () => {
@@ -408,6 +408,13 @@ function Preview() {
                 if (!before) return
                 setIntake((c) => ({ ...c, template: { ...before, palette } }))
                 record({ label: 'The colours changed.', undo: () => setIntake((c) => ({ ...c, template: before })) })
+              }}
+              onOwn={(own, more) => {
+                const before = intake.template
+                if (!before || before.own === own) return
+                const { own: _was, ...rest } = before
+                setIntake((c) => ({ ...c, template: own ? { ...rest, own } : rest }))
+                if (!more) record({ label: 'The colours changed.', undo: () => setIntake((c) => ({ ...c, template: before })) })
               }}
             />
           ) : side === 'look' ? (

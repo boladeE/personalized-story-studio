@@ -77,6 +77,14 @@ Senders didn't find that the words could be written again: the lyrics looked rea
 - **Steering** (`steerNote` in `src/server/lyrics.ts`): the writer is given the words as they stand and what the sender asked. A thing the sender names there counts as one of their details.
 - The notice that the words and song are made by Google's models is gone from this room, as the user asked for the creation flow on 2026-11-20.
 
+## A colour of the sender's own (2026-11-21)
+
+- **What it is.** The Design panel has a row under "Colours": the film's usual colours (from its photos, or as designed), ten colours at a tap (`OWN_COLOURS`), and the browser's colour picker for any other. The choice is stored with the film as `template.own` (`#rrggbb`), is kept when another design or another version is drawn, and applies to every template, including the three that do not take the photos' colours.
+- **What it does** (`owned()` in `src/template/color.ts`). The colour gives the family, not the shade. The whole palette is turned together, so its colours keep the relations the design gave them, until the one that shows the chosen colour best (a strongly coloured page ground, otherwise whichever of the grounds and accents can carry it) is the chosen colour. A grey, black or white asks for a film with almost no colour.
+- **Why words stay readable.** Each turned colour is set to exactly the brightness (WCAG luminance) the design's own colour had (`level()`), and contrast depends only on that, so a palette reads as well in any colour as it did in its own. The photos' colours (`tinted()`) now use the same step. `tests/colour.test.ts` checks every palette of every template in sixteen chosen colours and across the hues; the gate draws each template in four chosen colours as well (`--own` runs only those).
+- **Known limits.** A dark design in yellow is brown with yellow accents, not a yellow page. The picker's small pictures of the designs do not change with the colour; the still beside them does.
+- The song bar under the scenes names the song and nothing else ("written and sung for …" removed).
+
 ## Tunes, the design picker and the editor's stage (2026-11-21)
 
 - **Fourteen tunes, up from five** (`VIBES` in `src/story/vibes.ts`). The first five leaned one way (three were Afro styles) for a studio sold everywhere; the nine added are Acoustic guitar, Pop ballad, Gospel choir, Classic soul, Country, Jazz lounge, Reggae, Amapiano and Latin guitar. Each has the recipe a sung song is asked for with and a 16-second sample (`public/tunes/<id>.mp3`), made by `scripts/tune-samples.mjs` from a real instrumental. "Surprise me" draws a teasing film's tune from the livelier ones and a tender film's from the gentler ones; the director may name any.

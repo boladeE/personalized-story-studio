@@ -99,17 +99,33 @@ function apart(color: string, from: string, least: number): string {
 }
 
 /**
+ * A colour of a given strength and hue that is exactly as bright as another was. How readable two
+ * colours are together depends only on how bright each is, so a palette turned this way reads as
+ * well in any hue as it did in its own.
+ */
+function level(C: number, H: number, brightness: number): string {
+  let lo = 0
+  let hi = 1
+  for (let i = 0; i < 18; i++) {
+    const mid = (lo + hi) / 2
+    if (luminance(fromLch(mid, C, H)) < brightness) lo = mid
+    else hi = mid
+  }
+  return fromLch((lo + hi) / 2, C, H)
+}
+
+/**
  * A film's own colours. `hues` are the two main hues of its photos (degrees).
- * The palette keeps every colour's lightness and strength, so the design keeps
- * its character; its grounds and words turn to the first hue and its accents to
+ * The palette keeps every colour's brightness and strength, so the design keeps
+ * its character and its words stay as readable; its grounds and words turn to the first hue and its accents to
  * the second. Pairs that are read are then nudged apart if turning cost them contrast.
  */
 export function tinted(palette: Palette, hues: [number, number] | undefined): Palette {
   if (!hues) return palette
   const turn = (hex: string, hue: number) => {
-    const [L, C] = toLch(hex)
+    const [, C] = toLch(hex)
     // A near-grey has no hue to speak of: give it a little, so the whole page leans the film's way.
-    return fromLch(L, C < 0.012 ? 0.012 : C, hue)
+    return level(C < 0.012 ? 0.012 : C, hue, luminance(hex))
   }
   const [main, second] = hues
   const out: Palette = {
@@ -125,6 +141,60 @@ export function tinted(palette: Palette, hues: [number, number] | undefined): Pa
   for (const [text, under, least] of READ_PAIRS) out[text] = apart(out[text], out[under], least)
   return out
 }
+
+/**
+ * A film in a colour its sender chose. The colour gives the family, not the shade: every colour keeps
+ * the design's own brightness, so words stay as readable. The whole palette is turned together, so
+ * the colours keep the relations the design gave them, and it is turned until the one of its colours
+ * that shows the chosen colour best is the chosen colour. Near-greys lean the same way.
+ * A grey (or black, or white) asks for a film with almost no colour in it.
+ */
+export function owned(palette: Palette, own: string): Palette {
+  const [, strength, hue] = toLch(own)
+  const out = { ...palette }
+  if (strength < 0.03) {
+    for (const token of TOKENS) {
+      const [, C, H] = toLch(palette[token])
+      out[token] = level(C * 0.1, H, luminance(palette[token]))
+    }
+  } else {
+    // Which of the design's colours becomes the chosen one: the one that would show it best. That is how
+    // strong the chosen hue can be at that colour's brightness, how near that brightness is to the chosen
+    // colour's own (a yellow shows as yellow when light, as brown when dark), and how much of the page it covers.
+    const [ownL] = toLch(own)
+    const cover: Partial<Record<Token, number>> = { bg: 1.5, surface: 1.5, accent: 1, accent2: 0.8 }
+    const seen = (token: Token) => {
+      const [L, C] = toLch(level(toLch(palette[token])[1], hue, luminance(palette[token])))
+      return C * (cover[token] ?? 0) * Math.max(0.2, 1 - 1.5 * Math.abs(L - ownL))
+    }
+    // A page whose ground is strongly coloured is that colour before anything else, so the ground takes
+    // the chosen one, unless it is too far from it in brightness to show it.
+    const [groundL, groundC] = toLch(palette.bg)
+    const anchor = groundC >= 0.1 && Math.abs(groundL - ownL) <= 0.35 ? 'bg' : (['bg', 'surface', 'accent', 'accent2'] as Token[]).sort((a, b) => seen(b) - seen(a))[0]
+    const by = hue - toLch(palette[anchor])[2]
+    for (const token of TOKENS) {
+      const [, C, H] = toLch(palette[token])
+      // A faint colour's hue is close to an accident: it takes the chosen one instead of being turned.
+      out[token] = level(Math.max(C, 0.012), C < 0.04 ? hue : (H + by + 720) % 360, luminance(palette[token]))
+    }
+  }
+  for (const [text, under, least] of READ_PAIRS) out[text] = apart(out[text], out[under], least)
+  return out
+}
+
+/** The colours a sender is offered at a tap. Anything else comes from the colour picker. */
+export const OWN_COLOURS = [
+  { hex: '#d6336c', name: 'Pink' },
+  { hex: '#e03131', name: 'Red' },
+  { hex: '#e8590c', name: 'Orange' },
+  { hex: '#e0a800', name: 'Yellow' },
+  { hex: '#2f9e44', name: 'Green' },
+  { hex: '#0c8599', name: 'Teal' },
+  { hex: '#1c7ed6', name: 'Blue' },
+  { hex: '#4c4fd6', name: 'Indigo' },
+  { hex: '#8a3fd1', name: 'Purple' },
+  { hex: '#7a7a7a', name: 'Grey' },
+] as const
 
 /**
  * The two main hues of a set of pixels (RGBA bytes, as a canvas gives them): the

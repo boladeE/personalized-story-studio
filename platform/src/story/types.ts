@@ -36,6 +36,8 @@ export interface TemplateRef {
   id: string
   palette: number
   hues?: [number, number]
+  /** A colour the sender chose for the film (#rrggbb). It takes the place of the photos' hues. */
+  own?: string
 }
 
 /**

@@ -14,6 +14,8 @@ const flag = (name, fallback) => {
 }
 const base = flag('--base', 'http://127.0.0.1:3124')
 const shots = flag('--shots', '')
+// --own: only the runs in a colour a sender chose (for checking templates that passed before those runs existed).
+const ownOnly = args.includes('--own') && Boolean(args.splice(args.indexOf('--own'), 1))
 const files = args
 if (!files.length) {
   console.error('Name at least one template file.')
@@ -36,16 +38,26 @@ for (const file of files) {
   const found = []
   const palettes = Array.isArray(template.palettes) ? template.palettes.length : 1
   // Wide and upright, in each of its palettes, and once more turned toward a film's own colours.
-  const runs = [
-    ...Array.from({ length: palettes }, (_, p) => [{ size: 'wide', palette: p }, { size: 'tall', palette: p }]).flat(),
-    ...(template.tint ? [{ size: 'wide', palette: 0, hue: 205 }, { size: 'tall', palette: 0, hue: 25 }] : []),
+  // A sender may choose any colour for any design, so each is also drawn in three chosen ones: a warm, a cool and a grey.
+  const chosen = [
+    { size: 'wide', palette: 0, own: 'd6336c' },
+    { size: 'tall', palette: palettes - 1, own: '1c7ed6' },
+    { size: 'wide', palette: palettes - 1, own: 'e0a800' },
+    { size: 'tall', palette: 0, own: '7a7a7a' },
   ]
+  const runs = ownOnly
+    ? chosen
+    : [
+        ...Array.from({ length: palettes }, (_, p) => [{ size: 'wide', palette: p }, { size: 'tall', palette: p }]).flat(),
+        ...(template.tint ? [{ size: 'wide', palette: 0, hue: 205 }, { size: 'tall', palette: 0, hue: 25 }] : []),
+        ...chosen,
+      ]
   for (const run of runs) {
     const page = await browser.newPage({ viewport: run.size === 'tall' ? { width: 1700, height: 900 } : { width: 1340, height: 900 } })
     const errors = []
     page.on('pageerror', (e) => errors.push(e.message))
     await page.addInitScript((t) => (window.__labTemplate = t), template)
-    const query = new URLSearchParams({ size: run.size, palette: String(run.palette), ...(run.hue === undefined ? {} : { hue: String(run.hue) }) })
+    const query = new URLSearchParams({ size: run.size, palette: String(run.palette), ...(run.hue === undefined ? {} : { hue: String(run.hue) }), ...(run.own ? { own: run.own } : {}) })
     await page.goto(`${base}/lab?${query}`)
     try {
       await page.waitForFunction(() => window.__labReport?.ready, undefined, { timeout: 30000 })
@@ -55,7 +67,7 @@ for (const file of files) {
       continue
     }
     const report = await page.evaluate(() => window.__labReport)
-    const tag = `${run.size}, palette ${run.palette}${run.hue === undefined ? '' : `, turned to hue ${run.hue}`}`
+    const tag = `${run.size}, palette ${run.palette}${run.hue === undefined ? '' : `, turned to hue ${run.hue}`}${run.own ? `, in a chosen #${run.own}` : ''}`
     for (const p of report.invalid) found.push(p)
     for (const p of report.problems) found.push(`[${tag}] ${p.page}: ${p.what}`)
     for (const e of errors) found.push(`[${tag}] the page threw: ${e}`)
@@ -73,7 +85,7 @@ for (const file of files) {
       }, scale)
       await page.setViewportSize({ width: 1340, height: Math.min(height, 9000) })
       await page.waitForTimeout(400)
-      await page.screenshot({ path: join(shots, `${id}-${run.size}-p${run.palette}${run.hue === undefined ? '' : `-h${run.hue}`}.jpg`), type: 'jpeg', quality: 62, clip: { x: 0, y: 0, width: 1340, height: Math.min(height, 9000) } })
+      await page.screenshot({ path: join(shots, `${id}-${run.size}-p${run.palette}${run.hue === undefined ? '' : `-h${run.hue}`}${run.own ? `-o${run.own}` : ''}.jpg`), type: 'jpeg', quality: 62, clip: { x: 0, y: 0, width: 1340, height: Math.min(height, 9000) } })
     }
     await page.close()
     if (report.invalid.length) break

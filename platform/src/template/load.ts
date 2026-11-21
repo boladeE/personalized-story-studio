@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { TemplateRef } from '../story/types'
 import { checkTemplate } from './check'
-import { luminance, mainHues, tinted } from './color'
+import { luminance, mainHues, owned, tinted } from './color'
 import { templateVars } from './Page'
 import type { Palette, Template } from './types'
 
@@ -49,7 +49,11 @@ export function useTemplate(id: string | undefined): Template | null | undefined
 }
 
 /** The colours one film has in a template: the palette it drew, turned toward its own photos when the template allows. */
-export const coloursOf = (template: Template, ref: TemplateRef): Palette => tinted(template.palettes[Math.abs(ref.palette) % template.palettes.length], template.tint ? ref.hues : undefined)
+export function coloursOf(template: Template, ref: TemplateRef): Palette {
+  const palette = template.palettes[Math.abs(ref.palette) % template.palettes.length]
+  // A colour the sender chose is used in every design, even one that keeps its own colours otherwise.
+  return ref.own ? owned(palette, ref.own) : tinted(palette, template.tint ? ref.hues : undefined)
+}
 
 /** Everything a film in a template sets on its root, including the few colours the studio's own controls and widgets read. */
 export function filmVars(template: Template, colours: Palette): CSSProperties {

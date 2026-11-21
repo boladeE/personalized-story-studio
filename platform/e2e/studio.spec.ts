@@ -180,7 +180,8 @@ test('sound can be muted and the preview has an honest empty state', async ({ pa
   // The editor names the film's song in a bar of its own, which leads to the song's room.
   await openEditor(page)
   await expect(page).toHaveURL(/edit=1/)
-  await expect(page.locator('.film-song')).toContainText('“This One, With You”, written and sung for this film')
+  await expect(page.locator('.film-song')).toContainText('“This One, With You”')
+  await expect(page.locator('.film-song')).not.toContainText('written and sung')
   await page.getByRole('link', { name: 'Hear it' }).click()
   await expect(page).toHaveURL(/song=1/)
   // There is one piece of music, the song made for the film, and nothing else to switch to.
@@ -1099,10 +1100,29 @@ test('a new film is drawn in one of the studio’s templates, and another versio
   await expect(page.locator('.scene-strip .film.still').first()).toHaveAttribute('data-template', other)
   await undoButton(page).click()
   await expect(page.locator('.scene-strip .film.still').first()).toHaveAttribute('data-template', first!)
+  // A colour of the sender's own: one of ten at a tap, or any from the colour picker. It changes the film's
+  // colours, is named beside "Colours", and can be taken back to the film's usual ones.
+  const ground = () => page.locator('.stage-still-frame .film').evaluate((el) => getComputedStyle(el).getPropertyValue('--c-bg') + getComputedStyle(el).getPropertyValue('--c-accent'))
+  const usual = await ground()
+  await page.getByRole('button', { name: 'Pink', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Pink', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.locator('.pager.is-row small')).toHaveText('Pink')
+  await expect.poll(ground).not.toBe(usual)
+  const pink = await ground()
+  await page.getByRole('button', { name: 'Blue', exact: true }).click()
+  await expect.poll(ground).not.toBe(pink)
+  await page.locator('.colour-dot.is-usual').click()
+  await expect.poll(ground).toBe(usual)
+  await expect(page.getByLabel('Your own colour')).toHaveAttribute('type', 'color')
+  await page.getByRole('button', { name: 'Blue', exact: true }).click()
   await page.getByRole('button', { name: /^Back to / }).click()
   await page.getByRole('button', { name: 'Try another version' }).click()
   await expect.poll(() => page.locator('.scene-strip .film.still').first().getAttribute('data-template')).not.toBe(first)
   expect(listed).toContain(await page.locator('.scene-strip .film.still').first().getAttribute('data-template'))
+  // The colour the sender chose goes with the film into its new design.
+  await page.getByRole('button', { name: 'Design', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Blue', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: /^Back to / }).click()
   // Undo brings the first design back.
   await undoButton(page).click()
   await expect(page.locator('.scene-strip .film.still').first()).toHaveAttribute('data-template', first!)

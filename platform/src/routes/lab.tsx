@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { checkTemplate } from '../template/check'
-import { tinted } from '../template/color'
+import { owned, tinted } from '../template/color'
 import { labFilms } from '../template/fixtures'
 import { measure } from '../template/measure'
 import type { Problem } from '../template/measure'
@@ -26,11 +26,12 @@ declare global {
  * anywhere a sender goes.
  */
 export const Route = createFileRoute('/lab')({
-  validateSearch: (search: Record<string, unknown>): { t?: string; size?: 'wide' | 'tall'; palette?: number; hue?: number } => ({
+  validateSearch: (search: Record<string, unknown>): { t?: string; size?: 'wide' | 'tall'; palette?: number; hue?: number; own?: string } => ({
     ...(typeof search.t === 'string' && /^[a-z][a-z0-9-]{2,39}$/.test(search.t) ? { t: search.t } : {}),
     ...(search.size === 'tall' ? { size: 'tall' as const } : {}),
     ...(Number.isInteger(Number(search.palette)) && Number(search.palette) > 0 ? { palette: Number(search.palette) } : {}),
     ...(search.hue !== undefined && Number(search.hue) >= 0 && Number(search.hue) < 360 ? { hue: Number(search.hue) } : {}),
+    ...(/^[0-9a-f]{6}$/i.test(String(search.own)) ? { own: String(search.own) } : {}),
   }),
   component: Lab,
 })
@@ -38,7 +39,7 @@ export const Route = createFileRoute('/lab')({
 const noop = { onBlow: () => {}, onReplay: () => {}, waiting: false, ended: false }
 
 function Lab() {
-  const { t, size = 'wide', palette = 0, hue } = Route.useSearch()
+  const { t, size = 'wide', palette = 0, hue, own } = Route.useSearch()
   const [raw, setRaw] = useState<unknown>(null)
   const [failed, setFailed] = useState('')
   useEffect(() => {
@@ -85,7 +86,8 @@ function Lab() {
       </ul>
     )
 
-  const colours = tinted(template.palettes[palette % template.palettes.length], hue === undefined ? undefined : [hue, (hue + 150) % 360])
+  const base = template.palettes[palette % template.palettes.length]
+  const colours = own ? owned(base, `#${own}`) : tinted(base, hue === undefined ? undefined : [hue, (hue + 150) % 360])
   const [w, h] = size === 'tall' ? [390, 780] : [1280, 800]
   const vars = { ...templateVars(template, colours), '--f-ink': colours.ink, '--f-soft': colours.soft, '--f-accent': colours.accent, '--f-a': colours.bg, '--f-b': colours.surface, '--f-c': colours.accent2, '--bar': '0px', width: w, height: h } as CSSProperties
   const frames: Array<{ key: string; data: PageData }> = films.flatMap((film) => [

@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { Still } from '../film/Still'
 import type { Shot } from '../film/timeline'
 import { LOOKS, moveScene, nextDesign, toggleScene } from '../story/generate'
@@ -8,6 +9,7 @@ import { SAMPLE_SOUNDTRACK } from '../story/sample'
 import { outlineOf } from '../story/outline'
 import type { Cut, Intake, LookId, Story, WorldId } from '../story/types'
 import { WORLDS, worldOf } from '../story/worlds'
+import { OWN_COLOURS } from '../template/color'
 import { templateCatalogue, useTemplate } from '../template/load'
 import type { DraftSong, SongJob } from './draft'
 import { chapterAsk, ChapterWords, hasWords, OpeningWords, sceneAsk, SceneWords } from './SceneWords'
@@ -194,7 +196,23 @@ export function LookPanel({ story, back, note, onClose, onLook, onWorld }: { sto
  * Choosing the film's design by eye: every template the studio has, each shown as one of its pages, and
  * the colours of the one in use. The still beside it shows the film's own scene in whichever is picked.
  */
-export function DesignPanel({ story, back, onClose, onPick, onColours }: { story: Story; /** The scene to go back to. */ back: string; onClose: () => void; onPick: (id: string) => void; onColours: (palette: number) => void }) {
+export function DesignPanel({
+  story,
+  back,
+  onClose,
+  onPick,
+  onColours,
+  onOwn,
+}: {
+  story: Story
+  /** The scene to go back to. */
+  back: string
+  onClose: () => void
+  onPick: (id: string) => void
+  onColours: (palette: number) => void
+  /** A colour of the sender's own, or none for the film's usual ones. `more` is a further step of one drag in the colour picker: the same change, not another to undo. */
+  onOwn: (own: string | undefined, more?: boolean) => void
+}) {
   const [list, setList] = useState<Array<{ id: string; name: string }>>([])
   useEffect(() => {
     let live = true
@@ -207,25 +225,75 @@ export function DesignPanel({ story, back, onClose, onPick, onColours }: { story
   const template = useTemplate(current?.id)
   const count = template?.palettes.length ?? 1
   const at = current ? Math.abs(current.palette) % count : 0
+  const own = current?.own
+  const named = OWN_COLOURS.find((c) => c.hex === own)
+  // Without a colour of the sender's own, a film leans toward its photos, where the design allows and there are any.
+  const usual = current?.hues && template?.tint ? 'From your photos' : 'As designed'
+  // One drag in the colour picker is one change: only its first step is kept for undo.
+  const dragging = useRef(false)
+  const picker = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    const input = picker.current
+    if (!input) return
+    const done = () => {
+      dragging.current = false
+    }
+    input.addEventListener('change', done)
+    input.addEventListener('blur', done)
+    return () => {
+      input.removeEventListener('change', done)
+      input.removeEventListener('blur', done)
+    }
+  }, [])
   return (
     <aside className="scene-panel is-look is-design" aria-label="The design of the film">
       <header className="scene-panel-head">
         <h1>The design</h1>
       </header>
-      {count > 1 && (
-        <div className="pager is-row" role="group" aria-label="Colours">
-          <span>Colours</span>
-          <button type="button" aria-label="The colours before these" onClick={() => onColours((at + count - 1) % count)}>
-            <PagerChevron />
-          </button>
-          <b>
-            {at + 1} of {count}
-          </b>
-          <button type="button" className="is-next" aria-label="The next colours" onClick={() => onColours((at + 1) % count)}>
-            <PagerChevron />
-          </button>
+      <div className="design-colours">
+        <div className="pager is-row" role="group" aria-label="Sets of colours">
+          <span>
+            Colours <small>{own ? (named?.name ?? 'Your own') : usual}</small>
+          </span>
+          {count > 1 && (
+            <>
+              <button type="button" aria-label="The colours before these" onClick={() => onColours((at + count - 1) % count)}>
+                <PagerChevron />
+              </button>
+              <b>
+                {at + 1} of {count}
+              </b>
+              <button type="button" className="is-next" aria-label="The next colours" onClick={() => onColours((at + 1) % count)}>
+                <PagerChevron />
+              </button>
+            </>
+          )}
         </div>
-      )}
+        <div className="colour-dots" role="group" aria-label="The film’s colour">
+          <button type="button" className="colour-dot is-usual" aria-label={usual} title={usual} aria-pressed={!own} onClick={() => onOwn(undefined)}>
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="14" rx="2.5" />
+              <circle cx="8.5" cy="10" r="1.6" />
+              <path d="m4 17 5-4.5 3.5 3 3-2.5L20 17" />
+            </svg>
+          </button>
+          {OWN_COLOURS.map((c) => (
+            <button key={c.hex} type="button" className="colour-dot" style={{ '--dot': c.hex } as CSSProperties} aria-label={c.name} title={c.name} aria-pressed={own === c.hex} onClick={() => onOwn(c.hex)} />
+          ))}
+          <label className="colour-dot is-own" title="Your own colour" data-on={own && !named ? 'true' : undefined} style={own && !named ? ({ '--dot': own } as CSSProperties) : undefined}>
+            <input
+              ref={picker}
+              type="color"
+              aria-label="Your own colour"
+              value={own ?? '#d6336c'}
+              onChange={(event) => {
+                onOwn(event.target.value.toLowerCase(), dragging.current)
+                dragging.current = true
+              }}
+            />
+          </label>
+        </div>
+      </div>
       <ul className="design-grid">
         {list.map((t) => (
           <li key={t.id}>
@@ -342,11 +410,11 @@ export function SceneNav({
 export function SongBar({ sample, recipient, song, job, songs }: { sample: boolean; recipient: string; song: DraftSong | null; job: SongJob; songs: boolean | null }) {
   const making = job.state === 'writing' || job.state === 'singing'
   const words = sample
-    ? `“${SAMPLE_SOUNDTRACK.label}”, written and sung for this film`
+    ? `“${SAMPLE_SOUNDTRACK.label}”`
     : song
       ? song.sung === false
-        ? `“${song.label}”, made for ${recipient}`
-        : `“${song.label}”, written and sung for ${recipient}`
+        ? `“${song.label}”`
+        : `“${song.label}”`
       : job.state === 'failed'
         ? `${recipient}’s song didn’t come through`
         : making || songs !== false
