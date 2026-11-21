@@ -186,12 +186,12 @@ test('sound can be muted and the preview has an honest empty state', async ({ pa
   // There is one piece of music, the song made for the film, and nothing else to switch to.
   const songRoom = page.locator('.songroom')
   await expect(songRoom.getByRole('heading', { level: 1 })).toHaveText('This One, With You')
-  await expect(songRoom).toContainText('Written and sung for this film')
   await expect(songRoom).not.toContainText(/score|studio’s music/i)
-  await expect(songRoom.locator('input[name="take"]')).toHaveCount(0)
+  await expect(songRoom.locator('.pager')).toHaveCount(0)
   // Its words are laid out to read, and the sample's can't be changed.
   await expect(songRoom.locator('.song-lyrics .lyric-part').first()).toContainText('The last train pulled away')
-  await expect(songRoom.getByRole('button', { name: /Rewrite the words/ })).toHaveCount(0)
+  await expect(songRoom.getByRole('button', { name: 'Rewrite' })).toHaveCount(0)
+  await expect(songRoom.getByRole('button', { name: /Record it again|Make a new recording/ })).toHaveCount(0)
   // The song plays by itself here, from one button: the film is quiet, and the song's own time moves.
   await expect.poll(async () => (await audioState(page))?.trackId ?? null).toBeNull()
   const songTime = () => page.locator('.player audio').evaluate((el: HTMLAudioElement) => el.currentTime)
@@ -330,18 +330,23 @@ for (const [width, height] of [[360, 740], [768, 900], [1360, 800]]) {
       expect(await page.evaluate(() => document.documentElement.scrollWidth), `writing ${scene} makes the page wider than the screen`).toBeLessThanOrEqual(width)
       expect((await page.locator('.stage-still-frame').boundingBox())!.height, `the still of ${scene} keeps some room`).toBeGreaterThan(90)
     }
-    // The song's room: the player, the three ways to change it, the tunes and the written sheet all fit, and no sung line is hidden.
+    // The song's room: the player, the words on their paper, the three controls over them, the tunes and the one
+    // button all fit, and no sung line is hidden.
     await page.locator('.film-song-open').click()
     await expect(page.getByRole('button', { name: 'Play the song' })).toBeVisible()
-    await page.getByRole('button', { name: /Change the sound/ }).click()
-    expect(await offScreen(page, '.songroom :is(button, a, input, label, p, h1, h3)'), 'part of the song’s room runs off the screen').toBe(0)
-    await page.getByRole('button', { name: /Rewrite the words/ }).click()
     await expect(page.getByLabel('Lyrics')).toHaveValue(/Zara/)
     expect(await page.getByLabel('Lyrics').evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(1)
-    expect(await offScreen(page, '.songroom :is(button, a, input, textarea, label, p)'), 'part of the song’s sheet runs off the screen').toBe(0)
-    await page.getByRole('button', { name: 'Sing these words' }).click()
-    await expect(page.getByRole('radio', { name: /^Take 2/ })).toBeChecked()
-    expect(await offScreen(page, '.songroom :is(button, a, input, label, p, h1, h3)'), 'a second take runs off the screen').toBe(0)
+    expect(await offScreen(page, '.songroom :is(button, a, input, textarea, label, p, h1)'), 'part of the song’s room runs off the screen').toBe(0)
+    await page.locator('.song-tune').click()
+    expect(await offScreen(page, '.songroom :is(button, a, input, label, p, h1)'), 'part of the tunes runs off the screen').toBe(0)
+    await page.locator('.song-tune').click()
+    await page.getByLabel('Ask for different words').fill('funnier')
+    await page.getByRole('button', { name: 'Rewrite' }).click()
+    await expect(page.getByLabel('Lyrics')).toHaveValue(/You asked for funnier/)
+    await expect(page.getByRole('group', { name: 'Versions of the words' })).toContainText('2 of 2')
+    await page.getByRole('button', { name: /Make a new recording/ }).click()
+    await expect(page.getByRole('group', { name: 'Recordings' })).toContainText('2 of 2')
+    expect(await offScreen(page, '.songroom :is(button, a, input, textarea, label, p, h1)'), 'a second recording runs off the screen').toBe(0)
     expect(await page.evaluate(() => document.documentElement.scrollWidth), 'the song’s room is wider than the screen').toBeLessThanOrEqual(width)
 
     // A film with scenes of its own (the sample): every kind of film, and all four designs of its lists and moments.

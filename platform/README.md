@@ -66,6 +66,17 @@ On `platform_v2` a film's **scenes are its own**. There is no fixed list of scen
 - **Clips.** A short video can be added wherever photos are (up to 3 a film, 50 MB and 60 seconds each; MP4, MOV or WebM that the sender's browser can play). It is a `Photo` with a `clip` (the video) beside its `src` (its first frame, drawn on the device by `src/components/clip-intake.ts`). In the film it plays silent and looping where the photo would sit (`src/film/Media.tsx`); stills and thumbnails show the first frame. Nothing is converted, so a browser that can't play a clip shows its first frame instead. On send it is uploaded as `clip:<photo id>`, checked by its first bytes (`sniffVideo`), stored as `<photo id>-clip` and served behind the gift's lock with range requests like the song.
 - **A fuller first film.** The outline brief forbids cutting one sentence across two pages. Single-line scenes take a photo each while there are photos no told scene used, so photos sit beside words before any are left for the scene of photos.
 
+## The song room (reworked 2026-11-21)
+
+Senders didn't find that the words could be written again: the lyrics looked read-only and "have them written again" sat under an edit box behind a "Rewrite the words" option. The user picked this shape from mock-ups (`https://claude.ai/artifact/FwzdiyxCaE7sutQsCaKNLd`, direction D) and asked for few words on the page.
+
+- **The words are on ruled paper, always open.** Any line can be typed on; a pencil line says so until the first edit.
+- **Three controls over the paper, and nothing else:** *Ask for different words* (a box and a Rewrite button: what is typed steers the new words, an empty box gives another version), *Voice* (woman or man) and *Tune* (opens the tunes, each with its sample, and "Music only, no singing").
+- **Nothing is lost.** Versions of the words are paged through on the paper ("2 of 3"), and recordings on the player ("Recording 2 of 2"). Paging to a recording brings its words, voice and tune to the controls.
+- **One button records.** With nothing changed it is outlined and reads "Record it again / same words, voice and tune". With a change it is filled and reads "Make a new recording / with your new words, a man's voice, Highlife guitar". While it works: "Recording… / about a minute and a half".
+- **Steering** (`steerNote` in `src/server/lyrics.ts`): the writer is given the words as they stand and what the sender asked. A thing the sender names there counts as one of their details.
+- The notice that the words and song are made by Google's models is gone from this room, as the user asked for the creation flow on 2026-11-20.
+
 ## The owner's numbers (2026-11-20)
 
 `/owner` shows how much the studio has made and sent: films, songs, gifts and spoken notes for today, seven days and all time; the last fourteen days; and what sent gifts are made of (kind of film, occasion, song, photos, clips, voice notes). Counts only: nothing a sender wrote, uploaded or recorded is shown. It asks for the owner's key, which is the `OWNER_KEY` environment variable (at least 12 characters; without it nobody is let in), sent as a header to `GET /api/owner` and kept for the browser session only. Gifts are counted from their folders. Films, songs, lyrics and spoken notes are counted from `DATA_DIR/events.log`, one line per event with its time and kind (`record` in `src/server/metrics.ts`), kept since the page was added; nothing before that was counted.
