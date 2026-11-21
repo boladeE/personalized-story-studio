@@ -630,3 +630,331 @@
     border-bottom-width: 10px;
   }
 }
+
+/* ---------- The room as it is now: paper under three controls, and one button ---------- */
+
+.lyric-sheet.is-paper {
+  padding: 0;
+  overflow: hidden;
+  background: var(--card);
+}
+.song-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 14px 18px;
+  align-items: end;
+  padding: 16px clamp(16px, 2.4vw, 26px) 18px;
+  border-bottom: 2px solid var(--palm);
+  background: #f6f4ea;
+}
+.song-control {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.song-control > label,
+.song-control > span {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.song-steer {
+  display: flex;
+  gap: 8px;
+}
+.song-steer input {
+  flex: 1;
+  min-width: 0;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1.5px solid var(--palm);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+}
+.song-rewrite {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--palm);
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.song-rewrite svg {
+  width: 17px;
+  height: 17px;
+}
+.song-rewrite:disabled,
+.song-tune:disabled,
+.song-steer input:disabled,
+.segmented button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.segmented {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  padding: 3px;
+  border: 1.5px solid var(--palm);
+  border-radius: 10px;
+  background: var(--card);
+}
+.segmented button {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--palm);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.segmented button[aria-pressed='true'] {
+  background: var(--palm);
+  color: #fff;
+  font-weight: 700;
+}
+.song-tune {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-width: 150px;
+  min-height: 47px;
+  padding: 0 14px;
+  border: 1.5px solid var(--palm);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--palm);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.song-tune svg {
+  width: 14px;
+  height: 14px;
+  transform: rotate(-90deg);
+  transition: transform 0.2s;
+}
+.song-tune[aria-expanded='true'] svg {
+  transform: rotate(90deg);
+}
+.song-tunes {
+  display: grid;
+  gap: 12px;
+  padding: 16px clamp(16px, 2.4vw, 26px);
+  border-bottom: 1px solid var(--line);
+  background: #faf9f1;
+}
+.song-tunes .tunes {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.lyric-sheet.is-paper > .field-error {
+  margin: 12px clamp(16px, 2.4vw, 26px) 0;
+}
+.song-paper {
+  --rule: 38px;
+  padding: 18px clamp(18px, 3vw, 30px) 116px;
+  transition: opacity 0.2s;
+}
+.song-paper[aria-busy='true'] {
+  opacity: 0.5;
+}
+.song-paper.is-muted .sheet-title,
+.song-paper.is-muted .sheet-words {
+  opacity: 0.4;
+}
+.song-paper.is-empty {
+  padding: 26px clamp(18px, 3vw, 30px);
+}
+.song-paper-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.song-paper-head .sheet-title {
+  flex: 1;
+  min-width: 0;
+}
+.song-cue {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+.song-cue svg {
+  width: 15px;
+  height: 15px;
+}
+.for-touch {
+  display: none;
+}
+@media (hover: none) {
+  .for-touch {
+    display: inline;
+  }
+  .for-mouse {
+    display: none;
+  }
+}
+
+/* Stepping through what has been made: recordings on the player, versions of the words on the paper. */
+.pager {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 15px;
+  color: var(--palm);
+  white-space: nowrap;
+}
+.pager b {
+  font-weight: 700;
+}
+.pager button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+.pager button.is-next svg {
+  transform: rotate(180deg);
+}
+.pager button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.pager.on-dark {
+  display: flex;
+  padding-top: 8px;
+  border-top: 1px solid #2e4a3e;
+  color: var(--chalk);
+}
+.pager.on-dark > span {
+  margin-right: auto;
+  font-size: 14.5px;
+  color: #c9d6cc;
+}
+
+/* The one button. It floats over the foot of the paper and says what it will record. */
+.song-go {
+  position: fixed;
+  right: calc(clamp(12px, 3vw, 40px) + clamp(10px, 2vw, 24px));
+  bottom: max(18px, env(safe-area-inset-bottom, 0px));
+  z-index: 5;
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+.song-record {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 62px;
+  padding: 0 28px 0 22px;
+  border: 2px solid var(--hibiscus);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--hibiscus-deep);
+  font: inherit;
+  text-align: left;
+  box-shadow: 0 8px 20px rgba(16, 38, 31, 0.14);
+  cursor: pointer;
+}
+.song-record > span {
+  display: grid;
+  gap: 4px;
+  line-height: 1;
+}
+.song-record b {
+  font-size: 16.5px;
+}
+.song-record small {
+  font-size: 13px;
+  color: var(--muted);
+}
+.song-record.is-new {
+  background: var(--hibiscus);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(125, 22, 56, 0.35);
+}
+.song-record.is-new small {
+  color: #fff;
+}
+.song-record.is-busy {
+  border-color: var(--palm-deep);
+  background: var(--palm-deep);
+  color: #fff;
+  box-shadow: none;
+}
+.song-record.is-busy small {
+  color: #c9d6cc;
+}
+.song-record:disabled {
+  cursor: default;
+}
+.song-record:disabled:not(.is-busy) {
+  opacity: 0.5;
+}
+.song-spinner {
+  animation: song-spin 1s linear infinite;
+}
+@keyframes song-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .song-spinner {
+    animation: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .song-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .song-control.is-words {
+    grid-column: 1 / -1;
+  }
+  .song-tune {
+    width: 100%;
+    min-width: 0;
+  }
+  .song-go {
+    left: 12px;
+    right: 12px;
+    justify-content: stretch;
+  }
+  .song-record {
+    width: 100%;
+    justify-content: center;
+  }
+}

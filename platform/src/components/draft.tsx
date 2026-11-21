@@ -20,6 +20,8 @@ export interface DraftSong {
   lyrics?: string
   /** The tune it was made in. */
   vibe?: string
+  /** Who sings it, when it is sung and the voice was chosen. */
+  voice?: 'woman' | 'man'
 }
 
 /** The words of the song, written by the studio and open to the sender's edits. */
@@ -164,7 +166,7 @@ export function DraftProvider({ children }: { children: ReactNode }) {
           }
         }
         if (!current()) return
-        const song: DraftSong = { id: String(made.id), src: String(made.src), label: String(made.label ?? 'Original song'), sung: Boolean(made.sung), lyrics: String(made.lyrics ?? lyrics), vibe }
+        const song: DraftSong = { id: String(made.id), src: String(made.src), label: String(made.label ?? 'Original song'), sung: Boolean(made.sung), lyrics: String(made.lyrics ?? lyrics), vibe, ...(voice === 'woman' || voice === 'man' ? { voice } : {}) }
         setTakes((list) => [...list, song].slice(-MAX_TAKES))
         inFlight.current = false
         setJob({ state: 'ready', song })
@@ -189,7 +191,8 @@ export function DraftProvider({ children }: { children: ReactNode }) {
         const made = (await response.json().catch(() => ({}))) as Record<string, unknown>
         if (mine !== run.current) return
         if (!response.ok || !made.id || !made.src) throw new Error(typeof made.error === 'string' ? made.error : 'The song didn’t come through.')
-        const song: DraftSong = { id: String(made.id), src: String(made.src), label: String(made.label ?? 'Original song'), sung: Boolean(made.sung), lyrics: typeof made.lyrics === 'string' ? made.lyrics : sung ? remake.words!.lyrics : undefined, vibe: remake.vibe }
+        const voiceSung = forPlan.voice === 'surprise' ? surpriseVoice(forIntake) : forPlan.voice
+        const song: DraftSong = { id: String(made.id), src: String(made.src), label: String(made.label ?? 'Original song'), sung: Boolean(made.sung), lyrics: typeof made.lyrics === 'string' ? made.lyrics : sung ? remake.words!.lyrics : undefined, vibe: remake.vibe, ...(sung && (voiceSung === 'woman' || voiceSung === 'man') ? { voice: voiceSung } : {}) }
         setTakes((list) => [...list, song].slice(-MAX_TAKES))
         inFlight.current = false
         setJob({ state: 'ready', song, again: true })

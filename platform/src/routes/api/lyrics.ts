@@ -3,7 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { allowLyrics, lyricsProvider, writeLyrics } from '../../server/lyrics'
 import { MusicError } from '../../server/music'
 import { json } from '../../server/store'
-import { isLyricTone, parseSongDetails } from '../../story/vibes'
+import { isLyricTone, parseSongDetails, STEER_LIMIT } from '../../story/vibes'
 import type { LyricTone } from '../../story/vibes'
 
 /** Write the words of a song from the sender's details, before any music is made. */
@@ -15,11 +15,16 @@ export const Route = createFileRoute('/api/lyrics')({
         let tone: LyricTone = 'smooth'
         // Set when an earlier draft of these words was refused by the music model.
         let fresh = false
+        // What the sender asked to be different, in their own words, and the words as they stand.
+        let steer = ''
+        let current = ''
         try {
-          const body = (await request.json()) as { details?: unknown; tone?: unknown; fresh?: unknown }
+          const body = (await request.json()) as { details?: unknown; tone?: unknown; fresh?: unknown; steer?: unknown; current?: unknown }
           details = parseSongDetails(body.details)
           if (isLyricTone(body.tone)) tone = body.tone
           fresh = body.fresh === true
+          if (typeof body.steer === 'string') steer = body.steer.replace(/\s+/g, ' ').trim().slice(0, STEER_LIMIT)
+          if (typeof body.current === 'string') current = body.current.trim().slice(0, 5000)
         } catch {
           details = null
         }
@@ -29,7 +34,7 @@ export const Route = createFileRoute('/api/lyrics')({
         const allowed = allowLyrics(client)
         if (!allowed.allowed) return json({ error: allowed.reason }, { status: 429 })
         try {
-          const written = await writeLyrics(details, tone, fresh)
+          const written = await writeLyrics(details, tone, fresh, { steer, current })
           record('lyrics')
           return json(written, { status: 201 })
         } catch (error) {
