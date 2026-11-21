@@ -271,7 +271,7 @@ export function SongRoom({ intake, sample }: { intake: Intake; sample: boolean }
                 <label htmlFor="song-steer">Ask for different words</label>
                 <div className="song-steer">
                   <input id="song-steer" type="text" value={steer} maxLength={STEER_LIMIT} disabled={rewriting || busy} onChange={(e) => setSteer(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && void rewrite()} />
-                  <button type="button" className="song-rewrite" disabled={rewriting || busy || !details} onClick={() => void rewrite()}>
+                  <button type="button" className={`song-rewrite${rewriting ? ' is-busy' : ''}`} disabled={rewriting || busy || !details} onClick={() => void rewrite()}>
                     <AgainIcon />
                     {rewriting ? 'Writing…' : 'Rewrite'}
                   </button>
