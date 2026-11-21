@@ -170,7 +170,7 @@ async function askModel(brief: OutlineBrief, model: string, timeoutMs: number): 
       body: JSON.stringify({
         ...NOT_STORED,
         contents: [{ role: 'user', parts: [{ text: outlineBrief(brief) }] }],
-        generationConfig: { responseMimeType: 'application/json', responseSchema: SCHEMA, thinkingConfig: { thinkingLevel: process.env.GEMINI_OUTLINE_THINKING ?? 'low' } },
+        generationConfig: { responseMimeType: 'application/json', responseSchema: brief.voices?.length ? { ...SCHEMA, required: [...SCHEMA.required, 'voices_name', 'voices_intro'] } : SCHEMA, thinkingConfig: { thinkingLevel: process.env.GEMINI_OUTLINE_THINKING ?? 'low' } },
       }),
     })
     if (!response.ok) throw new Error(`Gemini ${response.status}: ${(await response.text().catch(() => '')).slice(0, 200)}`)
