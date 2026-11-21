@@ -280,6 +280,9 @@ export const tidyTitle = (raw: unknown) => tidy(raw, LYRIC_LIMITS.title).replace
 
 /** How the words are written: a told story with jokes, or an understated track built on a feeling. */
 export const LYRIC_TONES = ['smooth', 'story'] as const
+/** How much a sender may write when asking for the words to be different. */
+export const STEER_LIMIT = 240
+
 export type LyricTone = (typeof LYRIC_TONES)[number]
 export const isLyricTone = (value: unknown): value is LyricTone => (LYRIC_TONES as readonly unknown[]).includes(value)
 

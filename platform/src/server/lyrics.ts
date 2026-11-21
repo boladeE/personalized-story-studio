@@ -64,10 +64,25 @@ const SCHEMA = {
 export const FRESH_NOTE =
   'An earlier draft of this song was refused because a line was too close to the words of an existing, published song. Write it again with wording of your own. Do not use any phrase that is the title or a well-known line of an existing song (for example "thank you for being a friend", "you are the sunshine of my life", "I will always love you"), and keep the hook to plain words taken from the details above.'
 
-export async function writeLyrics(details: SongDetails, tone: LyricTone = 'smooth', fresh = false): Promise<WrittenLyrics> {
+/**
+ * What the writer is told when the sender has asked for the words to be different. What they ask is
+ * theirs to ask: a thing they name there ("mention the tacos") is one of their details. The words as
+ * they stand go with it, so "keep the chorus" and "funnier" both mean something.
+ */
+export function steerNote(steer: string, current: string) {
+  return [
+    ...(current ? [`Here are the words of this song as they stand:\n\n${current}`] : []),
+    steer
+      ? `The sender has read them and asks for this: "${steer}". Write the song again so that it does what they ask. What they say there is theirs: a thing, a person or a moment they name is one of their details and may be sung. Keep whatever they ask you to keep, word for word; change the rest as much as it takes. Everything else in this brief still holds.`
+      : 'The sender has read them and wants a different version. Write the song again: a new hook, new lines, another way into the same details. Do not hand back these words lightly changed.',
+  ].join('\n\n')
+}
+
+export async function writeLyrics(details: SongDetails, tone: LyricTone = 'smooth', fresh = false, again: { steer?: string; current?: string } = {}): Promise<WrittenLyrics> {
   const provider = lyricsProvider()
   if (provider === 'off') throw new MusicError('Songs aren’t switched on for this studio yet.', 503)
-  if (provider === 'demo') return demoLyrics(details)
+  if (provider === 'demo') return demoLyrics(details, again.steer)
+  const asked = again.steer || again.current ? steerNote(again.steer ?? '', again.current ?? '') : ''
 
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), Number(process.env.LYRICS_TIMEOUT_MS ?? 90_000))
@@ -81,7 +96,7 @@ export async function writeLyrics(details: SongDetails, tone: LyricTone = 'smoot
       headers: { 'x-goog-api-key': process.env.GEMINI_API_KEY ?? '', 'content-type': 'application/json' },
       body: JSON.stringify({
         ...NOT_STORED,
-        contents: [{ role: 'user', parts: [{ text: fresh ? `${lyricsBrief(details, tone)}\n\n${FRESH_NOTE}` : lyricsBrief(details, tone) }] }],
+        contents: [{ role: 'user', parts: [{ text: [lyricsBrief(details, tone), ...(fresh ? [FRESH_NOTE] : []), ...(asked ? [asked] : [])].join('\n\n') }] }],
         generationConfig: {
           responseMimeType: 'application/json',
           responseSchema: SCHEMA,
@@ -134,7 +149,8 @@ export function lyricsFromGenerate(body: unknown): WrittenLyrics | null {
 }
 
 /** Placeholder words for development and tests: only the names, nothing made up. */
-export function demoLyrics(d: SongDetails): WrittenLyrics {
+/** Test words. What a sender asked for is sung back in the verse, so a test can tell it arrived. */
+export function demoLyrics(d: SongDetails, steer = ''): WrittenLyrics {
   const greeting = occasionOf(d.occasion).song.greeting
   const line = greeting ? `${greeting.charAt(0).toUpperCase()}${greeting.slice(1)}, ${d.recipient}` : `This one is for ${d.recipient}`
   const chorus = ['[Chorus]', line, 'This little song is yours', line, 'Sung in placeholder words']
@@ -146,7 +162,7 @@ export function demoLyrics(d: SongDetails): WrittenLyrics {
         'These are test words for the studio',
         'They stand in for the real thing',
         ...(d.sender ? [`${d.sender} wrote the details down`] : ['Somebody wrote the details down']),
-        'And here is where the song would sing',
+        ...(steer ? [`You asked for ${steer}`] : ['And here is where the song would sing']),
         '',
         ...chorus,
       ].join('\n'),
